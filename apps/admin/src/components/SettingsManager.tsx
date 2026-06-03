@@ -1,0 +1,195 @@
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "../lib/api";
+
+type Settings = {
+  churchName: string;
+  logoUrl?: string;
+  colors: {
+    primary: string;
+    accent: string;
+    background: string;
+    surface: string;
+  };
+  typography: {
+    heading: string;
+    body: string;
+  };
+  heroBanner?: string;
+  footer: {
+    text: string;
+    copyright: string;
+  };
+  socialLinks: Array<{ label: string; href: string }>;
+  homepageLayout: string[];
+  navItems: Array<{ label: string; href: string; visible: boolean }>;
+};
+
+type Props = {
+  title: string;
+  description: string;
+};
+
+export function SettingsManager({ title, description }: Props) {
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => apiFetch<Settings>("/api/public/site")
+  });
+
+  const [form, setForm] = useState<Settings | null>(null);
+
+  useEffect(() => {
+    if (data) {
+      setForm(data);
+    }
+  }, [data]);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!form) return null;
+      return apiFetch<Settings>("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify(form)
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["settings"] });
+    }
+  });
+
+  if (!form) {
+    return <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 text-white/60">Loading settings...</div>;
+  }
+
+  return (
+    <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm uppercase tracking-[0.35em] text-gold/80">{title}</p>
+          <h2 className="mt-3 text-3xl font-semibold">Church Settings</h2>
+          <p className="mt-2 text-sm text-white/70">{description}</p>
+        </div>
+        <button onClick={() => mutation.mutate()} className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink">
+          Save Settings
+        </button>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Branding</legend>
+          <div className="mt-4 grid gap-4">
+            <label className="grid gap-2 text-sm">
+              <span>Church Name</span>
+              <input value={form.churchName} onChange={(event) => setForm({ ...form, churchName: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Logo URL</span>
+              <input value={form.logoUrl ?? ""} onChange={(event) => setForm({ ...form, logoUrl: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Hero Banner</span>
+              <input value={form.heroBanner ?? ""} onChange={(event) => setForm({ ...form, heroBanner: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Colors</legend>
+          <div className="mt-4 grid gap-4">
+            {(["primary", "accent", "background", "surface"] as const).map((key) => (
+              <label key={key} className="grid gap-2 text-sm">
+                <span className="capitalize">{key}</span>
+                <input
+                  value={form.colors[key]}
+                  onChange={(event) => setForm({ ...form, colors: { ...form.colors, [key]: event.target.value } })}
+                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+                />
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Typography</legend>
+          <div className="mt-4 grid gap-4">
+            <label className="grid gap-2 text-sm">
+              <span>Heading Font</span>
+              <input value={form.typography.heading} onChange={(event) => setForm({ ...form, typography: { ...form.typography, heading: event.target.value } })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Body Font</span>
+              <input value={form.typography.body} onChange={(event) => setForm({ ...form, typography: { ...form.typography, body: event.target.value } })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Footer</legend>
+          <div className="mt-4 grid gap-4">
+            <label className="grid gap-2 text-sm">
+              <span>Footer Text</span>
+              <input value={form.footer.text} onChange={(event) => setForm({ ...form, footer: { ...form.footer, text: event.target.value } })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Copyright</span>
+              <input value={form.footer.copyright} onChange={(event) => setForm({ ...form, footer: { ...form.footer, copyright: event.target.value } })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Navigation</legend>
+          <div className="mt-4 space-y-3">
+            {form.navItems.map((item, index) => (
+              <div key={`${item.label}-${index}`} className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:grid-cols-[1fr_1fr_auto]">
+                <input
+                  value={item.label}
+                  onChange={(event) => {
+                    const next = [...form.navItems];
+                    next[index] = { ...item, label: event.target.value };
+                    setForm({ ...form, navItems: next });
+                  }}
+                  className="rounded-xl border border-white/10 bg-black/20 px-3 py-2"
+                />
+                <input
+                  value={item.href}
+                  onChange={(event) => {
+                    const next = [...form.navItems];
+                    next[index] = { ...item, href: event.target.value };
+                    setForm({ ...form, navItems: next });
+                  }}
+                  className="rounded-xl border border-white/10 bg-black/20 px-3 py-2"
+                />
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={item.visible}
+                    onChange={(event) => {
+                      const next = [...form.navItems];
+                      next[index] = { ...item, visible: event.target.checked };
+                      setForm({ ...form, navItems: next });
+                    }}
+                  />
+                  Visible
+                </label>
+              </div>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Homepage Layout</legend>
+          <textarea
+            value={form.homepageLayout.join(", ")}
+            onChange={(event) => setForm({ ...form, homepageLayout: event.target.value.split(",").map((entry) => entry.trim()).filter(Boolean) })}
+            className="mt-4 min-h-44 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+          />
+        </fieldset>
+      </div>
+    </div>
+  );
+}
+

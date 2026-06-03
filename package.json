@@ -1,0 +1,17 @@
+{
+  "name": "church-platform",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/admin",
+    "server"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace apps/web",
+    "dev:admin": "npm run dev --workspace apps/admin",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspace apps/web && npm run build --workspace apps/admin && npm run build --workspace server",
+    "lint": "npm run lint --workspace apps/web && npm run lint --workspace apps/admin && npm run lint --workspace server"
+  }
+}
+
