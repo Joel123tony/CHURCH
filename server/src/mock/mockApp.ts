@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import multer from "multer";
 import { randomUUID } from "node:crypto";
 import { env } from "../config/env";
+import { getDatabaseStatus, setMockDatabaseStatus } from "../config/db";
 
 type Page = {
   slug: string;
@@ -458,6 +459,7 @@ function createMockUserResponse() {
 }
 
 export function createMockApp() {
+  setMockDatabaseStatus();
   const app = express();
   const allowedOrigins = env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
 
@@ -480,7 +482,7 @@ export function createMockApp() {
   });
 
   app.get("/health", (_req, res) => {
-    res.json({ ok: true, service: "church-api", mode: "mock" });
+    res.json({ ok: true, service: "church-api", database: getDatabaseStatus() });
   });
 
   app.post("/api/auth/login", (_req, res) => {

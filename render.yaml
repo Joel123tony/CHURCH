@@ -32,6 +32,6 @@ services:
       - key: ADMIN_WEB_URL
         value: https://adminmethodistpadikuppam.netlify.app
       - key: API_BASE_URL
-        value: https://church-api.onrender.com
+        value: https://church-api-yx0n.onrender.com
       - key: ALLOWED_ORIGINS
         value: https://methodistchurchpadikuppam.netlify.app,https://adminmethodistpadikuppam.netlify.app

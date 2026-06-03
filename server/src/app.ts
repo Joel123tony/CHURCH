@@ -16,6 +16,7 @@ import { youtubeRouter } from "./routes/youtube.routes";
 import { analyticsRouter } from "./routes/analytics.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { env } from "./config/env";
+import { getDatabaseStatus } from "./config/db";
 
 const allowedOrigins = env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean);
 
@@ -40,7 +41,7 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "church-api" });
+  res.json({ ok: true, service: "church-api", database: getDatabaseStatus() });
 });
 
 app.use("/api/auth", authRouter);

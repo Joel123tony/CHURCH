@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  VITE_API_BASE_URL = "https://church-api.onrender.com"
+  VITE_API_BASE_URL = "https://church-api-yx0n.onrender.com"
 
 [[redirects]]
   from = "/*"
