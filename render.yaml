@@ -27,6 +27,12 @@ services:
         sync: false
       - key: YOUTUBE_CHANNEL_ID
         sync: false
+      - key: SEED_ADMIN_NAME
+        sync: false
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
       - key: PUBLIC_WEB_URL
         value: https://methodistchurchpadikuppam.netlify.app
       - key: ADMIN_WEB_URL
