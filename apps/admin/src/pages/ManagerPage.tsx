@@ -27,7 +27,7 @@ const pastorFields: FieldSpec[] = [
   { name: "startYear", label: "Start Year", type: "number" },
   { name: "endYear", label: "End Year", type: "number" },
   { name: "biography", label: "Biography", type: "textarea" },
-  { name: "mainPhoto", label: "Main Photo", type: "url" },
+  { name: "mainPhoto", label: "Main Photo", type: "image" },
   { name: "galleryPhotos", label: "Gallery Photos CSV", type: "csv" },
   { name: "currentPastor", label: "Current Pastor", type: "checkbox" },
   { name: "youtubeChannelId", label: "YouTube Channel", type: "text" },
@@ -35,7 +35,7 @@ const pastorFields: FieldSpec[] = [
 ];
 
 const eventFields: FieldSpec[] = [
-  { name: "banner", label: "Banner", type: "url" },
+  { name: "banner", label: "Banner", type: "image" },
   { name: "title", label: "Title", type: "text" },
   { name: "date", label: "Date", type: "date" },
   { name: "time", label: "Time", type: "text" },
@@ -51,8 +51,8 @@ const sermonFields: FieldSpec[] = [
   { name: "description", label: "Description", type: "textarea" },
   { name: "speaker", label: "Speaker", type: "text" },
   { name: "publishDate", label: "Publish Date", type: "date" },
-  { name: "thumbnailUrl", label: "Thumbnail URL", type: "url" },
-  { name: "videoUrl", label: "Video URL", type: "url" },
+  { name: "thumbnailUrl", label: "Thumbnail", type: "image" },
+  { name: "videoUrl", label: "Video", type: "video" },
   { name: "youtubeVideoId", label: "YouTube Video ID", type: "text" },
   { name: "duration", label: "Duration", type: "text" },
   { name: "featured", label: "Featured", type: "checkbox" },
@@ -97,4 +97,3 @@ function ManagerPageBySlug({ slug }: Props) {
 export function ManagerPage({ slug }: Props) {
   return <ManagerPageBySlug slug={slug} />;
 }
-

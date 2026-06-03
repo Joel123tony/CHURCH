@@ -8,21 +8,33 @@ type Block =
 
 export type SectionData = {
   id: string;
+  anchorId?: string;
   title: string;
   subtitle?: string;
   description?: string;
   richText?: string;
+  backgroundImage?: string;
+  backgroundVideo?: string;
   blocks?: Block[];
 };
 
 export function SectionRenderer({ section }: { section: SectionData }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 md:px-8">
+    <section id={section.anchorId ?? section.id} className="mx-auto max-w-7xl px-4 py-16 md:px-8">
       <div className="mb-8 max-w-3xl">
         <p className="text-sm uppercase tracking-[0.3em] text-gold/80">{section.subtitle}</p>
         <h2 className="mt-3 text-3xl font-semibold text-pearl md:text-5xl">{section.title}</h2>
         {section.description ? <p className="mt-4 text-base leading-7 text-mist/80">{section.description}</p> : null}
       </div>
+      {section.backgroundImage || section.backgroundVideo ? (
+        <div className="mb-6 overflow-hidden rounded-[2rem] border border-white/10 bg-white/5">
+          {section.backgroundImage ? (
+            <img src={section.backgroundImage} alt={section.title} className="h-72 w-full object-cover md:h-96" />
+          ) : (
+            <video src={section.backgroundVideo} className="h-72 w-full object-cover md:h-96" controls muted />
+          )}
+        </div>
+      ) : null}
       <div className="grid gap-6 md:grid-cols-2">
         {section.blocks?.map((block, index) => {
           if (block.type === "text") {

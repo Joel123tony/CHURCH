@@ -3,6 +3,7 @@ import { AdminShell } from "./components/AdminShell";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ManagerPage } from "./pages/ManagerPage";
+import { RequireAdminAuth } from "./components/RequireAdminAuth";
 
 const managers = [
   "page-builder",
@@ -23,15 +24,17 @@ const managers = [
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route element={<AdminShell />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        {managers.map((slug) => (
-          <Route key={slug} path={`/${slug}`} element={<ManagerPage slug={slug} />} />
-        ))}
+      <Route element={<RequireAdminAuth />}>
+        <Route element={<AdminShell />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          {managers.map((slug) => (
+            <Route key={slug} path={`/${slug}`} element={<ManagerPage slug={slug} />} />
+          ))}
+        </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
-

@@ -1,7 +1,16 @@
 import { Outlet, Link } from "react-router-dom";
 import { Menu, Search, PlayCircle } from "lucide-react";
 
-const nav = ["Home", "About", "Ministries", "Events", "Gallery", "Pastors", "Contact", "Search"];
+const nav = [
+  { label: "Home", href: "#home" },
+  { label: "About", href: "#about" },
+  { label: "Ministries", href: "#ministries" },
+  { label: "Events", href: "#events" },
+  { label: "Gallery", href: "#gallery" },
+  { label: "Pastors", href: "#pastors" },
+  { label: "Contact", href: "#contact" },
+  { label: "Search", href: "#search" }
+];
 
 export function PublicLayout() {
   return (
@@ -19,19 +28,19 @@ export function PublicLayout() {
           </Link>
           <nav className="hidden items-center gap-6 lg:flex">
             {nav.map((item) => (
-              <Link key={item} to={item === "Home" ? "/" : `/${item.toLowerCase()}`} className="text-sm text-mist/90 transition hover:text-gold">
-                {item}
-              </Link>
+              <a key={item.label} href={item.href} className="text-sm text-mist/90 transition hover:text-gold">
+                {item.label}
+              </a>
             ))}
           </nav>
           <div className="flex items-center gap-3">
             <button className="rounded-full border border-white/10 bg-white/5 p-3 text-mist transition hover:border-gold/40 hover:bg-white/10 lg:hidden">
               <Menu className="h-4 w-4" />
             </button>
-            <button className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-mist transition hover:border-gold/40 hover:bg-white/10 md:flex">
+            <a href="#search" className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-mist transition hover:border-gold/40 hover:bg-white/10 md:flex">
               <Search className="h-4 w-4" />
               Search
-            </button>
+            </a>
           </div>
         </div>
       </header>
@@ -50,9 +59,9 @@ export function PublicLayout() {
             <p className="text-sm font-semibold text-pearl">Quick Links</p>
             <div className="mt-4 grid gap-2 text-sm text-mist/80">
               {nav.map((item) => (
-                <Link key={item} to={item === "Home" ? "/" : `/${item.toLowerCase()}`} className="transition hover:text-gold">
-                  {item}
-                </Link>
+                <a key={item.label} href={item.href} className="transition hover:text-gold">
+                  {item.label}
+                </a>
               ))}
             </div>
           </div>

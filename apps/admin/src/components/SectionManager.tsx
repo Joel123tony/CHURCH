@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
+import { MediaUploadField } from "./MediaUploadField";
 import type { FieldSpec } from "./RecordManager";
 
 type Section = {
@@ -27,8 +28,8 @@ const fields: FieldSpec[] = [
   { name: "subtitle", label: "Subtitle", type: "text" },
   { name: "description", label: "Description", type: "textarea" },
   { name: "richText", label: "Rich Text", type: "textarea" },
-  { name: "backgroundImage", label: "Background Image URL", type: "url" },
-  { name: "backgroundVideo", label: "Background Video URL", type: "url" },
+  { name: "backgroundImage", label: "Background Image", type: "image", placeholder: "Upload or paste an image URL" },
+  { name: "backgroundVideo", label: "Background Video", type: "video", placeholder: "Upload or paste a video URL" },
   { name: "ctaButtons", label: "CTA Buttons JSON", type: "json" },
   { name: "blocks", label: "Blocks JSON", type: "json" },
   { name: "order", label: "Order", type: "number" },
@@ -44,6 +45,12 @@ const defaultItem = {
   ctaButtons: "[]",
   blocks: "[]"
 };
+
+function parseJsonList(value: string | boolean) {
+  const text = String(value ?? "").trim();
+  if (!text) return [];
+  return JSON.parse(text);
+}
 
 export function SectionManager() {
   const queryClient = useQueryClient();
@@ -96,8 +103,8 @@ export function SectionManager() {
         richText: String(form.richText ?? ""),
         backgroundImage: String(form.backgroundImage ?? ""),
         backgroundVideo: String(form.backgroundVideo ?? ""),
-        ctaButtons: JSON.parse(String(form.ctaButtons ?? "[]") || "[]"),
-        blocks: JSON.parse(String(form.blocks ?? "[]") || "[]"),
+        ctaButtons: parseJsonList(form.ctaButtons),
+        blocks: parseJsonList(form.blocks),
         order: Number(form.order ?? 0),
         hidden: Boolean(form.hidden),
         published: Boolean(form.published)
@@ -154,7 +161,9 @@ export function SectionManager() {
           <div>
             <p className="text-sm uppercase tracking-[0.35em] text-gold/80">Section Builder</p>
             <h2 className="mt-3 text-3xl font-semibold">Homepage and Page Sections</h2>
-            <p className="mt-2 text-sm text-white/70">Create sections, duplicate them, hide/publish them, and reorder with drag and drop.</p>
+            <p className="mt-2 text-sm text-white/70">
+              Create sections, upload images or videos for backgrounds, hide/publish them, and reorder with drag and drop.
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <label className="grid gap-2 text-sm">
@@ -171,10 +180,7 @@ export function SectionManager() {
                 ))}
               </select>
             </label>
-            <button
-              onClick={() => setEditing(null)}
-              className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink"
-            >
+            <button onClick={() => setEditing(null)} className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink">
               New Section
             </button>
           </div>
@@ -185,48 +191,63 @@ export function SectionManager() {
         <section className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
           <p className="text-sm uppercase tracking-[0.35em] text-gold/80">{editing ? "Edit Section" : "Create Section"}</p>
           <div className="mt-5 grid gap-4">
-            {fields.map((field) => (
-              <label key={field.name} className="grid gap-2 text-sm">
-                <span className="text-white/75">{field.label}</span>
-                {field.type === "textarea" || field.type === "json" ? (
-                  <textarea
+            {fields.map((field) => {
+              if (field.type === "image" || field.type === "video") {
+                return (
+                  <MediaUploadField
+                    key={field.name}
+                    label={field.label}
+                    type={field.type}
                     value={String(form[field.name] ?? "")}
-                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                    className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
+                    onChange={(value) => setForm((current) => ({ ...current, [field.name]: value }))}
+                    helperText={field.placeholder}
                   />
-                ) : field.type === "checkbox" ? (
-                  <input
-                    type="checkbox"
-                    checked={Boolean(form[field.name])}
-                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.checked }))}
-                    className="h-5 w-5 rounded border-white/20 bg-black/20"
-                  />
-                ) : field.type === "number" ? (
-                  <input
-                    type="number"
-                    value={String(form[field.name] ?? "")}
-                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
-                  />
-                ) : (
-                  <input
-                    type="text"
-                    value={String(form[field.name] ?? "")}
-                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
-                  />
-                )}
-              </label>
-            ))}
+                );
+              }
+
+              return (
+                <label key={field.name} className="grid gap-2 text-sm">
+                  <span className="text-white/75">{field.label}</span>
+                  {field.type === "textarea" || field.type === "json" ? (
+                    <textarea
+                      value={String(form[field.name] ?? "")}
+                      onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                      className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
+                    />
+                  ) : field.type === "checkbox" ? (
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form[field.name])}
+                      onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.checked }))}
+                      className="h-5 w-5 rounded border-white/20 bg-black/20"
+                    />
+                  ) : field.type === "number" ? (
+                    <input
+                      type="number"
+                      value={String(form[field.name] ?? "")}
+                      onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                      className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={String(form[field.name] ?? "")}
+                      onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                      className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
+                    />
+                  )}
+                </label>
+              );
+            })}
           </div>
           <div className="mt-6 flex gap-3">
-            <button
-              onClick={() => saveMutation.mutate()}
-              className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink"
-            >
+            <button onClick={() => saveMutation.mutate()} className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink">
               {editing ? "Update" : "Create"}
             </button>
-            <button onClick={() => setEditing(null)} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-pearl">
+            <button
+              onClick={() => setEditing(null)}
+              className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-pearl"
+            >
               Reset
             </button>
           </div>
@@ -266,7 +287,10 @@ export function SectionManager() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setEditing(section)} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold">
+                    <button
+                      onClick={() => setEditing(section)}
+                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold"
+                    >
                       Edit
                     </button>
                     <button

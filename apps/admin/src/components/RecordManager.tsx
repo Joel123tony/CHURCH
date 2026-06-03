@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
+import { MediaUploadField } from "./MediaUploadField";
 
 export type FieldSpec = {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "checkbox" | "date" | "url" | "csv" | "json" | "select";
+  type: "text" | "textarea" | "number" | "checkbox" | "date" | "url" | "csv" | "json" | "select" | "image" | "video";
   placeholder?: string;
   options?: string[];
 };
@@ -75,10 +76,12 @@ export function RecordManager<T extends Record<string, any>>({
       return;
     }
 
-    const mapped = format ? format(editing) : fields.reduce<Record<string, string | boolean>>((acc, field) => {
-      acc[field.name] = stringifyValue(editing[field.name], field);
-      return acc;
-    }, {});
+    const mapped = format
+      ? format(editing)
+      : fields.reduce<Record<string, string | boolean>>((acc, field) => {
+          acc[field.name] = stringifyValue(editing[field.name], field);
+          return acc;
+        }, {});
 
     setForm({ ...emptyForm(fields), ...mapped });
   }, [createDefaults, editing, fields, format]);
@@ -127,47 +130,62 @@ export function RecordManager<T extends Record<string, any>>({
         <p className="mt-2 text-sm leading-6 text-white/70">{description}</p>
 
         <div className="mt-6 grid gap-4">
-          {fields.map((field) => (
-            <label key={field.name} className="grid gap-2 text-sm">
-              <span className="text-white/80">{field.label}</span>
-              {field.type === "textarea" || field.type === "json" ? (
-                <textarea
-                  value={String(form[field.name] ?? "")}
-                  onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                  placeholder={field.placeholder}
-                  className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none placeholder:text-white/30"
-                />
-              ) : field.type === "select" ? (
-                <select
-                  value={String(form[field.name] ?? "")}
-                  onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
-                >
-                  <option value="">Select</option>
-                  {field.options?.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ) : field.type === "checkbox" ? (
-                <input
-                  type="checkbox"
-                  checked={Boolean(form[field.name])}
-                  onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.checked }))}
-                  className="h-5 w-5 rounded border-white/20 bg-black/20"
-                />
-              ) : (
-                <input
+          {fields.map((field) => {
+            if (field.type === "image" || field.type === "video") {
+              return (
+                <MediaUploadField
+                  key={field.name}
+                  label={field.label}
                   type={field.type}
                   value={String(form[field.name] ?? "")}
-                  onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
-                  placeholder={field.placeholder}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none placeholder:text-white/30"
+                  onChange={(value) => setForm((current) => ({ ...current, [field.name]: value }))}
+                  helperText={field.placeholder}
                 />
-              )}
-            </label>
-          ))}
+              );
+            }
+
+            return (
+              <label key={field.name} className="grid gap-2 text-sm">
+                <span className="text-white/80">{field.label}</span>
+                {field.type === "textarea" || field.type === "json" ? (
+                  <textarea
+                    value={String(form[field.name] ?? "")}
+                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                    placeholder={field.placeholder}
+                    className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none placeholder:text-white/30"
+                  />
+                ) : field.type === "select" ? (
+                  <select
+                    value={String(form[field.name] ?? "")}
+                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
+                  >
+                    <option value="">Select</option>
+                    {field.options?.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : field.type === "checkbox" ? (
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form[field.name])}
+                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.checked }))}
+                    className="h-5 w-5 rounded border-white/20 bg-black/20"
+                  />
+                ) : (
+                  <input
+                    type={field.type}
+                    value={String(form[field.name] ?? "")}
+                    onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                    placeholder={field.placeholder}
+                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none placeholder:text-white/30"
+                  />
+                )}
+              </label>
+            );
+          })}
         </div>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -238,4 +256,3 @@ export function RecordManager<T extends Record<string, any>>({
     </div>
   );
 }
-
