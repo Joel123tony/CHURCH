@@ -8,14 +8,6 @@ const buttonSchema = new Schema(
   { _id: false }
 );
 
-const blockSchema = new Schema(
-  {
-    type: { type: String, required: true },
-    data: { type: Schema.Types.Mixed, required: true }
-  },
-  { _id: false }
-);
-
 const sectionSchema = new Schema(
   {
     pageSlug: { type: String, required: true, index: true },
@@ -27,7 +19,7 @@ const sectionSchema = new Schema(
     backgroundImage: String,
     backgroundVideo: String,
     ctaButtons: [buttonSchema],
-    blocks: [blockSchema],
+    blocks: [Schema.Types.Mixed],
     order: { type: Number, default: 0 },
     hidden: { type: Boolean, default: false },
     published: { type: Boolean, default: false },
@@ -40,4 +32,3 @@ sectionSchema.index({ pageSlug: 1, order: 1 });
 
 export type SectionDoc = InferSchemaType<typeof sectionSchema>;
 export const Section = model("Section", sectionSchema);
-

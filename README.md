@@ -57,6 +57,14 @@ The seed script creates a default site settings document and, if `SEED_ADMIN_EMA
 
 If `MONGODB_URI` is not set, the backend automatically falls back to mock mode so the full stack still runs locally without MongoDB.
 
+For Atlas-backed preview mode, put your connection string in the repo-root `.env`, then run:
+
+```bash
+npm run seed --workspace server
+```
+
+The preview seed populates the same public pages, sections, pastors, events, sermons, media, and admin account used by the mock demo.
+
 ## Deployment
 
 - Deploy `apps/web` to the public domain, such as `church.com`
