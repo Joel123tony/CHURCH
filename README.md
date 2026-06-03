@@ -67,8 +67,9 @@ The preview seed populates the same public pages, sections, pastors, events, ser
 
 ## Deployment
 
-- Deploy `apps/web` to the public domain, such as `church.com`
-- Deploy `apps/admin` to a separate domain, such as `admin.church.com`
-- Deploy `server` to your API host of choice, such as Render or a container platform
+- `apps/web/netlify.toml` is configured for the public site build and points production traffic at the API host.
+- `apps/admin/netlify.toml` is configured for the admin site build and points production traffic at the API host.
+- `render.yaml` defines the API service for Render using the `church-api` service name.
+- The current demo domains are `methodistchurchpadikuppam.netlify.app` and `adminmethodistpadikuppam.netlify.app`.
 
 Make sure the admin app is not publicly linked from the public site.
