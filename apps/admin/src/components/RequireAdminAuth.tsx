@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { apiFetch } from "../lib/api";
-import { hasStoredAuthTokens } from "../lib/auth";
+import { clearStoredAuthTokens, hasStoredAuthTokens } from "../lib/auth";
 
 export function RequireAdminAuth() {
   const location = useLocation();
@@ -29,6 +29,7 @@ export function RequireAdminAuth() {
   }
 
   if (isError || !data?.user || data.user.role !== "admin") {
+    clearStoredAuthTokens();
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

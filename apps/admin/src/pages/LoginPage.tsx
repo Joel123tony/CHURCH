@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
-import { hasStoredAuthTokens, setStoredAuthTokens } from "../lib/auth";
+import { clearStoredAuthTokens, hasStoredAuthTokens, setStoredAuthTokens } from "../lib/auth";
 
 type LoginResponse = {
   accessToken: string;
@@ -17,8 +17,8 @@ type LoginResponse = {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("methodist@padikuppam.com");
-  const [password, setPassword] = useState("padikupam107");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (!hasStoredAuthTokens()) {
@@ -34,7 +34,7 @@ export function LoginPage() {
         }
       })
       .catch(() => {
-        // no session yet
+        clearStoredAuthTokens();
       });
 
     return () => {
@@ -78,6 +78,7 @@ export function LoginPage() {
           <input
             className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none placeholder:text-white/30"
             placeholder="Email"
+            autoComplete="username"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
@@ -85,6 +86,7 @@ export function LoginPage() {
             className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none placeholder:text-white/30"
             placeholder="Password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
