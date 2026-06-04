@@ -6,9 +6,9 @@ import { SectionRenderer, type SectionData } from "../components/SectionRenderer
 const pages: Record<string, { title: string; description: string; sections: SectionData[] }> = {
   about: {
     title: "About Our Church",
-    description: "A place for worship, discipleship, and service.",
+    description: "Methodist Tamil Church is a Christ-centered congregation in Padikuppam, Mogappair East, Chennai.",
     sections: [
-      { id: "about-hero", title: "Rooted in Faith", subtitle: "About", description: "This page is wired to render from backend content when connected." }
+      { id: "about-hero", title: "Rooted in Faith", subtitle: "About", description: "This page is wired to render backend content for Methodist Tamil Church when connected." }
     ]
   },
   ministries: {
@@ -33,7 +33,7 @@ const pages: Record<string, { title: string; description: string; sections: Sect
   },
   contact: {
     title: "Contact",
-    description: "Get in touch with the church office.",
+    description: "Get in touch with Methodist Tamil Church in Padikuppam.",
     sections: [{ id: "contact", title: "Connect With Us", subtitle: "Contact", description: "Forms and prayer requests can be managed in the admin dashboard." }]
   },
   sermons: {

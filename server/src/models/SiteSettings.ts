@@ -12,6 +12,20 @@ const navItemSchema = new Schema(
 const siteSettingsSchema = new Schema(
   {
     churchName: { type: String, required: true },
+    shortName: String,
+    fullName: String,
+    address: String,
+    location: String,
+    primaryLanguage: String,
+    secondaryLanguage: String,
+    youtubeChannel: String,
+    facebookUrl: String,
+    instagramUrl: String,
+    about: String,
+    mission: String,
+    vision: String,
+    welcomeMessage: String,
+    communityFocus: [String],
     logoUrl: String,
     colors: {
       primary: String,
@@ -37,4 +51,3 @@ const siteSettingsSchema = new Schema(
 
 export type SiteSettingsDoc = InferSchemaType<typeof siteSettingsSchema>;
 export const SiteSettings = model("SiteSettings", siteSettingsSchema);
-

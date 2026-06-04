@@ -35,6 +35,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   const tokens = getStoredAuthTokens();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
+    cache: "no-store",
     credentials: "include",
     headers: {
       ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
@@ -48,6 +49,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     if (refreshedAccessToken) {
       const retry = await fetch(`${API_BASE_URL}${path}`, {
         ...init,
+        cache: "no-store",
         credentials: "include",
         headers: {
           ...(init?.body instanceof FormData ? {} : { "Content-Type": "application/json" }),

@@ -21,7 +21,7 @@ export function AdminShell() {
         <aside className="border-r border-white/10 bg-black/20 px-5 py-6 backdrop-blur-xl">
           <div className="mb-8">
             <p className="text-xs uppercase tracking-[0.4em] text-gold/80">Admin</p>
-            <h1 className="mt-2 text-2xl font-semibold">Grace House</h1>
+            <h1 className="mt-2 text-2xl font-semibold">Methodist Tamil Church</h1>
             <p className="mt-1 text-sm text-white/60">Private dashboard only</p>
           </div>
           <nav className="grid gap-2">
@@ -50,4 +50,3 @@ export function AdminShell() {
     </div>
   );
 }
-

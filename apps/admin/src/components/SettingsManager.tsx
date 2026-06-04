@@ -4,6 +4,20 @@ import { apiFetch } from "../lib/api";
 
 type Settings = {
   churchName: string;
+  shortName?: string;
+  fullName?: string;
+  address?: string;
+  location?: string;
+  primaryLanguage?: string;
+  secondaryLanguage?: string;
+  youtubeChannel?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  about?: string;
+  mission?: string;
+  vision?: string;
+  welcomeMessage?: string;
+  communityFocus?: string[];
   logoUrl?: string;
   colors: {
     primary: string;
@@ -95,6 +109,36 @@ export function SettingsManager({ title, description }: Props) {
         </fieldset>
 
         <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Church Profile</legend>
+          <div className="mt-4 grid gap-4">
+            <label className="grid gap-2 text-sm">
+              <span>Short Name</span>
+              <input value={form.shortName ?? ""} onChange={(event) => setForm({ ...form, shortName: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Full Name</span>
+              <input value={form.fullName ?? ""} onChange={(event) => setForm({ ...form, fullName: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Address</span>
+              <textarea value={form.address ?? ""} onChange={(event) => setForm({ ...form, address: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Location</span>
+              <input value={form.location ?? ""} onChange={(event) => setForm({ ...form, location: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Primary Language</span>
+              <input value={form.primaryLanguage ?? ""} onChange={(event) => setForm({ ...form, primaryLanguage: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Secondary Language</span>
+              <input value={form.secondaryLanguage ?? ""} onChange={(event) => setForm({ ...form, secondaryLanguage: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
           <legend className="px-2 text-sm font-semibold text-gold">Colors</legend>
           <div className="mt-4 grid gap-4">
             {(["primary", "accent", "background", "surface"] as const).map((key) => (
@@ -111,6 +155,36 @@ export function SettingsManager({ title, description }: Props) {
         </fieldset>
 
         <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Message & Mission</legend>
+          <div className="mt-4 grid gap-4">
+            <label className="grid gap-2 text-sm">
+              <span>About</span>
+              <textarea value={form.about ?? ""} onChange={(event) => setForm({ ...form, about: event.target.value })} className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Mission</span>
+              <textarea value={form.mission ?? ""} onChange={(event) => setForm({ ...form, mission: event.target.value })} className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Vision</span>
+              <textarea value={form.vision ?? ""} onChange={(event) => setForm({ ...form, vision: event.target.value })} className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Welcome Message</span>
+              <textarea value={form.welcomeMessage ?? ""} onChange={(event) => setForm({ ...form, welcomeMessage: event.target.value })} className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Community Focus</span>
+              <textarea
+                value={(form.communityFocus ?? []).join(", ")}
+                onChange={(event) => setForm({ ...form, communityFocus: event.target.value.split(",").map((entry) => entry.trim()).filter(Boolean) })}
+                className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+              />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
           <legend className="px-2 text-sm font-semibold text-gold">Typography</legend>
           <div className="mt-4 grid gap-4">
             <label className="grid gap-2 text-sm">
@@ -120,6 +194,24 @@ export function SettingsManager({ title, description }: Props) {
             <label className="grid gap-2 text-sm">
               <span>Body Font</span>
               <input value={form.typography.body} onChange={(event) => setForm({ ...form, typography: { ...form.typography, body: event.target.value } })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
+          <legend className="px-2 text-sm font-semibold text-gold">Social Links</legend>
+          <div className="mt-4 grid gap-4">
+            <label className="grid gap-2 text-sm">
+              <span>YouTube Channel</span>
+              <input value={form.youtubeChannel ?? ""} onChange={(event) => setForm({ ...form, youtubeChannel: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Facebook</span>
+              <input value={form.facebookUrl ?? ""} onChange={(event) => setForm({ ...form, facebookUrl: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+            </label>
+            <label className="grid gap-2 text-sm">
+              <span>Instagram</span>
+              <input value={form.instagramUrl ?? ""} onChange={(event) => setForm({ ...form, instagramUrl: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
             </label>
           </div>
         </fieldset>
@@ -192,4 +284,3 @@ export function SettingsManager({ title, description }: Props) {
     </div>
   );
 }
-

@@ -4,6 +4,24 @@ import { apiFetch } from "../lib/api";
 import { SectionRenderer, type SectionData } from "../components/SectionRenderer";
 
 type HomeResponse = {
+  settings?: {
+    churchName: string;
+    shortName?: string;
+    fullName?: string;
+    address?: string;
+    location?: string;
+    primaryLanguage?: string;
+    secondaryLanguage?: string;
+    youtubeChannel?: string;
+    facebookUrl?: string;
+    instagramUrl?: string;
+    about?: string;
+    mission?: string;
+    vision?: string;
+    welcomeMessage?: string;
+    communityFocus?: string[];
+    socialLinks?: Array<{ label: string; href: string }>;
+  };
   live?: { isLive: boolean; title?: string; viewerCount?: number };
   sections?: Array<SectionData & { key?: string }>;
 };
@@ -12,22 +30,54 @@ const fallbackSections: SectionData[] = [
   {
     id: "about",
     anchorId: "about",
-    subtitle: "About Grace House",
-    title: "A church home designed for worship, care, and community.",
+    subtitle: "About",
+    title: "Methodist Tamil Church",
     description:
-      "Our preview experience brings together sermons, live streams, events, pastors, and outreach into one clear, elegant page.",
+      "Methodist Tamil Church is a Christ-centered congregation in Padikuppam, Mogappair East, Chennai, serving through worship, prayer, biblical teaching, discipleship, fellowship, and outreach.",
     blocks: [
       {
         type: "text",
-        heading: "Why we exist",
+        heading: "Welcome message",
         content:
-          "We help church teams keep the public site fresh without depending on a developer for every update.",
-        bibleVerse: "Let all that you do be done in love."
+          "Welcome to Methodist Tamil Church. Whether you are visiting for the first time or have been part of our congregation for years, our prayer is that you experience God's love, grace, and presence.",
+        bibleVerse: "May the Lord bless you and keep you."
       },
       {
         type: "card",
-        title: "Flexible content model",
-        description: "Swap sections, upload media, and rearrange the homepage from the admin panel."
+        title: "Community life",
+        description: "Worship Services, Prayer Meetings, Bible Study, Youth Fellowship, Men's Fellowship, Women's Fellowship, Family Ministry, Community Outreach, and Special Church Events."
+      }
+    ]
+  },
+  {
+    id: "mission",
+    anchorId: "mission",
+    subtitle: "Mission",
+    title: "To glorify God through worship and discipleship.",
+    description:
+      "To glorify God through worship, proclaim the Gospel of Jesus Christ, make disciples, strengthen believers in faith, and serve the community with compassion and love.",
+    blocks: [
+      {
+        type: "text",
+        heading: "Our mission",
+        content:
+          "To glorify God through worship, proclaim the Gospel of Jesus Christ, make disciples, strengthen believers in faith, and serve the community with compassion and love."
+      }
+    ]
+  },
+  {
+    id: "vision",
+    anchorId: "vision",
+    subtitle: "Vision",
+    title: "A vibrant Christ-centered church for Chennai.",
+    description:
+      "To be a vibrant Christ-centered church that transforms lives through worship, prayer, discipleship, fellowship, and community outreach while helping people grow in their relationship with Jesus Christ.",
+    blocks: [
+      {
+        type: "text",
+        heading: "Our vision",
+        content:
+          "To be a vibrant Christ-centered church that transforms lives through worship, prayer, discipleship, fellowship, and community outreach while helping people grow in their relationship with Jesus Christ."
       }
     ]
   },
@@ -35,25 +85,25 @@ const fallbackSections: SectionData[] = [
     id: "ministries",
     anchorId: "ministries",
     subtitle: "Ministries",
-    title: "Serve in the places where your gifts matter most.",
-    description: "Build volunteer pathways, outreach teams, and ministry moments that are easy to update.",
+    title: "Serve together in church life and outreach.",
+    description: "Worship Services, Prayer Meetings, Bible Study, Youth Fellowship, Men's Fellowship, Women's Fellowship, Family Ministry, Community Outreach, and Special Church Events.",
     blocks: [
-      { type: "card", title: "Worship", description: "Music, production, and worship planning." },
-      { type: "card", title: "Discipleship", description: "Bible study, groups, and mentorship." },
-      { type: "card", title: "Outreach", description: "Serve the city with compassion and action." },
-      { type: "card", title: "Prayer", description: "Prayer requests, follow-up, and pastoral care." }
+      { type: "card", title: "Worship Services", description: "Tamil and English worship centered on Christ." },
+      { type: "card", title: "Prayer Meetings", description: "Intercession, encouragement, and care." },
+      { type: "card", title: "Bible Study", description: "Grow in Scripture and discipleship." },
+      { type: "card", title: "Community Outreach", description: "Serve families and neighbors with compassion." }
     ]
   },
   {
     id: "events",
     anchorId: "events",
     subtitle: "Events",
-    title: "Upcoming gatherings keep the whole church moving together.",
-    description: "Highlight conferences, special services, and ministry gatherings with rich visuals.",
+    title: "Upcoming gatherings keep the church connected.",
+    description: "Highlight Sunday worship, prayer meetings, Bible study, youth fellowship, family ministry, and special events with rich visuals.",
     backgroundImage:
       "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1600&q=80",
     blocks: [
-      { type: "text", heading: "Sunday worship", content: "Join us every Sunday for worship, prayer, and teaching." },
+      { type: "text", heading: "Sunday worship", content: "Join us every Sunday for worship, prayer, and biblical teaching in Tamil and English." },
       { type: "image", title: "Church family", description: "Preview of a banner image uploaded from admin.", url: "https://images.unsplash.com/photo-1522638189-1d7ffb7f7c5e?auto=format&fit=crop&w=1200&q=80" }
     ]
   },
@@ -62,7 +112,7 @@ const fallbackSections: SectionData[] = [
     anchorId: "sermons",
     subtitle: "Sermons",
     title: "Watch and share a full sermon archive.",
-    description: "The preview includes live service detection, featured sermons, and archived recordings.",
+    description: "The preview includes live service detection, featured sermons, and archived recordings from Methodist Tamil Church.",
     blocks: [
       { type: "video", title: "Sunday message", description: "A featured sermon video preview.", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
       { type: "button", label: "Browse sermons", link: "#search" }
@@ -101,9 +151,14 @@ const fallbackSections: SectionData[] = [
     anchorId: "contact",
     subtitle: "Contact",
     title: "Reach the church team anytime.",
-    description: "Keep office hours, service times, and contact routes easy to find from the homepage.",
+    description: "Keep address, location, language details, and social links easy to find from the homepage.",
     blocks: [
-      { type: "text", heading: "Office", content: "123 Grace Street, Sunday support, prayer line, and email contact can all live here." },
+      {
+        type: "text",
+        heading: "Address",
+        content: "No. 1, Vandiamman Koil Street, Mogappair East, Chennai, Tamil Nadu 600107, India."
+      },
+      { type: "text", heading: "Languages", content: "Primary: Tamil. Secondary: English." },
       { type: "button", label: "Request prayer", link: "#search" }
     ]
   },
@@ -122,8 +177,50 @@ const fallbackSections: SectionData[] = [
 export function HomePage() {
   const { data } = useQuery({
     queryKey: ["home"],
-    queryFn: () => apiFetch<HomeResponse>("/api/public/home")
+    queryFn: () => apiFetch<HomeResponse>("/api/public/home"),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 15_000
   });
+
+  const settings = data?.settings ?? {
+    churchName: "Methodist Tamil Church",
+    shortName: "MTC Padikuppam",
+    fullName: "Methodist Tamil Church, Padikuppam",
+    address: "No. 1, Vandiamman Koil Street, Mogappair East, Chennai, Tamil Nadu 600107, India",
+    location: "Padikuppam, Mogappair East, Chennai, Tamil Nadu, India",
+    primaryLanguage: "Tamil",
+    secondaryLanguage: "English",
+    youtubeChannel: "https://www.youtube.com/@MethodistChurchPadikuppam",
+    facebookUrl: "https://facebook.com/profile.php?id=61582424267282",
+    instagramUrl: "https://instagram.com/methodist_chruch_padikuppam",
+    about:
+      "Methodist Tamil Church is a Christ-centered congregation in Padikuppam, Mogappair East, Chennai, serving the local community through worship, prayer, biblical teaching, discipleship, fellowship, and outreach ministries.",
+    mission:
+      "To glorify God through worship, proclaim the Gospel of Jesus Christ, make disciples, strengthen believers in faith, and serve the community with compassion and love.",
+    vision:
+      "To be a vibrant Christ-centered church that transforms lives through worship, prayer, discipleship, fellowship, and community outreach while helping people grow in their relationship with Jesus Christ.",
+    welcomeMessage:
+      "Welcome to Methodist Tamil Church. We are delighted to welcome you into our church family. Whether you are visiting for the first time or have been part of our congregation for many years, our prayer is that you experience God's love, grace, and presence.",
+    communityFocus: [
+      "Worship Services",
+      "Prayer Meetings",
+      "Bible Study",
+      "Youth Fellowship",
+      "Men's Fellowship",
+      "Women's Fellowship",
+      "Family Ministry",
+      "Community Outreach",
+      "Special Church Events"
+    ],
+    socialLinks: []
+  };
+  const socialLinks = [
+    settings.youtubeChannel ? { label: "YouTube", href: settings.youtubeChannel } : null,
+    settings.facebookUrl ? { label: "Facebook", href: settings.facebookUrl } : null,
+    settings.instagramUrl ? { label: "Instagram", href: settings.instagramUrl } : null,
+    ...(settings.socialLinks ?? [])
+  ].filter((item): item is { label: string; href: string } => Boolean(item));
 
   const apiSections = data?.sections?.length
     ? data.sections.map((section) => ({
@@ -141,12 +238,12 @@ export function HomePage() {
         <div className="absolute inset-0 bg-hero-radial" />
         <div className="mx-auto grid max-w-7xl gap-12 px-4 py-20 md:grid-cols-[1.2fr_0.8fr] md:px-8 md:py-28">
           <div className="relative z-10">
-            <p className="text-sm uppercase tracking-[0.35em] text-gold/80">Grace House Church</p>
+            <p className="text-sm uppercase tracking-[0.35em] text-gold/80">{settings.shortName}</p>
             <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-tight text-pearl md:text-7xl">
-              A single-page church experience for worship, community, and outreach.
+              {settings.fullName}
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-mist/78 md:text-lg">
-              Everything is arranged as one flowing landing page, with anchored sections for sermons, events, pastors, media, and contact details that staff can update from the admin panel.
+              {settings.about}
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <a className="inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-ink transition hover:scale-[1.02]" href="#sermons">
@@ -168,6 +265,28 @@ export function HomePage() {
                   <p className="mt-3 text-sm text-mist/80">{label}</p>
                 </a>
               ))}
+            </div>
+            <div className="mt-10 grid gap-4 md:grid-cols-2">
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                <p className="text-xs uppercase tracking-[0.3em] text-gold/80">Address</p>
+                <p className="mt-3 text-sm leading-6 text-mist/80">{settings.address}</p>
+                <p className="mt-3 text-sm text-mist/70">{settings.location}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                <p className="text-xs uppercase tracking-[0.3em] text-gold/80">Languages</p>
+                <p className="mt-3 text-sm leading-6 text-mist/80">
+                  Primary: {settings.primaryLanguage}
+                  <br />
+                  Secondary: {settings.secondaryLanguage}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {socialLinks.map((link) => (
+                    <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs text-mist/80 transition hover:border-gold/40 hover:text-gold">
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -195,7 +314,39 @@ export function HomePage() {
                 </div>
               </div>
             </div>
+            <div className="mt-6 grid gap-4">
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                <p className="text-xs uppercase tracking-[0.3em] text-gold/80">Welcome</p>
+                <p className="mt-3 text-sm leading-7 text-mist/80">{settings.welcomeMessage}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+                <p className="text-xs uppercase tracking-[0.3em] text-gold/80">Community Focus</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {settings.communityFocus?.map((item) => (
+                    <span key={item} className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs text-mist/80">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
+      <section className="mx-auto max-w-7xl px-4 pb-8 md:px-8">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <article className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <p className="text-sm uppercase tracking-[0.3em] text-gold/80">About</p>
+            <p className="mt-4 text-sm leading-7 text-mist/80">{settings.about}</p>
+          </article>
+          <article className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <p className="text-sm uppercase tracking-[0.3em] text-gold/80">Mission</p>
+            <p className="mt-4 text-sm leading-7 text-mist/80">{settings.mission}</p>
+          </article>
+          <article className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <p className="text-sm uppercase tracking-[0.3em] text-gold/80">Vision</p>
+            <p className="mt-4 text-sm leading-7 text-mist/80">{settings.vision}</p>
+          </article>
         </div>
       </section>
       {sections.map((section) => (
