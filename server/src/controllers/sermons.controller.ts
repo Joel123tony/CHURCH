@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { Sermon } from "../models/Sermon";
 import { slugify } from "../utils/slug";
+import { touchContentVersion } from "../services/contentVersion";
 
 export async function listSermons(req: Request, res: Response) {
   const featured = String(req.query.featured ?? "") === "true";
@@ -31,6 +32,7 @@ export async function createSermon(req: Request, res: Response) {
     ...req.body,
     slug: req.body.slug ?? slugify(String(req.body.title ?? "sermon"))
   });
+  await touchContentVersion();
   res.status(201).json(item);
 }
 
@@ -39,6 +41,7 @@ export async function updateSermon(req: Request, res: Response) {
   if (!item) {
     return res.status(404).json({ message: "Sermon not found" });
   }
+  await touchContentVersion();
   res.json(item);
 }
 
@@ -47,5 +50,6 @@ export async function deleteSermon(req: Request, res: Response) {
   if (!item) {
     return res.status(404).json({ message: "Sermon not found" });
   }
+  await touchContentVersion();
   res.status(204).send();
 }

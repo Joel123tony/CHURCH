@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { Readable } from "node:stream";
 import { MediaAsset } from "../models/MediaAsset";
 import { cloudinary } from "../services/cloudinary";
+import { touchContentVersion } from "../services/contentVersion";
 
 export async function listMedia(_req: Request, res: Response) {
   const items = await MediaAsset.find().sort({ createdAt: -1 }).lean();
@@ -10,6 +11,7 @@ export async function listMedia(_req: Request, res: Response) {
 
 export async function createMedia(req: Request, res: Response) {
   const item = await MediaAsset.create(req.body);
+  await touchContentVersion();
   res.status(201).json(item);
 }
 
@@ -53,6 +55,7 @@ export async function uploadMedia(req: Request, res: Response) {
     height: uploaded.height
   });
 
+  await touchContentVersion();
   res.status(201).json({ asset, uploaded });
 }
 
@@ -61,5 +64,6 @@ export async function deleteMedia(req: Request, res: Response) {
   if (!item) {
     return res.status(404).json({ message: "Media not found" });
   }
+  await touchContentVersion();
   res.status(204).send();
 }

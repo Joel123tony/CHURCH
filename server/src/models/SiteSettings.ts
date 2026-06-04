@@ -42,6 +42,7 @@ const siteSettingsSchema = new Schema(
       text: String,
       copyright: String
     },
+    lastContentChangeAt: Date,
     socialLinks: [{ label: String, href: String }],
     homepageLayout: [String],
     navItems: [navItemSchema]

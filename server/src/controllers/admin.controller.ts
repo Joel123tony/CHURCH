@@ -7,6 +7,7 @@ import { Sermon } from "../models/Sermon";
 import { MediaAsset } from "../models/MediaAsset";
 import { PrayerRequest } from "../models/PrayerRequest";
 import { AnalyticsEvent } from "../models/AnalyticsEvent";
+import { touchContentVersion } from "../services/contentVersion";
 
 export async function dashboardSummary(_req: Request, res: Response) {
   const [visitors, pastors, sermons, events, videos, images] = await Promise.all([
@@ -29,6 +30,7 @@ export async function listSections(req: Request, res: Response) {
 
 export async function upsertSettings(req: Request, res: Response) {
   const doc = await SiteSettings.findOneAndUpdate({}, req.body, { upsert: true, new: true });
+  await touchContentVersion();
   res.json(doc);
 }
 
@@ -41,4 +43,3 @@ export async function listAnalytics(_req: Request, res: Response) {
   const items = await AnalyticsEvent.find().sort({ createdAt: -1 }).limit(100).lean();
   res.json(items);
 }
-

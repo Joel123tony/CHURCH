@@ -59,6 +59,8 @@ export function SectionManager() {
   const [form, setForm] = useState<Record<string, string | boolean>>({ ...defaultItem });
   const [ordered, setOrdered] = useState<Section[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data } = useQuery({
     queryKey: ["sections", pageSlug],
@@ -94,37 +96,50 @@ export function SectionManager() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
-        pageSlug: String(form.pageSlug ?? "home"),
-        key: String(form.key ?? ""),
-        title: String(form.title ?? ""),
-        subtitle: String(form.subtitle ?? ""),
-        description: String(form.description ?? ""),
-        richText: String(form.richText ?? ""),
-        backgroundImage: String(form.backgroundImage ?? ""),
-        backgroundVideo: String(form.backgroundVideo ?? ""),
-        ctaButtons: parseJsonList(form.ctaButtons),
-        blocks: parseJsonList(form.blocks),
-        order: Number(form.order ?? 0),
-        hidden: Boolean(form.hidden),
-        published: Boolean(form.published)
-      };
+      try {
+        const payload = {
+          pageSlug: String(form.pageSlug ?? "home"),
+          key: String(form.key ?? ""),
+          title: String(form.title ?? ""),
+          subtitle: String(form.subtitle ?? ""),
+          description: String(form.description ?? ""),
+          richText: String(form.richText ?? ""),
+          backgroundImage: String(form.backgroundImage ?? ""),
+          backgroundVideo: String(form.backgroundVideo ?? ""),
+          ctaButtons: parseJsonList(form.ctaButtons),
+          blocks: parseJsonList(form.blocks),
+          order: Number(form.order ?? 0),
+          hidden: Boolean(form.hidden),
+          published: Boolean(form.published)
+        };
 
-      if (editing) {
-        return apiFetch<Section>(`/api/sections/${editing.id}`, {
-          method: "PUT",
+        if (editing) {
+          return apiFetch<Section>(`/api/sections/${editing.id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+        }
+
+        return apiFetch<Section>("/api/sections", {
+          method: "POST",
           body: JSON.stringify(payload)
         });
+      } catch (mutationError) {
+        throw new Error(mutationError instanceof Error ? mutationError.message : "Unable to save section");
       }
-
-      return apiFetch<Section>("/api/sections", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
+    },
+    onMutate: () => {
+      setNotice(null);
+      setError(null);
     },
     onSuccess: async () => {
       setEditing(null);
+      setNotice("Section saved successfully.");
       await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+      await queryClient.invalidateQueries({ queryKey: ["public"] });
+    },
+    onError: (mutationError) => {
+      setError(mutationError instanceof Error ? mutationError.message : "Unable to save section");
     }
   });
 
@@ -136,8 +151,17 @@ export function SectionManager() {
           items: items.map((item, index) => ({ id: item.id, order: index }))
         })
       }),
+    onMutate: () => {
+      setNotice(null);
+      setError(null);
+    },
     onSuccess: async () => {
+      setNotice("Section order saved successfully.");
       await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+      await queryClient.invalidateQueries({ queryKey: ["public"] });
+    },
+    onError: (mutationError) => {
+      setError(mutationError instanceof Error ? mutationError.message : "Unable to reorder sections");
     }
   });
 
@@ -185,6 +209,8 @@ export function SectionManager() {
             </button>
           </div>
         </div>
+        {notice ? <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{notice}</div> : null}
+        {error ? <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
@@ -295,8 +321,16 @@ export function SectionManager() {
                     </button>
                     <button
                       onClick={async () => {
-                        await apiFetch(`/api/sections/${section.id}/duplicate`, { method: "POST" });
-                        await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+                        try {
+                          setNotice(null);
+                          setError(null);
+                          await apiFetch(`/api/sections/${section.id}/duplicate`, { method: "POST" });
+                          setNotice("Section duplicated successfully.");
+                          await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+                          await queryClient.invalidateQueries({ queryKey: ["public"] });
+                        } catch (mutationError) {
+                          setError(mutationError instanceof Error ? mutationError.message : "Unable to duplicate section");
+                        }
                       }}
                       className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold"
                     >
@@ -304,8 +338,16 @@ export function SectionManager() {
                     </button>
                     <button
                       onClick={async () => {
-                        await apiFetch(`/api/sections/${section.id}/publish`, { method: "POST" });
-                        await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+                        try {
+                          setNotice(null);
+                          setError(null);
+                          await apiFetch(`/api/sections/${section.id}/publish`, { method: "POST" });
+                          setNotice("Section published successfully.");
+                          await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+                          await queryClient.invalidateQueries({ queryKey: ["public"] });
+                        } catch (mutationError) {
+                          setError(mutationError instanceof Error ? mutationError.message : "Unable to publish section");
+                        }
                       }}
                       className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-200"
                     >
@@ -313,8 +355,16 @@ export function SectionManager() {
                     </button>
                     <button
                       onClick={async () => {
-                        await apiFetch(`/api/sections/${section.id}/hide`, { method: "POST" });
-                        await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+                        try {
+                          setNotice(null);
+                          setError(null);
+                          await apiFetch(`/api/sections/${section.id}/hide`, { method: "POST" });
+                          setNotice("Section hidden successfully.");
+                          await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+                          await queryClient.invalidateQueries({ queryKey: ["public"] });
+                        } catch (mutationError) {
+                          setError(mutationError instanceof Error ? mutationError.message : "Unable to hide section");
+                        }
                       }}
                       className="rounded-full border border-amber-400/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-200"
                     >
@@ -322,8 +372,16 @@ export function SectionManager() {
                     </button>
                     <button
                       onClick={async () => {
-                        await apiFetch(`/api/sections/${section.id}`, { method: "DELETE" });
-                        await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+                        try {
+                          setNotice(null);
+                          setError(null);
+                          await apiFetch(`/api/sections/${section.id}`, { method: "DELETE" });
+                          setNotice("Section deleted successfully.");
+                          await queryClient.invalidateQueries({ queryKey: ["sections", pageSlug] });
+                          await queryClient.invalidateQueries({ queryKey: ["public"] });
+                        } catch (mutationError) {
+                          setError(mutationError instanceof Error ? mutationError.message : "Unable to delete section");
+                        }
                       }}
                       className="rounded-full border border-red-400/20 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-200"
                     >

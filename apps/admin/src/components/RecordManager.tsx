@@ -64,6 +64,8 @@ export function RecordManager<T extends Record<string, any>>({
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<T | null>(null);
   const [form, setForm] = useState<Record<string, string | boolean>>(emptyForm(fields));
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: [endpoint],
@@ -88,35 +90,58 @@ export function RecordManager<T extends Record<string, any>>({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const payload = fields.reduce<Record<string, unknown>>((acc, field) => {
-        const value = form[field.name] ?? "";
-        acc[field.name] = parse ? parse(form)[field.name] : parseValue(value, field);
-        return acc;
-      }, {});
+      try {
+        const parsed = parse ? parse(form) : undefined;
+        const payload = fields.reduce<Record<string, unknown>>((acc, field) => {
+          const value = form[field.name] ?? "";
+          acc[field.name] = parse ? parsed?.[field.name] : parseValue(value, field);
+          return acc;
+        }, {});
 
-      const body = { ...(createDefaults ?? {}), ...payload };
-      if (editing) {
-        return apiFetch<T>(`${endpoint}/${editing[itemKey]}`, {
-          method: "PUT",
+        const body = { ...(createDefaults ?? {}), ...payload };
+        if (editing) {
+          return apiFetch<T>(`${endpoint}/${editing[itemKey]}`, {
+            method: "PUT",
+            body: JSON.stringify(body)
+          });
+        }
+
+        return apiFetch<T>(endpoint, {
+          method: "POST",
           body: JSON.stringify(body)
         });
+      } catch (mutationError) {
+        throw new Error(mutationError instanceof Error ? mutationError.message : "Unable to save record");
       }
-
-      return apiFetch<T>(endpoint, {
-        method: "POST",
-        body: JSON.stringify(body)
-      });
+    },
+    onMutate: () => {
+      setNotice(null);
+      setError(null);
     },
     onSuccess: async () => {
       setEditing(null);
+      setNotice(editing ? `${title} updated successfully.` : `${title} created successfully.`);
       await queryClient.invalidateQueries({ queryKey: [endpoint] });
+      await queryClient.invalidateQueries({ queryKey: ["public"] });
+    },
+    onError: (mutationError) => {
+      setError(mutationError instanceof Error ? mutationError.message : "Unable to save record");
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (item: T) => apiFetch(`${endpoint}/${item[itemKey]}`, { method: "DELETE" }),
+    onMutate: () => {
+      setNotice(null);
+      setError(null);
+    },
     onSuccess: async () => {
+      setNotice(`${title} deleted successfully.`);
       await queryClient.invalidateQueries({ queryKey: [endpoint] });
+      await queryClient.invalidateQueries({ queryKey: ["public"] });
+    },
+    onError: (mutationError) => {
+      setError(mutationError instanceof Error ? mutationError.message : "Unable to delete record");
     }
   });
 
@@ -128,6 +153,8 @@ export function RecordManager<T extends Record<string, any>>({
         <p className="text-sm uppercase tracking-[0.35em] text-gold/80">{title}</p>
         <h2 className="mt-3 text-3xl font-semibold">{editing ? "Edit Item" : "Create Item"}</h2>
         <p className="mt-2 text-sm leading-6 text-white/70">{description}</p>
+        {notice ? <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{notice}</div> : null}
+        {error ? <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
 
         <div className="mt-6 grid gap-4">
           {fields.map((field) => {

@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, CalendarDays, Play, Search, Users } from "lucide-react";
+import { ArrowRight, CalendarDays, Play, Users } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { SectionRenderer, type SectionData } from "../components/SectionRenderer";
+import { SearchBox } from "../components/SearchBox";
 
 type HomeResponse = {
   settings?: {
@@ -15,6 +16,7 @@ type HomeResponse = {
     youtubeChannel?: string;
     facebookUrl?: string;
     instagramUrl?: string;
+    lastContentChangeAt?: string;
     about?: string;
     mission?: string;
     vision?: string;
@@ -164,10 +166,9 @@ const fallbackSections: SectionData[] = [
   },
   {
     id: "search",
-    anchorId: "search",
     subtitle: "Search",
     title: "Find sermons, events, pages, and pastors in seconds.",
-    description: "This preview keeps local search history and supports a full-site content lookup experience.",
+    description: "Use the search page to find content across the site with live suggestions.",
     blocks: [
       { type: "card", title: "Fast lookup", description: "Search by title, speaker, location, or page slug." }
     ]
@@ -176,11 +177,12 @@ const fallbackSections: SectionData[] = [
 
 export function HomePage() {
   const { data } = useQuery({
-    queryKey: ["home"],
+    queryKey: ["public", "home"],
     queryFn: () => apiFetch<HomeResponse>("/api/public/home"),
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    refetchInterval: 15_000
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true
   });
 
   const settings = data?.settings ?? {
@@ -194,6 +196,7 @@ export function HomePage() {
     youtubeChannel: "https://www.youtube.com/@MethodistChurchPadikuppam",
     facebookUrl: "https://facebook.com/profile.php?id=61582424267282",
     instagramUrl: "https://instagram.com/methodist_chruch_padikuppam",
+    lastContentChangeAt: "",
     about:
       "Methodist Tamil Church is a Christ-centered congregation in Padikuppam, Mogappair East, Chennai, serving the local community through worship, prayer, biblical teaching, discipleship, fellowship, and outreach ministries.",
     mission:
@@ -215,18 +218,13 @@ export function HomePage() {
     ],
     socialLinks: []
   };
-  const socialLinks = [
-    settings.youtubeChannel ? { label: "YouTube", href: settings.youtubeChannel } : null,
-    settings.facebookUrl ? { label: "Facebook", href: settings.facebookUrl } : null,
-    settings.instagramUrl ? { label: "Instagram", href: settings.instagramUrl } : null,
-    ...(settings.socialLinks ?? [])
-  ].filter((item): item is { label: string; href: string } => Boolean(item));
 
   const apiSections = data?.sections?.length
     ? data.sections.map((section) => ({
         ...section,
         anchorId: section.anchorId ?? section.key ?? section.id
       }))
+      .filter((section) => section.anchorId !== "search" && section.key !== "search")
     : [];
 
   const sections = apiSections.length ? apiSections : fallbackSections;
@@ -253,12 +251,14 @@ export function HomePage() {
                 Upcoming Events
               </a>
             </div>
-            <div className="mt-10 grid max-w-xl grid-cols-2 gap-4 md:grid-cols-4">
+            <div className="mt-8 max-w-2xl">
+              <SearchBox placeholder="Search sermons, pastors, events, pages, media..." />
+            </div>
+            <div className="mt-10 grid max-w-xl grid-cols-2 gap-4 md:grid-cols-3">
               {[
                 { icon: Play, label: "Live Streams", href: "#sermons" },
                 { icon: CalendarDays, label: "Events", href: "#events" },
-                { icon: Users, label: "Pastors", href: "#pastors" },
-                { icon: Search, label: "Search", href: "#search" }
+                { icon: Users, label: "Pastors", href: "#pastors" }
               ].map(({ icon: Icon, label, href }) => (
                 <a key={label} href={href} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl transition hover:border-gold/40">
                   <Icon className="h-5 w-5 text-gold" />
@@ -279,13 +279,6 @@ export function HomePage() {
                   <br />
                   Secondary: {settings.secondaryLanguage}
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {socialLinks.map((link) => (
-                    <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs text-mist/80 transition hover:border-gold/40 hover:text-gold">
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
               </div>
             </div>
           </div>

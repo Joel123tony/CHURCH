@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
+import { MediaUploadField } from "./MediaUploadField";
 
 type Settings = {
   churchName: string;
@@ -37,6 +38,7 @@ type Settings = {
   socialLinks: Array<{ label: string; href: string }>;
   homepageLayout: string[];
   navItems: Array<{ label: string; href: string; visible: boolean }>;
+  lastContentChangeAt?: string;
 };
 
 type Props = {
@@ -47,11 +49,13 @@ type Props = {
 export function SettingsManager({ title, description }: Props) {
   const queryClient = useQueryClient();
   const { data } = useQuery({
-    queryKey: ["settings"],
+    queryKey: ["public", "site-settings"],
     queryFn: () => apiFetch<Settings>("/api/public/site")
   });
 
   const [form, setForm] = useState<Settings | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (data) {
@@ -67,8 +71,16 @@ export function SettingsManager({ title, description }: Props) {
         body: JSON.stringify(form)
       });
     },
+    onMutate: () => {
+      setNotice(null);
+      setError(null);
+    },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["settings"] });
+      setNotice("Settings saved successfully.");
+      await queryClient.invalidateQueries({ queryKey: ["public"] });
+    },
+    onError: (mutationError) => {
+      setError(mutationError instanceof Error ? mutationError.message : "Unable to save settings");
     }
   });
 
@@ -89,6 +101,9 @@ export function SettingsManager({ title, description }: Props) {
         </button>
       </div>
 
+      {notice ? <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{notice}</div> : null}
+      {error ? <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
+
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <fieldset className="rounded-3xl border border-white/10 bg-black/20 p-5">
           <legend className="px-2 text-sm font-semibold text-gold">Branding</legend>
@@ -97,14 +112,20 @@ export function SettingsManager({ title, description }: Props) {
               <span>Church Name</span>
               <input value={form.churchName} onChange={(event) => setForm({ ...form, churchName: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
             </label>
-            <label className="grid gap-2 text-sm">
-              <span>Logo URL</span>
-              <input value={form.logoUrl ?? ""} onChange={(event) => setForm({ ...form, logoUrl: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
-            </label>
-            <label className="grid gap-2 text-sm">
-              <span>Hero Banner</span>
-              <input value={form.heroBanner ?? ""} onChange={(event) => setForm({ ...form, heroBanner: event.target.value })} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
-            </label>
+            <MediaUploadField
+              label="Logo"
+              type="image"
+              value={form.logoUrl ?? ""}
+              onChange={(value) => setForm({ ...form, logoUrl: value })}
+              helperText="Upload the church logo for the public site."
+            />
+            <MediaUploadField
+              label="Hero Banner"
+              type="image"
+              value={form.heroBanner ?? ""}
+              onChange={(value) => setForm({ ...form, heroBanner: value })}
+              helperText="Upload the hero image shown at the top of the homepage."
+            />
           </div>
         </fieldset>
 

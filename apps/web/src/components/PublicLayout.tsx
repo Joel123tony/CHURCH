@@ -1,7 +1,9 @@
 import { Outlet, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Menu, Search, PlayCircle } from "lucide-react";
 import { apiFetch } from "../lib/api";
+import { queryClient } from "../lib/queryClient";
 
 type SiteSettings = {
   churchName: string;
@@ -14,6 +16,7 @@ type SiteSettings = {
   youtubeChannel?: string;
   facebookUrl?: string;
   instagramUrl?: string;
+  lastContentChangeAt?: string;
   footer?: {
     text?: string;
     copyright?: string;
@@ -31,18 +34,30 @@ const nav = [
   { label: "Gallery", href: "#gallery" },
   { label: "Pastors", href: "#pastors" },
   { label: "Contact", href: "#contact" },
-  { label: "Search", href: "#search" }
+  { label: "Search", href: "/search" }
 ];
 
 export function PublicLayout() {
+  const seenVersion = useRef<string | undefined>(undefined);
   const { data } = useQuery({
-    queryKey: ["site-settings"],
+    queryKey: ["public", "site-settings"],
     queryFn: () => apiFetch<SiteSettings>("/api/public/site"),
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    refetchInterval: 15_000
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true
   });
+
+  useEffect(() => {
+    const currentVersion = data?.lastContentChangeAt;
+    if (!currentVersion || seenVersion.current === currentVersion) {
+      return;
+    }
+
+    seenVersion.current = currentVersion;
+    void queryClient.invalidateQueries({ queryKey: ["public"] });
+  }, [data?.lastContentChangeAt]);
 
   const site = data ?? {
     churchName: "Methodist Tamil Church",
@@ -55,6 +70,7 @@ export function PublicLayout() {
     youtubeChannel: "https://www.youtube.com/@MethodistChurchPadikuppam",
     facebookUrl: "https://facebook.com/profile.php?id=61582424267282",
     instagramUrl: "https://instagram.com/methodist_chruch_padikuppam",
+    lastContentChangeAt: "",
     footer: {
       text: "Worship with us in Tamil and English at Padikuppam.",
       copyright: "Methodist Tamil Church, Padikuppam"
@@ -83,19 +99,25 @@ export function PublicLayout() {
           </Link>
           <nav className="hidden items-center gap-6 lg:flex">
             {nav.map((item) => (
-              <a key={item.label} href={item.href} className="text-sm text-mist/90 transition hover:text-gold">
-                {item.label}
-              </a>
+              item.href.startsWith("/") ? (
+                <Link key={item.label} to={item.href} className="text-sm text-mist/90 transition hover:text-gold">
+                  {item.label}
+                </Link>
+              ) : (
+                <a key={item.label} href={item.href} className="text-sm text-mist/90 transition hover:text-gold">
+                  {item.label}
+                </a>
+              )
             ))}
           </nav>
           <div className="flex items-center gap-3">
             <button className="rounded-full border border-white/10 bg-white/5 p-3 text-mist transition hover:border-gold/40 hover:bg-white/10 lg:hidden">
               <Menu className="h-4 w-4" />
             </button>
-            <a href="#search" className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-mist transition hover:border-gold/40 hover:bg-white/10 md:flex">
+            <Link to="/search" className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-mist transition hover:border-gold/40 hover:bg-white/10 md:flex">
               <Search className="h-4 w-4" />
               Search
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -112,12 +134,14 @@ export function PublicLayout() {
           </div>
           <div>
             <p className="text-sm font-semibold text-pearl">Quick Links</p>
-            <div className="mt-4 grid gap-2 text-sm text-mist/80">
-              {nav.map((item) => (
-                <a key={item.label} href={item.href} className="transition hover:text-gold">
-                  {item.label}
-                </a>
-              ))}
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-mist/80">
+              {nav
+                .filter((item) => item.href.startsWith("#"))
+                .map((item) => (
+                  <a key={item.label} href={item.href} className="whitespace-nowrap transition hover:text-gold">
+                    {item.label}
+                  </a>
+                ))}
             </div>
           </div>
           <div>
@@ -128,7 +152,7 @@ export function PublicLayout() {
               {site.primaryLanguage && site.secondaryLanguage ? <br /> : null}
               {site.secondaryLanguage ? `Secondary: ${site.secondaryLanguage}` : null}
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap items-center gap-3">
               {socialLinks.map((link) => (
                 <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-mist/80 transition hover:border-gold/40 hover:text-gold">
                   {link.label}

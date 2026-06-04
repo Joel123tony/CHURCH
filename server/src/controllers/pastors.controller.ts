@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { Pastor } from "../models/Pastor";
 import { fetchPlaylistSermons } from "../services/youtube";
+import { touchContentVersion } from "../services/contentVersion";
 
 export async function listPastors(_req: Request, res: Response) {
   const items = await Pastor.find().sort({ currentPastor: -1, startYear: -1 }).lean();
@@ -18,6 +19,7 @@ export async function getPastor(req: Request, res: Response) {
 
 export async function createPastor(req: Request, res: Response) {
   const item = await Pastor.create(req.body);
+  await touchContentVersion();
   res.status(201).json(item);
 }
 
@@ -26,6 +28,7 @@ export async function updatePastor(req: Request, res: Response) {
   if (!item) {
     return res.status(404).json({ message: "Pastor not found" });
   }
+  await touchContentVersion();
   res.json(item);
 }
 
@@ -34,6 +37,6 @@ export async function deletePastor(req: Request, res: Response) {
   if (!item) {
     return res.status(404).json({ message: "Pastor not found" });
   }
+  await touchContentVersion();
   res.status(204).send();
 }
-

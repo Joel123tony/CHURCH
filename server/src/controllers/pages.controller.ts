@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { Page } from "../models/Page";
+import { touchContentVersion } from "../services/contentVersion";
 
 export async function listPages(_req: Request, res: Response) {
   const items = await Page.find().sort({ createdAt: -1 }).lean();
@@ -16,6 +17,7 @@ export async function getPage(req: Request, res: Response) {
 
 export async function createPage(req: Request, res: Response) {
   const item = await Page.create(req.body);
+  await touchContentVersion();
   res.status(201).json(item);
 }
 
@@ -24,6 +26,7 @@ export async function updatePage(req: Request, res: Response) {
   if (!item) {
     return res.status(404).json({ message: "Page not found" });
   }
+  await touchContentVersion();
   res.json(item);
 }
 
@@ -32,6 +35,6 @@ export async function deletePage(req: Request, res: Response) {
   if (!item) {
     return res.status(404).json({ message: "Page not found" });
   }
+  await touchContentVersion();
   res.status(204).send();
 }
-

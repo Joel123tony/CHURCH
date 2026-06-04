@@ -1,6 +1,5 @@
-import { useRef } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { apiFetch } from "../lib/api";
+import { useRef, useState } from "react";
+import { getStoredAuthTokens } from "../lib/auth";
 
 type MediaUploadFieldProps = {
   label: string;
@@ -16,28 +15,101 @@ type UploadResponse = {
   url?: string;
 };
 
+function uploadFileWithProgress(file: File, onProgress: (progress: number) => void) {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+  const tokens = getStoredAuthTokens();
+
+  return new Promise<UploadResponse>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE_URL}/api/media/upload`);
+    xhr.withCredentials = true;
+
+    if (tokens?.accessToken) {
+      xhr.setRequestHeader("Authorization", `Bearer ${tokens.accessToken}`);
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error(xhr.responseText || `Upload failed with ${xhr.status}`));
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(xhr.responseText) as UploadResponse);
+      } catch {
+        reject(new Error("Upload response was not valid JSON"));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Upload failed"));
+
+    const formData = new FormData();
+    formData.append("file", file);
+    xhr.send(formData);
+  });
+}
+
 export function MediaUploadField({ label, value, type, onChange, helperText }: MediaUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-
-  const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      return apiFetch<UploadResponse>("/api/media/upload", {
-        method: "POST",
-        body: formData
-      });
-    },
-    onSuccess: (response) => {
-      const nextUrl = response.asset?.url ?? response.uploaded?.url ?? response.url ?? "";
-      if (nextUrl) {
-        onChange(nextUrl);
-      }
-    }
-  });
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const accept = type === "image" ? "image/*" : "video/*";
   const preview = value;
+
+  function validate(file: File) {
+    if (type === "image" && !file.type.startsWith("image/")) {
+      return "Please choose an image file.";
+    }
+    if (type === "video" && !file.type.startsWith("video/")) {
+      return "Please choose a video file.";
+    }
+    const maxSize = type === "video" ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return `File is too large. Maximum size is ${type === "video" ? "100 MB" : "15 MB"}.`;
+    }
+    return null;
+  }
+
+  async function handleFile(file: File) {
+    const validationError = validate(file);
+    if (validationError) {
+      setError(validationError);
+      setStatus(null);
+      setProgress(0);
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    setStatus("Uploading...");
+    setProgress(0);
+
+    try {
+      const response = await uploadFileWithProgress(file, setProgress);
+      const nextUrl = response.asset?.url ?? response.uploaded?.url ?? response.url ?? "";
+      if (nextUrl) {
+        onChange(nextUrl);
+        setStatus("Upload complete.");
+      } else {
+        setError("Upload succeeded but no file URL was returned.");
+        setStatus(null);
+      }
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "Upload failed");
+      setStatus(null);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div className="grid gap-3 rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -50,14 +122,18 @@ export function MediaUploadField({ label, value, type, onChange, helperText }: M
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-pearl transition hover:border-gold/40"
+            disabled={uploading}
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-pearl transition hover:border-gold/40 disabled:opacity-60"
           >
-            Upload
+            {uploading ? "Uploading..." : "Upload"}
           </button>
           <button
             type="button"
             onClick={() => {
               onChange("");
+              setStatus(null);
+              setError(null);
+              setProgress(0);
               if (inputRef.current) {
                 inputRef.current.value = "";
               }
@@ -76,7 +152,7 @@ export function MediaUploadField({ label, value, type, onChange, helperText }: M
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (!file) return;
-          uploadMutation.mutate(file);
+          void handleFile(file);
         }}
         className="hidden"
       />
@@ -87,6 +163,15 @@ export function MediaUploadField({ label, value, type, onChange, helperText }: M
         placeholder={`https://.../${type}`}
         className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none placeholder:text-white/30"
       />
+
+      {uploading ? (
+        <div className="overflow-hidden rounded-full border border-white/10 bg-white/5">
+          <div className="h-2 bg-gold transition-all" style={{ width: `${progress}%` }} />
+        </div>
+      ) : null}
+
+      {status ? <p className="text-xs text-emerald-200">{status}</p> : null}
+      {error ? <p className="text-xs text-red-200">{error}</p> : null}
 
       {preview ? (
         type === "image" ? (
