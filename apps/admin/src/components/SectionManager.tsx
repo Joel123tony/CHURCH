@@ -12,6 +12,7 @@ type Section = {
   subtitle?: string;
   description?: string;
   richText?: string;
+  alignment?: "left" | "center" | "right";
   backgroundImage?: string;
   backgroundVideo?: string;
   ctaButtons: Array<{ label: string; link: string }>;
@@ -30,6 +31,7 @@ const fields: FieldSpec[] = [
   { name: "richText", label: "Rich Text", type: "textarea" },
   { name: "backgroundImage", label: "Background Image", type: "image", placeholder: "Upload or paste an image URL" },
   { name: "backgroundVideo", label: "Background Video", type: "video", placeholder: "Upload or paste a video URL" },
+  { name: "alignment", label: "Alignment", type: "select", options: ["left", "center", "right"] },
   { name: "ctaButtons", label: "CTA Buttons JSON", type: "json" },
   { name: "blocks", label: "Blocks JSON", type: "json" },
   { name: "order", label: "Order", type: "number" },
@@ -37,26 +39,36 @@ const fields: FieldSpec[] = [
   { name: "published", label: "Published", type: "checkbox" }
 ];
 
-const defaultItem = {
-  pageSlug: "home",
-  order: "0",
-  hidden: false,
-  published: false,
-  ctaButtons: "[]",
-  blocks: "[]"
-};
-
 function parseJsonList(value: string | boolean) {
   const text = String(value ?? "").trim();
   if (!text) return [];
   return JSON.parse(text);
 }
 
+function createDefaultForm(pageSlug = "home", order = 0) {
+  return {
+    pageSlug,
+    order: String(order),
+    alignment: "left",
+    hidden: false,
+    published: true,
+    ctaButtons: "[]",
+    blocks: "[]"
+  };
+}
+
+function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
 export function SectionManager() {
   const queryClient = useQueryClient();
   const [pageSlug, setPageSlug] = useState("home");
   const [editing, setEditing] = useState<Section | null>(null);
-  const [form, setForm] = useState<Record<string, string | boolean>>({ ...defaultItem });
+  const [form, setForm] = useState<Record<string, string | boolean>>(createDefaultForm());
   const [ordered, setOrdered] = useState<Section[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -71,9 +83,14 @@ export function SectionManager() {
     setOrdered(data ?? []);
   }, [data]);
 
+  const nextOrder = useMemo(() => {
+    if (!ordered.length) return 0;
+    return Math.max(...ordered.map((section) => section.order ?? 0)) + 1;
+  }, [ordered]);
+
   useEffect(() => {
     if (!editing) {
-      setForm({ ...defaultItem });
+      setForm(createDefaultForm(pageSlug, nextOrder));
       return;
     }
 
@@ -84,6 +101,7 @@ export function SectionManager() {
       subtitle: editing.subtitle ?? "",
       description: editing.description ?? "",
       richText: editing.richText ?? "",
+      alignment: editing.alignment ?? "left",
       backgroundImage: editing.backgroundImage ?? "",
       backgroundVideo: editing.backgroundVideo ?? "",
       ctaButtons: JSON.stringify(editing.ctaButtons ?? [], null, 2),
@@ -92,7 +110,7 @@ export function SectionManager() {
       hidden: Boolean(editing.hidden),
       published: Boolean(editing.published)
     });
-  }, [editing]);
+  }, [editing, nextOrder, pageSlug]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -104,6 +122,7 @@ export function SectionManager() {
           subtitle: String(form.subtitle ?? ""),
           description: String(form.description ?? ""),
           richText: String(form.richText ?? ""),
+          alignment: String(form.alignment ?? "left"),
           backgroundImage: String(form.backgroundImage ?? ""),
           backgroundVideo: String(form.backgroundVideo ?? ""),
           ctaButtons: parseJsonList(form.ctaButtons),
@@ -165,17 +184,31 @@ export function SectionManager() {
     }
   });
 
-  const summary = useMemo(() => ordered, [ordered]);
+  function startNewSection() {
+    setEditing(null);
+    setForm(createDefaultForm(pageSlug, nextOrder));
+  }
 
-  function moveSection(fromId: string, toId: string) {
-    const fromIndex = ordered.findIndex((item) => item.id === fromId);
-    const toIndex = ordered.findIndex((item) => item.id === toId);
+  function dropSection(targetId: string) {
+    if (!dragId) return;
+    const fromIndex = ordered.findIndex((item) => item.id === dragId);
+    const toIndex = ordered.findIndex((item) => item.id === targetId);
     if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
 
-    const next = [...ordered];
-    const [moved] = next.splice(fromIndex, 1);
-    next.splice(toIndex, 0, moved);
+    const next = moveItem(ordered, fromIndex, toIndex);
     setOrdered(next);
+    setDragId(null);
+    reorderMutation.mutate(next);
+  }
+
+  function moveSectionByStep(sectionId: string, direction: -1 | 1) {
+    const index = ordered.findIndex((item) => item.id === sectionId);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= ordered.length) return;
+
+    const next = moveItem(ordered, index, targetIndex);
+    setOrdered(next);
+    reorderMutation.mutate(next);
   }
 
   return (
@@ -186,7 +219,7 @@ export function SectionManager() {
             <p className="text-sm uppercase tracking-[0.35em] text-gold/80">Section Builder</p>
             <h2 className="mt-3 text-3xl font-semibold">Homepage and Page Sections</h2>
             <p className="mt-2 text-sm text-white/70">
-              Create sections, upload images or videos for backgrounds, hide/publish them, and reorder with drag and drop.
+              Create sections, upload images or videos for backgrounds, set alignment, publish them, and reorder with drag and drop.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -204,7 +237,7 @@ export function SectionManager() {
                 ))}
               </select>
             </label>
-            <button onClick={() => setEditing(null)} className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink">
+            <button onClick={startNewSection} className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink">
               New Section
             </button>
           </div>
@@ -240,6 +273,19 @@ export function SectionManager() {
                       onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
                       className="min-h-28 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
                     />
+                  ) : field.type === "select" ? (
+                    <select
+                      value={String(form[field.name] ?? "")}
+                      onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+                      className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-pearl outline-none"
+                    >
+                      <option value="">Select</option>
+                      {field.options?.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   ) : field.type === "checkbox" ? (
                     <input
                       type="checkbox"
@@ -270,10 +316,7 @@ export function SectionManager() {
             <button onClick={() => saveMutation.mutate()} className="rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink">
               {editing ? "Update" : "Create"}
             </button>
-            <button
-              onClick={() => setEditing(null)}
-              className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-pearl"
-            >
+            <button onClick={startNewSection} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-pearl">
               Reset
             </button>
           </div>
@@ -293,13 +336,14 @@ export function SectionManager() {
             </button>
           </div>
           <div className="mt-6 grid gap-4">
-            {summary.map((section) => (
+            {ordered.map((section) => (
               <article
                 key={section.id}
                 draggable
                 onDragStart={() => setDragId(section.id)}
                 onDragOver={(event) => event.preventDefault()}
-                onDrop={() => dragId && moveSection(dragId, section.id)}
+                onDrop={() => dropSection(section.id)}
+                onDragEnd={() => setDragId(null)}
                 className="rounded-3xl border border-white/10 bg-black/20 p-5"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -309,10 +353,25 @@ export function SectionManager() {
                     </p>
                     <h4 className="mt-2 text-lg font-semibold text-pearl">{section.title}</h4>
                     <p className="mt-2 text-sm text-white/65">
-                      {section.subtitle} {section.hidden ? "· Hidden" : ""} {section.published ? "· Published" : "· Draft"}
+                      {section.subtitle}
+                      {section.hidden ? " · Hidden" : ""}
+                      {section.published ? " · Published" : " · Draft"}
+                      {section.alignment ? ` · ${section.alignment}` : ""}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => moveSectionByStep(section.id, -1)}
+                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold"
+                    >
+                      Up
+                    </button>
+                    <button
+                      onClick={() => moveSectionByStep(section.id, 1)}
+                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold"
+                    >
+                      Down
+                    </button>
                     <button
                       onClick={() => setEditing(section)}
                       className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold"

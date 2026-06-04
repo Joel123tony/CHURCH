@@ -9,7 +9,12 @@ export async function listSections(req: Request, res: Response) {
 }
 
 export async function createSection(req: Request, res: Response) {
-  const section = await Section.create(req.body);
+  const section = await Section.create({
+    hidden: false,
+    published: true,
+    alignment: "left",
+    ...req.body
+  });
   await touchContentVersion();
   res.status(201).json(section);
 }

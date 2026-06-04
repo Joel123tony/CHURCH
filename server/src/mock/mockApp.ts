@@ -24,6 +24,7 @@ type Section = {
   subtitle?: string;
   description?: string;
   richText?: string;
+  alignment?: "left" | "center" | "right";
   backgroundImage?: string;
   backgroundVideo?: string;
   ctaButtons: Array<{ label: string; link: string }>;
@@ -635,13 +636,14 @@ export function createMockApp() {
       subtitle: body.subtitle,
       description: body.description,
       richText: body.richText,
+      alignment: body.alignment ?? "left",
       backgroundImage: body.backgroundImage,
       backgroundVideo: body.backgroundVideo,
       ctaButtons: Array.isArray(body.ctaButtons) ? body.ctaButtons : [],
       blocks: Array.isArray(body.blocks) ? body.blocks : [],
       order: body.order ?? nextOrder(state.sections),
-      hidden: Boolean(body.hidden),
-      published: Boolean(body.published)
+      hidden: body.hidden ?? false,
+      published: body.published ?? true
     };
     state.sections.push(item);
     res.status(201).json(clone(item));

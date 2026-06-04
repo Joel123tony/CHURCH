@@ -16,6 +16,7 @@ const sectionSchema = new Schema(
     subtitle: String,
     description: String,
     richText: String,
+    alignment: { type: String, enum: ["left", "center", "right"], default: "left" },
     backgroundImage: String,
     backgroundVideo: String,
     ctaButtons: [buttonSchema],

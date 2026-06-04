@@ -13,15 +13,22 @@ export type SectionData = {
   subtitle?: string;
   description?: string;
   richText?: string;
+  alignment?: "left" | "center" | "right";
   backgroundImage?: string;
   backgroundVideo?: string;
   blocks?: Block[];
 };
 
 export function SectionRenderer({ section }: { section: SectionData }) {
+  const alignment = section.alignment ?? "left";
+  const contentAlignClass =
+    alignment === "center" ? "mx-auto text-center" : alignment === "right" ? "ml-auto text-right" : "text-left";
+  const gridAlignClass =
+    alignment === "center" ? "justify-items-center" : alignment === "right" ? "justify-items-end" : "justify-items-start";
+
   return (
     <section id={section.anchorId ?? section.id} className="mx-auto max-w-7xl px-4 py-16 md:px-8">
-      <div className="mb-8 max-w-3xl">
+      <div className={`mb-8 max-w-3xl ${contentAlignClass}`}>
         <p className="text-sm uppercase tracking-[0.3em] text-gold/80">{section.subtitle}</p>
         <h2 className="mt-3 text-3xl font-semibold text-pearl md:text-5xl">{section.title}</h2>
         {section.description ? <p className="mt-4 text-base leading-7 text-mist/80">{section.description}</p> : null}
@@ -35,7 +42,7 @@ export function SectionRenderer({ section }: { section: SectionData }) {
           )}
         </div>
       ) : null}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className={`grid gap-6 md:grid-cols-2 ${gridAlignClass}`}>
         {section.blocks?.map((block, index) => {
           if (block.type === "text") {
             return (
