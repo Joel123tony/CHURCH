@@ -325,9 +325,9 @@ export function HomePage() {
                 Watch recent YouTube broadcasts, open any thumbnail to play it here, or jump straight to the channel on YouTube.
               </p>
             </div>
-            {site.youtubeChannel ? (
+            {settings.youtubeChannel ? (
               <a
-                href={site.youtubeChannel}
+                href={settings.youtubeChannel}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-full border border-gold/40 bg-gold px-5 py-3 text-sm font-semibold text-ink transition hover:scale-[1.02]"
