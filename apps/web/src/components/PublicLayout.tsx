@@ -27,8 +27,6 @@ type SiteSettings = {
 const nav = [
   { label: "Home", href: "#home" },
   { label: "About", href: "#about" },
-  { label: "Mission", href: "#mission" },
-  { label: "Vision", href: "#vision" },
   { label: "Ministries", href: "#ministries" },
   { label: "Events", href: "#events" },
   { label: "Gallery", href: "#gallery" },
@@ -80,8 +78,7 @@ export function PublicLayout() {
   const socialLinks = [
     site.youtubeChannel ? { label: "YouTube", href: site.youtubeChannel } : null,
     site.facebookUrl ? { label: "Facebook", href: site.facebookUrl } : null,
-    site.instagramUrl ? { label: "Instagram", href: site.instagramUrl } : null,
-    ...(site.socialLinks ?? [])
+    site.instagramUrl ? { label: "Instagram", href: site.instagramUrl } : null
   ].filter((item): item is { label: string; href: string } => Boolean(item));
 
   return (

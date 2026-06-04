@@ -1,8 +1,18 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CalendarDays, Play, Users } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { SectionRenderer, type SectionData } from "../components/SectionRenderer";
-import { SearchBox } from "../components/SearchBox";
+
+type YoutubeVideo = {
+  videoId: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  publishedAt?: string;
+  watchUrl: string;
+  embedUrl: string;
+};
 
 type HomeResponse = {
   settings?: {
@@ -24,7 +34,16 @@ type HomeResponse = {
     communityFocus?: string[];
     socialLinks?: Array<{ label: string; href: string }>;
   };
-  live?: { isLive: boolean; title?: string; viewerCount?: number };
+  live?: { isLive: boolean; title?: string; viewerCount?: number; liveVideoId?: string; thumbnailUrl?: string };
+  youtubeVideos?: YoutubeVideo[];
+  featuredSermons?: Array<{
+    title: string;
+    description?: string;
+    videoUrl: string;
+    thumbnailUrl?: string;
+    publishDate?: string;
+    youtubeVideoId?: string;
+  }>;
   sections?: Array<SectionData & { key?: string }>;
 };
 
@@ -48,38 +67,6 @@ const fallbackSections: SectionData[] = [
         type: "card",
         title: "Community life",
         description: "Worship Services, Prayer Meetings, Bible Study, Youth Fellowship, Men's Fellowship, Women's Fellowship, Family Ministry, Community Outreach, and Special Church Events."
-      }
-    ]
-  },
-  {
-    id: "mission",
-    anchorId: "mission",
-    subtitle: "Mission",
-    title: "To glorify God through worship and discipleship.",
-    description:
-      "To glorify God through worship, proclaim the Gospel of Jesus Christ, make disciples, strengthen believers in faith, and serve the community with compassion and love.",
-    blocks: [
-      {
-        type: "text",
-        heading: "Our mission",
-        content:
-          "To glorify God through worship, proclaim the Gospel of Jesus Christ, make disciples, strengthen believers in faith, and serve the community with compassion and love."
-      }
-    ]
-  },
-  {
-    id: "vision",
-    anchorId: "vision",
-    subtitle: "Vision",
-    title: "A vibrant Christ-centered church for Chennai.",
-    description:
-      "To be a vibrant Christ-centered church that transforms lives through worship, prayer, discipleship, fellowship, and community outreach while helping people grow in their relationship with Jesus Christ.",
-    blocks: [
-      {
-        type: "text",
-        heading: "Our vision",
-        content:
-          "To be a vibrant Christ-centered church that transforms lives through worship, prayer, discipleship, fellowship, and community outreach while helping people grow in their relationship with Jesus Christ."
       }
     ]
   },
@@ -117,7 +104,7 @@ const fallbackSections: SectionData[] = [
     description: "The preview includes live service detection, featured sermons, and archived recordings from Methodist Tamil Church.",
     blocks: [
       { type: "video", title: "Sunday message", description: "A featured sermon video preview.", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-      { type: "button", label: "Browse sermons", link: "#search" }
+      { type: "button", label: "Browse sermons", link: "/search" }
     ]
   },
   {
@@ -161,21 +148,13 @@ const fallbackSections: SectionData[] = [
         content: "No. 1, Vandiamman Koil Street, Mogappair East, Chennai, Tamil Nadu 600107, India."
       },
       { type: "text", heading: "Languages", content: "Primary: Tamil. Secondary: English." },
-      { type: "button", label: "Request prayer", link: "#search" }
+      { type: "button", label: "Request prayer", link: "#contact" }
     ]
   },
-  {
-    id: "search",
-    subtitle: "Search",
-    title: "Find sermons, events, pages, and pastors in seconds.",
-    description: "Use the search page to find content across the site with live suggestions.",
-    blocks: [
-      { type: "card", title: "Fast lookup", description: "Search by title, speaker, location, or page slug." }
-    ]
-  }
 ];
 
 export function HomePage() {
+  const [activeVideo, setActiveVideo] = useState<YoutubeVideo | null>(null);
   const { data } = useQuery({
     queryKey: ["public", "home"],
     queryFn: () => apiFetch<HomeResponse>("/api/public/home"),
@@ -220,15 +199,28 @@ export function HomePage() {
   };
 
   const apiSections = data?.sections?.length
-    ? data.sections.map((section) => ({
-        ...section,
-        anchorId: section.anchorId ?? section.key ?? section.id
-      }))
-      .filter((section) => section.anchorId !== "search" && section.key !== "search")
+    ? data.sections
+        .map((section) => ({
+          ...section,
+          anchorId: section.anchorId ?? section.key ?? section.id
+        }))
+        .filter((section) => !["search", "mission", "vision"].includes(String(section.anchorId ?? section.key ?? "")))
     : [];
 
   const sections = apiSections.length ? apiSections : fallbackSections;
   const live = data?.live?.isLive;
+  const youtubeVideos =
+    data?.youtubeVideos?.length
+      ? data.youtubeVideos
+      : (data?.featuredSermons ?? []).map((sermon) => ({
+          videoId: sermon.youtubeVideoId ?? sermon.videoUrl,
+          title: sermon.title,
+          description: sermon.description,
+          thumbnailUrl: sermon.thumbnailUrl ?? (sermon.youtubeVideoId ? `https://img.youtube.com/vi/${sermon.youtubeVideoId}/hqdefault.jpg` : undefined),
+          publishedAt: sermon.publishDate,
+          watchUrl: sermon.videoUrl,
+          embedUrl: sermon.youtubeVideoId ? `https://www.youtube.com/embed/${sermon.youtubeVideoId}` : sermon.videoUrl
+        }));
 
   return (
     <div>
@@ -250,9 +242,6 @@ export function HomePage() {
               <a className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-pearl backdrop-blur-xl transition hover:border-gold/40 hover:bg-white/10" href="#events">
                 Upcoming Events
               </a>
-            </div>
-            <div className="mt-8 max-w-2xl">
-              <SearchBox placeholder="Search sermons, pastors, events, pages, media..." />
             </div>
             <div className="mt-10 grid max-w-xl grid-cols-2 gap-4 md:grid-cols-3">
               {[
@@ -326,6 +315,65 @@ export function HomePage() {
           </div>
         </div>
       </section>
+      <section className="mx-auto max-w-7xl px-4 py-8 md:px-8">
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl md:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="max-w-3xl">
+              <p className="text-sm uppercase tracking-[0.35em] text-gold/80">YouTube</p>
+              <h2 className="mt-3 text-3xl font-semibold text-pearl md:text-5xl">Past live broadcasts and videos</h2>
+              <p className="mt-4 text-sm leading-7 text-mist/80">
+                Watch recent YouTube broadcasts, open any thumbnail to play it here, or jump straight to the channel on YouTube.
+              </p>
+            </div>
+            {site.youtubeChannel ? (
+              <a
+                href={site.youtubeChannel}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-gold/40 bg-gold px-5 py-3 text-sm font-semibold text-ink transition hover:scale-[1.02]"
+              >
+                Watch on YouTube
+              </a>
+            ) : null}
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {youtubeVideos.map((video) => (
+              <button
+                key={video.videoId}
+                type="button"
+                onClick={() => setActiveVideo(video)}
+                className="group overflow-hidden rounded-3xl border border-white/10 bg-black/20 text-left transition hover:border-gold/40"
+              >
+                <div className="relative aspect-video overflow-hidden">
+                  {video.thumbnailUrl ? (
+                    <img
+                      src={video.thumbnailUrl}
+                      alt={video.title}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                    />
+                  ) : (
+                    <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,rgba(215,180,106,0.22),rgba(255,255,255,0.04))] text-sm text-mist/70">
+                      No thumbnail
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/25 to-transparent" />
+                  <div className="absolute inset-0 grid place-items-center">
+                    <div className="grid h-16 w-16 place-items-center rounded-full border border-gold/30 bg-black/40 text-gold shadow-glow transition group-hover:scale-105">
+                      <Play className="ml-1 h-6 w-6 fill-current" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <p className="text-xs uppercase tracking-[0.3em] text-gold/80">YouTube</p>
+                  <h3 className="mt-2 text-lg font-semibold text-pearl">{video.title}</h3>
+                  {video.description ? <p className="mt-2 line-clamp-3 text-sm leading-6 text-mist/75">{video.description}</p> : null}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
       <section className="mx-auto max-w-7xl px-4 pb-8 md:px-8">
         <div className="grid gap-6 lg:grid-cols-3">
           <article className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
@@ -333,18 +381,64 @@ export function HomePage() {
             <p className="mt-4 text-sm leading-7 text-mist/80">{settings.about}</p>
           </article>
           <article className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-gold/80">Mission</p>
-            <p className="mt-4 text-sm leading-7 text-mist/80">{settings.mission}</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-gold/80">Welcome</p>
+            <p className="mt-4 text-sm leading-7 text-mist/80">{settings.welcomeMessage}</p>
           </article>
           <article className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-gold/80">Vision</p>
-            <p className="mt-4 text-sm leading-7 text-mist/80">{settings.vision}</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-gold/80">Community</p>
+            <p className="mt-4 text-sm leading-7 text-mist/80">
+              Worship, prayer, Bible study, fellowship, outreach, and special church gatherings.
+            </p>
           </article>
         </div>
       </section>
       {sections.map((section) => (
         <SectionRenderer key={section.id} section={section} />
       ))}
+      {activeVideo ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/80 px-4 py-8 backdrop-blur-sm" onClick={() => setActiveVideo(null)}>
+          <div
+            className="w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 bg-[#08111e] shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-gold/80">YouTube Video</p>
+                <h3 className="mt-2 text-lg font-semibold text-pearl">{activeVideo.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveVideo(null)}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-pearl"
+              >
+                Close
+              </button>
+            </div>
+            <div className="grid gap-4 p-4 md:grid-cols-[1.6fr_0.8fr]">
+              <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/30">
+                <iframe
+                  src={`${activeVideo.embedUrl}?autoplay=1&rel=0`}
+                  title={activeVideo.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="aspect-video w-full"
+                />
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                <p className="text-sm leading-7 text-mist/80">{activeVideo.description ?? "Watch this broadcast on YouTube."}</p>
+                <a
+                  href={activeVideo.watchUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex rounded-full bg-gold px-5 py-3 text-sm font-semibold text-ink"
+                >
+                  Watch on YouTube
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

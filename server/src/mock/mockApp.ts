@@ -76,6 +76,16 @@ type Sermon = {
   tags: string[];
 };
 
+type YoutubeVideo = {
+  videoId: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  publishedAt?: string;
+  watchUrl: string;
+  embedUrl: string;
+};
+
 type MediaAsset = {
   id: string;
   type: "image" | "video";
@@ -136,6 +146,7 @@ const state: {
   pastors: Pastor[];
   events: Event[];
   sermons: Sermon[];
+  youtubeVideos: YoutubeVideo[];
   media: MediaAsset[];
   requests: PrayerRequest[];
   analytics: AnalyticsEvent[];
@@ -322,7 +333,7 @@ const state: {
       description: "Office hours, location, and prayer requests all in one place.",
       blocks: [
         { type: "text", heading: "Office", content: "123 Grace Street, your city, Sunday support, and email contact details." },
-        { type: "button", label: "Request prayer", link: "#search" }
+        { type: "button", label: "Request prayer", link: "#contact" }
       ],
       order: 6,
       hidden: false,
@@ -385,6 +396,26 @@ const state: {
       source: "manual",
       liveRecording: false,
       tags: ["worship", "faith"]
+    }
+  ],
+  youtubeVideos: [
+    {
+      videoId: "dQw4w9WgXcQ",
+      title: "Sunday Worship Live",
+      description: "A recent live worship broadcast from Methodist Tamil Church.",
+      thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      publishedAt: new Date().toISOString(),
+      watchUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+    },
+    {
+      videoId: "jNQXAC9IVRw",
+      title: "Bible Study and Prayer",
+      description: "A recent teaching session and prayer gathering.",
+      thumbnailUrl: "https://img.youtube.com/vi/jNQXAC9IVRw/hqdefault.jpg",
+      publishedAt: new Date().toISOString(),
+      watchUrl: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+      embedUrl: "https://www.youtube.com/embed/jNQXAC9IVRw"
     }
   ],
   media: [
@@ -526,8 +557,11 @@ export function createMockApp() {
   app.get("/api/public/home", (_req, res) => {
     res.json({
       settings: clone(state.settings),
-      sections: clone(state.sections.filter((section) => section.pageSlug === "home" && section.published && !section.hidden)),
+      sections: clone(
+        state.sections.filter((section) => section.pageSlug === "home" && section.published && !section.hidden && !["mission", "vision", "search"].includes(section.key))
+      ),
       live: { isLive: false },
+      youtubeVideos: clone(state.youtubeVideos),
       featuredSermons: clone(state.sermons.filter((sermon) => sermon.featured)),
       pastors: clone(state.pastors),
       events: clone(state.events.filter((event) => !event.archived))

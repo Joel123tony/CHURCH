@@ -6,7 +6,7 @@ import { Pastor } from "../models/Pastor";
 import { Event } from "../models/Event";
 import { Sermon } from "../models/Sermon";
 import { MediaAsset } from "../models/MediaAsset";
-import { detectLiveBroadcast } from "../services/youtube";
+import { detectLiveBroadcast, fetchRecentBroadcasts } from "../services/youtube";
 
 export async function getSiteConfig(_req: Request, res: Response) {
   const settings = await SiteSettings.findOne().lean();
@@ -14,10 +14,13 @@ export async function getSiteConfig(_req: Request, res: Response) {
 }
 
 export async function getHomePayload(_req: Request, res: Response) {
-  const [settings, sections, live, featuredSermons, pastors, events] = await Promise.all([
+  const [settings, sections, live, youtubeVideos, featuredSermons, pastors, events] = await Promise.all([
     SiteSettings.findOne().lean(),
-    Section.find({ pageSlug: "home", published: true, hidden: false }).sort({ order: 1 }).lean(),
+    Section.find({ pageSlug: "home", published: true, hidden: false, key: { $nin: ["mission", "vision", "search"] } })
+      .sort({ order: 1 })
+      .lean(),
     detectLiveBroadcast(),
+    fetchRecentBroadcasts(),
     Sermon.find({}).sort({ publishDate: -1 }).limit(6).lean(),
     Pastor.find({}).sort({ currentPastor: -1, startYear: -1 }).lean(),
     Event.find({ archived: false }).sort({ date: 1 }).limit(6).lean()
@@ -27,6 +30,7 @@ export async function getHomePayload(_req: Request, res: Response) {
     settings,
     sections,
     live,
+    youtubeVideos,
     featuredSermons,
     pastors,
     events
