@@ -1,13 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { hasStoredAuthTokens } from "../lib/auth";
 
 export function RequireAdminAuth() {
   const location = useLocation();
+  const hasTokens = hasStoredAuthTokens();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["auth-me"],
-    queryFn: () => apiFetch<{ user: unknown }>("/api/auth/me")
+    queryFn: () => apiFetch<{ user: { role?: string } | null }>("/api/auth/me"),
+    enabled: hasTokens,
+    retry: false,
+    refetchOnMount: "always"
   });
+
+  if (!hasTokens) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
 
   if (isLoading) {
     return (
@@ -19,10 +28,9 @@ export function RequireAdminAuth() {
     );
   }
 
-  if (isError || !data?.user) {
+  if (isError || !data?.user || data.user.role !== "admin") {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return <Outlet />;
 }
-

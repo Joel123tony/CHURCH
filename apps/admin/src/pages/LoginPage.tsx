@@ -2,16 +2,32 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { apiFetch } from "../lib/api";
+import { hasStoredAuthTokens, setStoredAuthTokens } from "../lib/auth";
+
+type LoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+  };
+};
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@church.com");
-  const [password, setPassword] = useState("change-me-now");
+  const [email, setEmail] = useState("methodist@padikuppam.com");
+  const [password, setPassword] = useState("padikupam107");
 
   useEffect(() => {
+    if (!hasStoredAuthTokens()) {
+      return;
+    }
+
     let mounted = true;
 
-    apiFetch("/api/auth/me")
+    apiFetch<{ user: { role?: string } | null }>("/api/auth/me")
       .then(() => {
         if (mounted) {
           navigate("/dashboard", { replace: true });
@@ -28,12 +44,19 @@ export function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: async () =>
-      apiFetch("/api/auth/login", {
+      apiFetch<LoginResponse>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password })
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setStoredAuthTokens({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken
+      });
       navigate("/dashboard", { replace: true });
+    },
+    onError: () => {
+      // Keep the form visible; the server already returns a useful error message.
     }
   });
 
