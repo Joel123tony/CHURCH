@@ -1,5 +1,4 @@
 import express from "express";
-import axios from "axios";
 
 const router = express.Router();
 
@@ -8,20 +7,17 @@ router.get("/live", async (req, res) => {
   try {
     const channelId = process.env.CHANNEL_ID;
 
-    const response = await axios.get(
-      "https://www.googleapis.com/youtube/v3/search",
-      {
-        params: {
-          part: "snippet",
-          channelId,
-          eventType: "live",
-          type: "video",
-          key: process.env.YOUTUBE_API_KEY,
-        },
-      }
-    );
+    const url = new URL("https://www.googleapis.com/youtube/v3/search");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("channelId", channelId);
+    url.searchParams.set("eventType", "live");
+    url.searchParams.set("type", "video");
+    url.searchParams.set("key", process.env.YOUTUBE_API_KEY);
 
-    const liveVideo = response.data.items?.[0];
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const liveVideo = data.items?.[0];
 
     if (!liveVideo) {
       return res.json({ live: false });

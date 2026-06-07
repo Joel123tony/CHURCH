@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
 
+import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import pastorRoutes from "./routes/pastor.routes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import youtubeRoutes from "./routes/youtube.routes.js";
@@ -15,14 +16,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// DB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.log("MongoDB Error:", err));
+connectDB().catch(() => {
+  // Connection errors are logged in config/db.js.
+});
 
 // ROUTES
 app.use("/api/pastors", pastorRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/youtube", youtubeRoutes);
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { decodeJwt } from "../../utils/auth";
 
 const API = "/api/auth/login";
 
@@ -15,9 +16,15 @@ export default function Login() {
       const res = await axios.post(API, {
         email,
         password,
-      });
+      }, { withCredentials: true });
 
-      localStorage.setItem("token", res.data.token);
+      const decoded = decodeJwt(res.data.token);
+      const user = decoded || res.data.user;
+
+      localStorage.removeItem("token");
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
 
       navigate("/admin");
     } catch (err) {

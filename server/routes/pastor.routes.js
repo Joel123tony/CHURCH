@@ -1,5 +1,7 @@
 import express from "express";
 import Pastor from "../models/Pastor.js";
+import { authMiddleware } from "../middleware/auth.js";
+import { allowRoles } from "../middleware/role.js";
 
 const router = express.Router();
 
@@ -68,6 +70,8 @@ router.get("/search", async (req, res) => {
   }
 });
 
+router.use(authMiddleware, allowRoles("developer"));
+
 router.post("/", async (req, res) => {
   try {
     const pastor = await Pastor.create({
@@ -78,6 +82,22 @@ router.post("/", async (req, res) => {
       image: buildImage(req.body.image, true),
       isCurrent: Boolean(req.body.isCurrent),
     });
+
+    res.json(pastor);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/current/:id", async (req, res) => {
+  try {
+    await Pastor.updateMany({}, { isCurrent: false });
+
+    const pastor = await Pastor.findByIdAndUpdate(
+      req.params.id,
+      { isCurrent: true },
+      { new: true, runValidators: true }
+    );
 
     res.json(pastor);
   } catch (err) {
@@ -114,22 +134,6 @@ router.delete("/:id", async (req, res) => {
   try {
     await Pastor.findByIdAndDelete(req.params.id);
     res.json({ message: "Deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.put("/current/:id", async (req, res) => {
-  try {
-    await Pastor.updateMany({}, { isCurrent: false });
-
-    const pastor = await Pastor.findByIdAndUpdate(
-      req.params.id,
-      { isCurrent: true },
-      { new: true, runValidators: true }
-    );
-
-    res.json(pastor);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
