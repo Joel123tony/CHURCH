@@ -36,13 +36,11 @@ export default function Home() {
         <section id="gallery" className="scroll-mt-24">
           <Gallery />
         </section>
-
-        {/* PASTOR */}
-        <section id="pastor" className="scroll-mt-24">
+        {/* PASTORS */}
+        <section id="pastors" className="scroll-mt-24">
           <Pastor />
         </section>
-
-        {/* CONTACT */}
+            {/* CONTACT */}
         <section id="contact" className="scroll-mt-24">
           <Contact />
         </section>

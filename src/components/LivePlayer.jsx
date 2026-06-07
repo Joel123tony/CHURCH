@@ -4,7 +4,7 @@ export default function LivePlayer() {
   const [videoId, setVideoId] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/youtube/live")
+    fetch("/api/youtube/live")
       .then((res) => res.json())
       .then((data) => {
         if (data.live) {

@@ -1,12 +1,48 @@
 import mongoose from "mongoose";
 
-const PastorSchema = new mongoose.Schema({
-  name: String,
-  joinedYear: String,
-  leftYear: String,
-  details: String,
-  photo: String,
-  isCurrent: { type: Boolean, default: false }
+const pastorSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    joinedYear: {
+      type: Number,
+      required: true,
+    },
+    leftYear: {
+      type: Number,
+      default: null,
+    },
+    details: {
+      type: String,
+      default: "",
+    },
+    image: {
+      url: {
+        type: String,
+        default: "",
+      },
+      public_id: {
+        type: String,
+        default: null,
+      },
+    },
+    isCurrent: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+pastorSchema.virtual("photo").get(function () {
+  return this.image?.url || "";
 });
 
-export default mongoose.model("Pastor", PastorSchema);
+export default mongoose.models.Pastor || mongoose.model("Pastor", pastorSchema);
