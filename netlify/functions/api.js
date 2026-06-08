@@ -6,11 +6,9 @@ export default serverless(app);
 export const config = {
   path: [
     "/api/pastors",
-    "/api/pastors/search",
-    "/api/pastors/current/:id",
-    "/api/pastors/:id",
-    "/api/auth/login",
-    "/api/upload/image",
-    "/api/youtube/live",
+    "/api/pastors/*",
+    "/api/auth/*",
+    "/api/upload/*",
+    "/api/youtube/*",
   ],
 };
