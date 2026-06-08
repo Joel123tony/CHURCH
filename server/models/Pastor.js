@@ -7,42 +7,29 @@ const pastorSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    joinedYear: {
-      type: Number,
-      required: true,
+    role: {
+      type: String,
+      default: "Pastor",
     },
-    leftYear: {
-      type: Number,
-      default: null,
-    },
-    details: {
+    bio: {
       type: String,
       default: "",
     },
     image: {
-      url: {
-        type: String,
-        default: "",
-      },
-      public_id: {
-        type: String,
-        default: null,
-      },
+      type: String,
+      default: "",
     },
-    isCurrent: {
+    joinedYear: {
+      type: Number,
+    },
+    active: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  }
+  { timestamps: true }
 );
 
-pastorSchema.virtual("photo").get(function () {
-  return this.image?.url || "";
-});
+const Pastor = mongoose.model("Pastor", pastorSchema);
 
-export default mongoose.models.Pastor || mongoose.model("Pastor", pastorSchema);
+export default Pastor;

@@ -10,7 +10,6 @@ export const config = {
     "/api/pastors/current/:id",
     "/api/pastors/:id",
     "/api/auth/login",
-    "/api/auth/register",
     "/api/upload/image",
     "/api/youtube/live",
   ],

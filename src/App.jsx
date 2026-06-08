@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
+import Login from "./pages/Login"; // ✅ ADD THIS
 
 // ADMIN
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -18,15 +19,16 @@ export default function App() {
         {/* USER */}
         <Route path="/" element={<Home />} />
 
+        {/* ADMIN LOGIN (IMPORTANT) */}
+        <Route path="/admin/login" element={<Login />} />
+
         {/* ADMIN WRAPPER */}
         <Route path="/admin" element={<AdminLayout />}>
-
           <Route index element={<Dashboard />} />
           <Route path="pastors" element={<Pastors />} />
           <Route path="events" element={<Events />} />
           <Route path="gallery" element={<Gallery />} />
           <Route path="messages" element={<Messages />} />
-
         </Route>
 
       </Routes>

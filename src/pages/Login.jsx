@@ -1,7 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { decodeJwt } from "../../utils/auth";
 
 const API = "/api/auth/login";
 
@@ -16,15 +15,17 @@ export default function Login() {
       const res = await axios.post(API, {
         email,
         password,
-      }, { withCredentials: true });
+      });
 
-      const decoded = decodeJwt(res.data.token);
-      const user = decoded || res.data.user;
+      const token = res.data.token;
 
-      localStorage.removeItem("token");
-      if (user) {
-        localStorage.setItem("user", JSON.stringify(user));
+      if (!token) {
+        alert("No token received");
+        return;
       }
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
 
       navigate("/admin");
     } catch (err) {
@@ -34,8 +35,7 @@ export default function Login() {
 
   return (
     <div className="h-screen flex items-center justify-center">
-      <div className="bg-white p-6 rounded shadow w-80">
-        <h2 className="text-xl font-bold mb-4">Admin Login</h2>
+      <div className="p-6 bg-white shadow w-80">
 
         <input
           placeholder="Email"
@@ -46,7 +46,7 @@ export default function Login() {
         <input
           type="password"
           placeholder="Password"
-          className="border p-2 w-full mb-2"
+          className="border p-2 w-full mb-4"
           onChange={(e) => setPassword(e.target.value)}
         />
 
@@ -56,6 +56,7 @@ export default function Login() {
         >
           Login
         </button>
+
       </div>
     </div>
   );

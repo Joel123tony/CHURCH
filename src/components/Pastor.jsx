@@ -7,17 +7,39 @@ export default function Pastor() {
   const [searchYear, setSearchYear] = useState("");
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
-
-  const [selectedPastor, setSelectedPastor] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  // ---------------- SAFE DATA EXTRACTOR ----------------
+  const extractArray = (res) => {
+    const data = res?.data;
+
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+
+    return [];
+  };
+
+  // ---------------- IMAGE HELPER ----------------
+  const getImage = (p) => {
+    return p?.image?.url || p?.photo || "/placeholder.png";
+  };
 
   // ---------------- LOAD ALL PASTORS ----------------
   useEffect(() => {
     API.get("/pastors")
       .then((res) => {
-        setPastors(res.data);
+        const pastors = extractArray(res);
+
+        const activeOnly = pastors.filter(
+          (p) => p.active !== false
+        );
+
+        setPastors(activeOnly);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error loading pastors:", err);
+        setPastors([]);
+      });
   }, []);
 
   const currentPastor =
@@ -30,18 +52,27 @@ export default function Pastor() {
         `/pastors/search?name=${searchName}&year=${searchYear}`
       );
 
-      const filtered = res.data.filter((p) => !p.isCurrent);
+      const pastors = extractArray(res);
+
+      const filtered = pastors.filter(
+        (p) => p.active !== false
+      );
 
       setResults(filtered);
       setSearched(true);
-
-      if (filtered.length > 0) {
-        setSelectedPastor(filtered[0]);
-        setShowModal(true);
-      }
+      setShowModal(true);
     } catch (err) {
-      console.error(err);
+      console.error("Search error:", err);
+      setResults([]);
+      setSearched(true);
+      setShowModal(true);
     }
+  };
+
+  // ---------------- CLOSE MODAL ----------------
+  const closeModal = () => {
+    setShowModal(false);
+    setResults([]);
   };
 
   return (
@@ -55,7 +86,7 @@ export default function Pastor() {
 
           <div className="grid lg:grid-cols-4 gap-6">
 
-            {/* CURRENT PASTOR */}
+            {/* ================= CURRENT PASTOR ================= */}
             <div className="lg:col-span-3 bg-[#d8cbb7] rounded-3xl p-8">
 
               {currentPastor ? (
@@ -85,15 +116,11 @@ export default function Pastor() {
                   </div>
 
                   <div className="flex justify-center">
-                    {currentPastor.photo || currentPastor.image?.url ? (
-                      <img
-                        src={currentPastor.photo || currentPastor.image?.url}
-                        alt={currentPastor.name}
-                        className="w-48 h-48 object-cover rounded-3xl"
-                      />
-                    ) : (
-                      <div className="w-48 h-48 rounded-3xl bg-gray-200" />
-                    )}
+                    <img
+                      src={getImage(currentPastor)}
+                      alt={currentPastor.name}
+                      className="w-48 h-48 object-cover rounded-3xl"
+                    />
                   </div>
 
                 </div>
@@ -105,7 +132,7 @@ export default function Pastor() {
 
             </div>
 
-            {/* SEARCH PANEL */}
+            {/* ================= SEARCH PANEL ================= */}
             <div className="bg-[#d8cbb7] rounded-3xl p-6">
 
               <h3 className="text-center font-bold text-[#5b1320] mb-4">
@@ -155,54 +182,56 @@ export default function Pastor() {
         </div>
       </section>
 
-      {/* MODAL */}
-      {showModal && selectedPastor && (
+      {/* ================= MODAL ================= */}
+      {showModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
 
-          <div className="bg-[#d8cbb7] rounded-3xl p-8 w-full max-w-4xl relative">
+          <div className="bg-[#d8cbb7] rounded-3xl p-8 w-full max-w-4xl relative max-h-[80vh] overflow-auto">
 
             <button
-              onClick={() => setShowModal(false)}
+              onClick={closeModal}
               className="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full"
             >
-              Close
+              Close ✖
             </button>
 
-            <div className="grid md:grid-cols-2 gap-8 items-center">
+            <h2 className="text-2xl font-bold text-[#5b1320] mb-6">
+              Search Results
+            </h2>
 
-              <div>
-                <h2 className="text-3xl font-bold text-[#5b1320] mb-4">
-                  {selectedPastor.name}
-                </h2>
+            {results.length > 0 ? (
+              results.map((p) => (
+                <div
+                  key={p._id}
+                  className="mb-6 border-b border-[#5b1320]/20 pb-4"
+                >
 
-                <p className="mb-3 text-[#5b1320]">
-                  <strong>Years:</strong>{" "}
-                  {selectedPastor.joinedYear} - {selectedPastor.leftYear}
-                </p>
+                  <h3 className="text-xl font-bold text-[#5b1320]">
+                    {p.name}
+                  </h3>
 
-                <p className="text-[#5b1320] leading-relaxed">
-                  {selectedPastor.details}
-                </p>
-              </div>
+                  <p className="text-[#5b1320]">
+                    {p.joinedYear} - {p.leftYear || "Present"}
+                  </p>
 
-              <div className="flex justify-center">
+                  <p className="text-[#5b1320] mt-2">
+                    {p.details}
+                  </p>
 
-                {selectedPastor.photo || selectedPastor.image?.url ? (
                   <img
-                    src={selectedPastor.photo || selectedPastor.image?.url}
-                    alt={selectedPastor.name}
-                    className="w-72 h-72 object-cover rounded-3xl"
+                    src={getImage(p)}
+                    alt={p.name}
+                    className="w-40 h-40 object-cover rounded-xl mt-3"
                   />
-                ) : (
-                  <div className="w-72 h-72 bg-gray-300 rounded-3xl" />
-                )}
-
-              </div>
-
-            </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-[#5b1320]">
+                No pastors found
+              </p>
+            )}
 
           </div>
-
         </div>
       )}
     </>

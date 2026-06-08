@@ -1,19 +1,34 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import AdminLayout from "./admin/AdminLayout";
-import Dashboard from "./admin/pages/Dashboard";
-import Pastors from "./admin/pages/Pastors";
+import { Routes, Route } from "react-router-dom";
+import AdminLayout from "./AdminLayout";
+import Dashboard from "./Dashboard";
+import Pastors from "./Pastors";
+import Events from "./Events";
+import Gallery from "./Gallery";
+import Messages from "./Messages";
+import Login from "./Login";
+import ProtectedRoute from "../../components/ProtectedRoute";
 
-export default function App() {
+export default function Admin() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <Routes>
 
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="pastors" element={<Pastors />} />
-        </Route>
+      <Route path="/login" element={<Login />} />
 
-      </Routes>
-    </BrowserRouter>
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="pastors" element={<Pastors />} />
+        <Route path="events" element={<Events />} />
+        <Route path="gallery" element={<Gallery />} />
+        <Route path="messages" element={<Messages />} />
+      </Route>
+
+    </Routes>
   );
 }
