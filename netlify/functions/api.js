@@ -1,7 +1,7 @@
 import serverless from "serverless-http";
 import app from "../../server/app.js";
 
-export default serverless(app);
+export const handler = serverless(app);
 
 export const config = {
   path: [
