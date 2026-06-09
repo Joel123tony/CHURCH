@@ -5,25 +5,13 @@ import Pastor from "../models/Pastor.js";
 ========================= */
 export const createPastor = async (req, res) => {
   try {
-    console.log("CREATE PASTOR BODY:", req.body);
-
-    const pastor = await Pastor.create({
-      name: req.body.name,
-      role: req.body.role || "Pastor",
-      bio: req.body.bio || "",
-      image: req.body.image || "",
-      joinedYear: req.body.joinedYear || "",
-      leftYear: req.body.leftYear || "",
-      number: req.body.number || "",
-      active: req.body.active ?? true,
-    });
+    const pastor = await Pastor.create(req.body);
 
     res.status(201).json({
       success: true,
       pastor,
     });
   } catch (err) {
-    console.log("CREATE ERROR:", err.message);
     res.status(500).json({
       success: false,
       error: err.message,
@@ -38,10 +26,7 @@ export const getAllPastors = async (req, res) => {
   try {
     const pastors = await Pastor.find().sort({ createdAt: -1 });
 
-    res.json({
-      success: true,
-      pastors,
-    });
+    res.json({ success: true, pastors });
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -52,7 +37,7 @@ export const getAllPastors = async (req, res) => {
 };
 
 /* =========================
-   GET PUBLIC PASTORS
+   PUBLIC PASTORS
 ========================= */
 export const getPublicPastors = async (req, res) => {
   try {
@@ -60,10 +45,7 @@ export const getPublicPastors = async (req, res) => {
       joinedYear: -1,
     });
 
-    res.json({
-      success: true,
-      pastors,
-    });
+    res.json({ success: true, pastors });
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -74,29 +56,25 @@ export const getPublicPastors = async (req, res) => {
 };
 
 /* =========================
-   SEARCH
+   SEARCH PASTORS
 ========================= */
 export const searchPastors = async (req, res) => {
   try {
     const { name = "", year = "" } = req.query;
 
-    const query = { active: true };
+    const query = {};
 
-    if (name.trim()) {
-      query.name = { $regex: name.trim(), $options: "i" };
+    if (name) {
+      query.name = { $regex: name, $options: "i" };
     }
 
-    if (year.trim()) {
-      const y = Number(year);
-      query.$or = [{ joinedYear: y }, { leftYear: y }];
+    if (year) {
+      query.$or = [{ joinedYear: Number(year) }, { leftYear: Number(year) }];
     }
 
     const pastors = await Pastor.find(query);
 
-    res.json({
-      success: true,
-      pastors,
-    });
+    res.json({ success: true, pastors });
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -107,20 +85,17 @@ export const searchPastors = async (req, res) => {
 };
 
 /* =========================
-   UPDATE
+   UPDATE PASTOR
 ========================= */
 export const updatePastor = async (req, res) => {
   try {
     const pastor = await Pastor.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true, runValidators: true }
+      { new: true }
     );
 
-    res.json({
-      success: true,
-      pastor,
-    });
+    res.json({ success: true, pastor });
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -130,7 +105,7 @@ export const updatePastor = async (req, res) => {
 };
 
 /* =========================
-   DELETE
+   DELETE PASTOR
 ========================= */
 export const deletePastor = async (req, res) => {
   try {
@@ -138,7 +113,7 @@ export const deletePastor = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Pastor deleted successfully",
+      message: "Pastor deleted",
     });
   } catch (err) {
     res.status(500).json({
