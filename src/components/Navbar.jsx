@@ -51,7 +51,7 @@ export default function Navbar() {
           {/* LOGO */}
           <div className="flex items-center gap-3">
             <img
-              src="public/Logo/methodist logo.png"
+              src="Logo/methodist logo.png"
               className="h-12 w-12"
               alt="logo"
             />

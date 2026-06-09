@@ -25,7 +25,7 @@ export default function History() {
 
       <div className="flex justify-center">
         <img
-          src="/public/history/church.png"
+          src="history/church.png"
           alt="Church History"
           className="w-full max-w-lg object-contain"
         />
