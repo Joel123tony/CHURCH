@@ -1,11 +1,28 @@
 import Pastor from "../models/Pastor.js";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
+import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 
 /* =========================
-   CREATE PASTOR
+   CREATE PASTOR (WITH IMAGE)
 ========================= */
 export const createPastor = async (req, res) => {
   try {
-    const pastor = await Pastor.create(req.body);
+    let imageData = null;
+
+    // if file uploaded (multer)
+    if (req.file) {
+      imageData = await uploadToCloudinary(req.file.buffer);
+    }
+
+    const pastor = await Pastor.create({
+      ...req.body,
+      image: imageData
+        ? {
+            url: imageData.url,
+            public_id: imageData.public_id,
+          }
+        : null,
+    });
 
     res.status(201).json({
       success: true,
@@ -102,15 +119,11 @@ export const searchPastors = async (req, res) => {
 };
 
 /* =========================
-   UPDATE PASTOR
+   UPDATE PASTOR (WITH IMAGE REPLACE)
 ========================= */
 export const updatePastor = async (req, res) => {
   try {
-    const pastor = await Pastor.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const pastor = await Pastor.findById(req.params.id);
 
     if (!pastor) {
       return res.status(404).json({
@@ -119,10 +132,30 @@ export const updatePastor = async (req, res) => {
       });
     }
 
+    // if new image uploaded → delete old one
+    if (req.file) {
+      if (pastor.image?.public_id) {
+        await deleteFromCloudinary(pastor.image.public_id);
+      }
+
+      const newImage = await uploadToCloudinary(req.file.buffer);
+
+      req.body.image = {
+        url: newImage.url,
+        public_id: newImage.public_id,
+      };
+    }
+
+    const updated = await Pastor.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
     res.json({
       success: true,
       message: "Pastor updated successfully",
-      pastor,
+      pastor: updated,
     });
   } catch (err) {
     res.status(500).json({
@@ -134,11 +167,11 @@ export const updatePastor = async (req, res) => {
 };
 
 /* =========================
-   DELETE PASTOR
+   DELETE PASTOR (DELETE CLOUDINARY TOO)
 ========================= */
 export const deletePastor = async (req, res) => {
   try {
-    const pastor = await Pastor.findByIdAndDelete(req.params.id);
+    const pastor = await Pastor.findById(req.params.id);
 
     if (!pastor) {
       return res.status(404).json({
@@ -146,6 +179,13 @@ export const deletePastor = async (req, res) => {
         message: "Pastor not found",
       });
     }
+
+    // delete image from cloudinary
+    if (pastor.image?.public_id) {
+      await deleteFromCloudinary(pastor.image.public_id);
+    }
+
+    await pastor.deleteOne();
 
     res.json({
       success: true,

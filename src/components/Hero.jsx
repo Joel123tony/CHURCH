@@ -9,16 +9,17 @@ export default function Hero() {
           </h1>
 
           <p className="leading-8">
-            Methodist Tamil Church is a Christ-centered
-            congregation located in Padikuppam,
-            Mogappair East, Chennai.
-          </p>
+Methodist Tamil Church serves the local community through worship, prayer, biblical teaching, discipleship, fellowship, and outreach ministries. We are committed to sharing the love of Jesus Christ, strengthening families, nurturing spiritual growth, and building a welcoming church community for people of all ages.          </p>
 
           <div className="grid md:grid-cols-2 gap-4 mt-8">
 
             <div className="bg-cream text-primary p-5 rounded-xl">
               <h3 className="font-bold">Address</h3>
-              <p>No.1 Vandiamman Koil Street</p>
+              <p>No. 1, Vandiamman Koil Street,
+Mogappair East,
+Chennai,
+Tamil Nadu 600107,
+India</p>
             </div>
 
             <div className="bg-cream text-primary p-5 rounded-xl">
