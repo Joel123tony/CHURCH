@@ -61,37 +61,53 @@ export default function Pastors() {
   };
 
   /* ================= ADD ================= */
-  const addPastor = async () => {
-    try {
-      setLoading(true);
+ const addPastor = async () => {
+  try {
+    setLoading(true);
 
-      const imageUrl = await uploadImage();
+    const payload = {
+      name: form.name,
+      role: "Pastor",
+      bio: form.bio,
+      image: "",
+      joinedYear: Number(form.joinedYear),
+      active: form.active,
+    };
 
-      await API.post("/admin/pastors", {
-        ...form,
-        image: imageUrl,
-      });
+    console.log("SENDING:", payload);
 
-      setForm({
-        name: "",
-        bio: "",
-        image: "",
-        joinedYear: "",
-        leftYear: "",
-        number: "",
-        active: true,
-      });
+    const res = await API.post("/pastors", payload);
 
-      setFile(null);
+    console.log("CREATED:", res.data);
 
-      await fetchPastors();
-    } catch (err) {
-      alert(err.response?.data?.error || "Error adding pastor");
-    } finally {
-      setLoading(false);
-    }
-  };
+    alert("Pastor added successfully");
 
+    setForm({
+      name: "",
+      bio: "",
+      image: "",
+      joinedYear: "",
+      leftYear: "",
+      number: "",
+      active: true,
+    });
+
+    setFile(null);
+
+    await fetchPastors();
+  } catch (err) {
+    console.log("ADD ERROR:", err.response?.data || err.message);
+
+    alert(
+      err.response?.data?.error ||
+      err.response?.data?.message ||
+      err.message ||
+      "Error adding pastor"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   /* ================= DELETE ================= */
   const deletePastor = async (id) => {
     try {
