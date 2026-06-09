@@ -1,13 +1,13 @@
 import express from "express";
 import upload from "../middleware/upload.js";
-import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
+import cloudinary from "../config/cloudinary.js";
 
 const router = express.Router();
 
 /* =========================
-   UPLOAD IMAGE
+   MEDIA UPLOAD (IMAGE + VIDEO)
 ========================= */
-router.post("/image", upload.single("image"), async (req, res) => {
+router.post("/media", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -16,19 +16,33 @@ router.post("/image", upload.single("image"), async (req, res) => {
       });
     }
 
-    const result = await uploadToCloudinary(req.file.buffer);
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "church",
+          resource_type: "auto", // supports images & videos
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
 
-    return res.json({
-      success: true,
-      url: result.secure_url || result.url,
-      public_id: result.public_id,
+      uploadStream.end(req.file.buffer);
     });
-  } catch (err) {
-    console.error("UPLOAD ERROR:", err);
+
+    return res.status(200).json({
+      success: true,
+      url: result.secure_url,
+      public_id: result.public_id,
+      type: result.resource_type,
+    });
+  } catch (error) {
+    console.error("MEDIA UPLOAD ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: error.message || "Upload failed",
     });
   }
 });

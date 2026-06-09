@@ -25,6 +25,11 @@ const pastorSchema = new mongoose.Schema(
       default: "",
     },
 
+    public_id: {
+      type: String,
+      default: "",
+    },
+
     joinedYear: {
       type: Number,
       default: null,
@@ -45,7 +50,9 @@ const pastorSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 const Pastor = mongoose.model("Pastor", pastorSchema);

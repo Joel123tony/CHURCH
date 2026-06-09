@@ -1,4 +1,6 @@
 import express from "express";
+import upload from "../middleware/upload.js";
+
 import {
   createPastor,
   getAllPastors,
@@ -26,14 +28,14 @@ router.get("/public", getPublicPastors);
 router.get("/search", searchPastors);
 
 /* =========================
-   CREATE PASTOR
+   CREATE PASTOR (UPLOAD FIX)
 ========================= */
-router.post("/", createPastor);
+router.post("/", upload.single("file"), createPastor);
 
 /* =========================
-   UPDATE PASTOR
+   UPDATE PASTOR (UPLOAD FIX)
 ========================= */
-router.put("/:id", updatePastor);
+router.put("/:id", upload.single("file"), updatePastor);
 
 /* =========================
    DELETE PASTOR

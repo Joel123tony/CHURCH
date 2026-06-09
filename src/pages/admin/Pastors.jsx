@@ -5,14 +5,12 @@ export default function Pastors() {
   const [pastors, setPastors] = useState([]);
   const [search, setSearch] = useState("");
   const [file, setFile] = useState(null);
-
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
     bio: "",
-    image: "",
     joinedYear: "",
     leftYear: "",
     number: "",
@@ -23,20 +21,13 @@ export default function Pastors() {
   const fetchPastors = async () => {
     try {
       setFetching(true);
-
       const res = await API.get("/pastors");
 
-      console.log("Pastors API response:", res.data);
-
-      const data =
-        res.data?.pastors ||
-        res.data?.data ||
-        res.data ||
-        [];
+      const data = res.data?.pastors || [];
 
       setPastors(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.log("Fetch error:", err.response?.data || err.message);
+      console.log("Fetch error:", err.message);
       setPastors([]);
     } finally {
       setFetching(false);
@@ -49,20 +40,23 @@ export default function Pastors() {
 
   /* ================= UPLOAD IMAGE ================= */
   const uploadImage = async () => {
-    if (!file) return "";
-
-    const formData = new FormData();
-    formData.append("image", file);
+    if (!file) return null;
 
     try {
-      const res = await API.post("/upload/image", formData, {
+      const formData = new FormData();
+      formData.append("file", file); // 🔥 MUST BE "file"
+
+      const res = await API.post("/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      return res.data?.url || "";
+      return {
+        url: res.data.url,
+        public_id: res.data.public_id,
+      };
     } catch (err) {
-      console.log("Upload error:", err.response?.data || err.message);
-      return "";
+      console.log("Upload error:", err.message);
+      return null;
     }
   };
 
@@ -71,31 +65,26 @@ export default function Pastors() {
     try {
       setLoading(true);
 
-      const imageUrl = await uploadImage();
+      const imageData = await uploadImage();
 
       const payload = {
         name: form.name,
-        role: "Pastor",
         bio: form.bio,
-        image: imageUrl,
         joinedYear: Number(form.joinedYear) || null,
-        leftYear: form.leftYear || "",
-        number: form.number || "",
+        leftYear: form.leftYear,
+        number: form.number,
         active: form.active,
+        image: imageData, // 🔥 FIXED
       };
-
-      console.log("SENDING:", payload);
 
       const res = await API.post("/pastors", payload);
 
-      console.log("CREATED:", res.data);
-
-      alert("Pastor added successfully");
+      // 🔥 INSTANT UI UPDATE
+      setPastors((prev) => [res.data.pastor, ...prev]);
 
       setForm({
         name: "",
         bio: "",
-        image: "",
         joinedYear: "",
         leftYear: "",
         number: "",
@@ -104,15 +93,9 @@ export default function Pastors() {
 
       setFile(null);
 
-      fetchPastors();
     } catch (err) {
-      console.log("ADD ERROR:", err.response?.data || err.message);
-
-      alert(
-        err.response?.data?.error ||
-        err.response?.data?.message ||
-        "Error adding pastor"
-      );
+      console.log("ADD ERROR:", err.message);
+      alert("Error adding pastor");
     } finally {
       setLoading(false);
     }
@@ -122,9 +105,11 @@ export default function Pastors() {
   const deletePastor = async (id) => {
     try {
       await API.delete(`/pastors/${id}`);
-      fetchPastors();
+
+      setPastors((prev) => prev.filter((p) => p._id !== id));
+
     } catch (err) {
-      console.log("DELETE ERROR:", err.response?.data || err.message);
+      console.log("DELETE ERROR:", err.message);
     }
   };
 
@@ -221,15 +206,12 @@ export default function Pastors() {
 
           {fetching && <p>Loading pastors...</p>}
 
-          {!fetching && filtered.length === 0 && (
-            <p>No pastors found</p>
-          )}
-
           {filtered.map((p) => (
             <div key={p._id} style={styles.item}>
               <img
-                src={p.image || "https://via.placeholder.com/60"}
+                src={p.image?.url || "https://via.placeholder.com/60"}
                 style={styles.img}
+                alt="pastor"
               />
 
               <div style={{ flex: 1 }}>
@@ -253,71 +235,3 @@ export default function Pastors() {
     </div>
   );
 }
-
-/* ================= STYLES ================= */
-const styles = {
-  page: {
-    padding: 20,
-    background: "#f4f4f4",
-    minHeight: "100vh",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 2fr",
-    gap: 20,
-  },
-  card: {
-    background: "#fff",
-    padding: 15,
-    borderRadius: 10,
-  },
-  input: {
-    width: "100%",
-    marginBottom: 10,
-    padding: 10,
-    border: "1px solid #ccc",
-    borderRadius: 6,
-  },
-  btn: {
-    width: "100%",
-    padding: 10,
-    background: "#16a34a",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-  search: {
-    width: "100%",
-    padding: 10,
-    marginBottom: 15,
-  },
-  item: {
-    display: "flex",
-    gap: 10,
-    background: "#fff",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  img: {
-    width: 60,
-    height: 60,
-    borderRadius: "50%",
-    objectFit: "cover",
-  },
-  delete: {
-    background: "red",
-    color: "#fff",
-    border: "none",
-    padding: 8,
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-};
