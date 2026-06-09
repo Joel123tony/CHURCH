@@ -40,6 +40,7 @@ export default function AdminLayout() {
       >
         <h1 className="text-xl font-bold mb-2">
           MTC Admin
+          style={{ color: "#EFBF04" }} 
         </h1>
 
         <p className="text-sm text-gray-200 mb-6">
@@ -60,7 +61,7 @@ export default function AdminLayout() {
                 }`
               }
               style={({ isActive }) => ({
-                color: isActive ? "#ee0039" : "#ffffff", // 🔴 secondary highlight
+                color: isActive ? "#ffffff" : "#ee0039" , // 🔴 secondary highlight
                 backgroundColor: isActive ? "rgba(238,0,57,0.1)" : "transparent",
               })}
             >
