@@ -3,6 +3,7 @@ import API from "../../api/axios";
 import MediaCard from "../../components/MediaCard";
 import GalleryUpload from "./GalleryUpload";
 
+
 export default function Gallery() {
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(false);
