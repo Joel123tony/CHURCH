@@ -9,11 +9,13 @@ export const createPastor = async (req, res) => {
 
     res.status(201).json({
       success: true,
+      message: "Pastor created successfully",
       pastor,
     });
   } catch (err) {
     res.status(500).json({
       success: false,
+      message: "Error creating pastor",
       error: err.message,
     });
   }
@@ -26,10 +28,14 @@ export const getAllPastors = async (req, res) => {
   try {
     const pastors = await Pastor.find().sort({ createdAt: -1 });
 
-    res.json({ success: true, pastors });
+    res.json({
+      success: true,
+      pastors,
+    });
   } catch (err) {
     res.status(500).json({
       success: false,
+      message: "Error fetching pastors",
       error: err.message,
       pastors: [],
     });
@@ -45,10 +51,14 @@ export const getPublicPastors = async (req, res) => {
       joinedYear: -1,
     });
 
-    res.json({ success: true, pastors });
+    res.json({
+      success: true,
+      pastors,
+    });
   } catch (err) {
     res.status(500).json({
       success: false,
+      message: "Error fetching public pastors",
       error: err.message,
       pastors: [],
     });
@@ -69,15 +79,22 @@ export const searchPastors = async (req, res) => {
     }
 
     if (year) {
-      query.$or = [{ joinedYear: Number(year) }, { leftYear: Number(year) }];
+      query.$or = [
+        { joinedYear: Number(year) },
+        { leftYear: Number(year) },
+      ];
     }
 
     const pastors = await Pastor.find(query);
 
-    res.json({ success: true, pastors });
+    res.json({
+      success: true,
+      pastors,
+    });
   } catch (err) {
     res.status(500).json({
       success: false,
+      message: "Error searching pastors",
       error: err.message,
       pastors: [],
     });
@@ -95,10 +112,22 @@ export const updatePastor = async (req, res) => {
       { new: true }
     );
 
-    res.json({ success: true, pastor });
+    if (!pastor) {
+      return res.status(404).json({
+        success: false,
+        message: "Pastor not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Pastor updated successfully",
+      pastor,
+    });
   } catch (err) {
     res.status(500).json({
       success: false,
+      message: "Error updating pastor",
       error: err.message,
     });
   }
@@ -109,15 +138,23 @@ export const updatePastor = async (req, res) => {
 ========================= */
 export const deletePastor = async (req, res) => {
   try {
-    await Pastor.findByIdAndDelete(req.params.id);
+    const pastor = await Pastor.findByIdAndDelete(req.params.id);
+
+    if (!pastor) {
+      return res.status(404).json({
+        success: false,
+        message: "Pastor not found",
+      });
+    }
 
     res.json({
       success: true,
-      message: "Pastor deleted",
+      message: "Pastor deleted successfully",
     });
   } catch (err) {
     res.status(500).json({
       success: false,
+      message: "Error deleting pastor",
       error: err.message,
     });
   }

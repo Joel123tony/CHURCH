@@ -7,21 +7,39 @@ const pastorSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
     role: {
       type: String,
       default: "Pastor",
+      trim: true,
     },
+
     bio: {
       type: String,
       default: "",
+      trim: true,
     },
+
     image: {
       type: String,
       default: "",
     },
+
     joinedYear: {
       type: Number,
+      default: null,
     },
+
+    leftYear: {
+      type: Number,
+      default: null,
+    },
+
+    number: {
+      type: String,
+      default: "",
+    },
+
     active: {
       type: Boolean,
       default: true,
