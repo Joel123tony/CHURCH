@@ -1,10 +1,14 @@
 import express from "express";
 import Pastor from "../models/Pastor.js";
 import Sermon from "../models/Sermon.js";
+import upload from "../middleware/upload.js";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 
 const router = express.Router();
 
-/* DASHBOARD */
+/* =========================
+   DASHBOARD STATS
+========================= */
 router.get("/dashboard", async (req, res) => {
   try {
     const [pastorsCount, sermonsCount, latestSermons] =
@@ -15,6 +19,7 @@ router.get("/dashboard", async (req, res) => {
       ]);
 
     res.json({
+      success: true,
       counts: {
         pastors: pastorsCount,
         sermons: sermonsCount,
@@ -22,72 +27,165 @@ router.get("/dashboard", async (req, res) => {
       latestSermons,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
-/* PASTORS */
+/* =========================
+   GET ALL PASTORS (ADMIN)
+========================= */
 router.get("/pastors", async (req, res) => {
   try {
     const pastors = await Pastor.find().sort({ createdAt: -1 });
-    res.json(pastors);
+
+    res.json({
+      success: true,
+      pastors,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      pastors: [],
+      message: err.message,
+    });
   }
 });
 
-router.post("/pastors", async (req, res) => {
+/* =========================
+   CREATE PASTOR (WITH UPLOAD)
+   🔥 FIX: multer added here
+========================= */
+router.post("/pastors", upload.single("file"), async (req, res) => {
   try {
-    const pastor = await Pastor.create(req.body);
-    res.status(201).json(pastor);
+    let image = null;
+
+    // upload file to cloudinary if exists
+    if (req.file) {
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
+
+      image = {
+        url: uploadResult.url,
+        public_id: uploadResult.public_id,
+        type: uploadResult.type,
+      };
+    }
+
+    const pastor = await Pastor.create({
+      ...req.body,
+      image,
+    });
+
+    res.status(201).json({
+      success: true,
+      pastor,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
-router.put("/pastors/:id", async (req, res) => {
+/* =========================
+   UPDATE PASTOR
+========================= */
+router.put("/pastors/:id", upload.single("file"), async (req, res) => {
   try {
-    const pastor = await Pastor.findByIdAndUpdate(
+    const pastor = await Pastor.findById(req.params.id);
+
+    if (!pastor) {
+      return res.status(404).json({
+        success: false,
+        message: "Pastor not found",
+      });
+    }
+
+    let image = pastor.image;
+
+    if (req.file) {
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
+
+      image = {
+        url: uploadResult.url,
+        public_id: uploadResult.public_id,
+        type: uploadResult.type,
+      };
+    }
+
+    const updated = await Pastor.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { ...req.body, image },
       { new: true }
     );
 
-    res.json(pastor);
+    res.json({
+      success: true,
+      pastor: updated,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
+/* =========================
+   DELETE PASTOR
+========================= */
 router.delete("/pastors/:id", async (req, res) => {
   try {
     await Pastor.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,
-      message: "Pastor deleted",
+      message: "Pastor deleted successfully",
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
-/* SERMONS */
+/* =========================
+   SERMONS (BASIC CRUD)
+========================= */
 router.get("/sermons", async (req, res) => {
   try {
     const sermons = await Sermon.find().sort({ createdAt: -1 });
-    res.json(sermons);
+
+    res.json({
+      success: true,
+      sermons,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      sermons: [],
+      message: err.message,
+    });
   }
 });
 
 router.post("/sermons", async (req, res) => {
   try {
     const sermon = await Sermon.create(req.body);
-    res.status(201).json(sermon);
+
+    res.status(201).json({
+      success: true,
+      sermon,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
@@ -100,7 +198,10 @@ router.delete("/sermons/:id", async (req, res) => {
       message: "Sermon deleted",
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 

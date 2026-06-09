@@ -12,11 +12,7 @@ export const uploadToCloudinary = (buffer, folder = "church") => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
-
-        // 🔥 CRITICAL: supports image + video automatically
-        resource_type: "auto",
-
-        // optional safety
+        resource_type: "auto", // supports image + video
         timeout: 60000,
       },
       (error, result) => {
@@ -38,7 +34,6 @@ export const uploadToCloudinary = (buffer, folder = "church") => {
       }
     );
 
-    // 🔥 IMPORTANT: send buffer
     stream.end(buffer);
   });
 };
