@@ -5,6 +5,7 @@ export default function Pastors() {
   const [pastors, setPastors] = useState([]);
   const [search, setSearch] = useState("");
   const [file, setFile] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
 
@@ -23,17 +24,17 @@ export default function Pastors() {
     try {
       setFetching(true);
 
-      const res = await API.get("/admin/pastors");
+      const res = await API.get("/pastors");
 
       console.log("Pastors API response:", res.data);
 
-      const pastorsData =
+      const data =
         res.data?.pastors ||
         res.data?.data ||
         res.data ||
         [];
 
-      setPastors(Array.isArray(pastorsData) ? pastorsData : []);
+      setPastors(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log("Fetch error:", err.response?.data || err.message);
       setPastors([]);
@@ -46,80 +47,89 @@ export default function Pastors() {
     fetchPastors();
   }, []);
 
-  /* ================= UPLOAD ================= */
+  /* ================= UPLOAD IMAGE ================= */
   const uploadImage = async () => {
     if (!file) return "";
 
-    const data = new FormData();
-    data.append("image", file);
+    const formData = new FormData();
+    formData.append("image", file);
 
-    const res = await API.post("/upload/image", data, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    try {
+      const res = await API.post("/upload/image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-    return res.data?.url || "";
+      return res.data?.url || "";
+    } catch (err) {
+      console.log("Upload error:", err.response?.data || err.message);
+      return "";
+    }
   };
 
-  /* ================= ADD ================= */
- const addPastor = async () => {
-  try {
-    setLoading(true);
+  /* ================= ADD PASTOR ================= */
+  const addPastor = async () => {
+    try {
+      setLoading(true);
 
-    const payload = {
-      name: form.name,
-      role: "Pastor",
-      bio: form.bio,
-      image: "",
-      joinedYear: Number(form.joinedYear),
-      active: form.active,
-    };
+      const imageUrl = await uploadImage();
 
-    console.log("SENDING:", payload);
+      const payload = {
+        name: form.name,
+        role: "Pastor",
+        bio: form.bio,
+        image: imageUrl,
+        joinedYear: Number(form.joinedYear) || null,
+        leftYear: form.leftYear || "",
+        number: form.number || "",
+        active: form.active,
+      };
 
-    const res = await API.post("/pastors", payload);
+      console.log("SENDING:", payload);
 
-    console.log("CREATED:", res.data);
+      const res = await API.post("/pastors", payload);
 
-    alert("Pastor added successfully");
+      console.log("CREATED:", res.data);
 
-    setForm({
-      name: "",
-      bio: "",
-      image: "",
-      joinedYear: "",
-      leftYear: "",
-      number: "",
-      active: true,
-    });
+      alert("Pastor added successfully");
 
-    setFile(null);
+      setForm({
+        name: "",
+        bio: "",
+        image: "",
+        joinedYear: "",
+        leftYear: "",
+        number: "",
+        active: true,
+      });
 
-    await fetchPastors();
-  } catch (err) {
-    console.log("ADD ERROR:", err.response?.data || err.message);
+      setFile(null);
 
-    alert(
-      err.response?.data?.error ||
-      err.response?.data?.message ||
-      err.message ||
-      "Error adding pastor"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      fetchPastors();
+    } catch (err) {
+      console.log("ADD ERROR:", err.response?.data || err.message);
+
+      alert(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Error adding pastor"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ================= DELETE ================= */
   const deletePastor = async (id) => {
     try {
-      await API.delete(`/admin/pastors/${id}`);
+      await API.delete(`/pastors/${id}`);
       fetchPastors();
     } catch (err) {
-      console.log(err.response?.data || err.message);
+      console.log("DELETE ERROR:", err.response?.data || err.message);
     }
   };
 
   /* ================= FILTER ================= */
-  const filtered = (pastors || []).filter((p) =>
+  const filtered = pastors.filter((p) =>
     (p?.name || "").toLowerCase().includes(search.toLowerCase()) ||
     (p?.bio || "").toLowerCase().includes(search.toLowerCase())
   );
@@ -256,19 +266,16 @@ const styles = {
     fontWeight: "bold",
     marginBottom: 20,
   },
-
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr 2fr",
     gap: 20,
   },
-
   card: {
     background: "#fff",
     padding: 15,
     borderRadius: 10,
   },
-
   input: {
     width: "100%",
     marginBottom: 10,
@@ -276,7 +283,6 @@ const styles = {
     border: "1px solid #ccc",
     borderRadius: 6,
   },
-
   btn: {
     width: "100%",
     padding: 10,
@@ -286,13 +292,11 @@ const styles = {
     borderRadius: 6,
     cursor: "pointer",
   },
-
   search: {
     width: "100%",
     padding: 10,
     marginBottom: 15,
   },
-
   item: {
     display: "flex",
     gap: 10,
@@ -302,14 +306,12 @@ const styles = {
     borderRadius: 10,
     alignItems: "center",
   },
-
   img: {
     width: 60,
     height: 60,
     borderRadius: "50%",
     objectFit: "cover",
   },
-
   delete: {
     background: "red",
     color: "#fff",
