@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 
-// 👇 professional icons
+// icons
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
 export default function Login() {
@@ -15,6 +15,11 @@ export default function Login() {
 
   /* ================= LOGIN ================= */
   const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Please enter email and password");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -23,10 +28,17 @@ export default function Login() {
         password,
       });
 
-      localStorage.setItem("token", res.data.token);
+      const token = res?.data?.token;
+
+      if (!token) {
+        throw new Error("No token received from server");
+      }
+
+      localStorage.setItem("token", token);
 
       navigate("/admin");
     } catch (err) {
+      console.error("LOGIN ERROR:", err);
       alert(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
@@ -58,30 +70,29 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          {/* PROFESSIONAL TOGGLE ICON */}
           <button
             type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
+            onClick={() => setShowPassword((p) => !p)}
             style={styles.eyeBtn}
           >
-            {showPassword ? (
-              <FiEyeOff size={18} />
-            ) : (
-              <FiEye size={18} />
-            )}
+            {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
           </button>
         </div>
 
-        {/* LOGIN */}
+        {/* LOGIN BUTTON */}
         <button
           onClick={handleLogin}
-          style={styles.loginBtn}
+          style={{
+            ...styles.loginBtn,
+            opacity: loading ? 0.7 : 1,
+            cursor: loading ? "not-allowed" : "pointer",
+          }}
           disabled={loading}
         >
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* CLIENT */}
+        {/* GO TO CLIENT */}
         <button
           onClick={() => (window.location.href = "/")}
           style={styles.clientBtn}
@@ -101,7 +112,7 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #e11d48,#54091b)",
+    background: "linear-gradient(135deg, #e11d48, #54091b)",
   },
 
   card: {
@@ -151,10 +162,10 @@ const styles = {
     background: "transparent",
     border: "none",
     cursor: "pointer",
+    color: "#666",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#666",
   },
 
   loginBtn: {
@@ -163,7 +174,6 @@ const styles = {
     borderRadius: "8px",
     background: "#e11d48",
     color: "#fff",
-    cursor: "pointer",
     fontWeight: "bold",
   },
 
@@ -173,7 +183,6 @@ const styles = {
     borderRadius: "8px",
     background: "transparent",
     color: "#e11d48",
-    cursor: "pointer",
     fontWeight: "bold",
   },
 };
