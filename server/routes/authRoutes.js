@@ -5,46 +5,56 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-router.get("/test", (req, res) => {
-  res.json({ message: "Auth route working" });
-});
-
-/* LOGIN */
 router.post("/login", async (req, res) => {
   try {
+    console.log("LOGIN REQUEST:", req.body);
+
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
 
+    console.log("USER FOUND:", user);
+
     if (!user) {
-      return res.status(400).json({ message: "Invalid email" });
+      return res.status(400).json({
+        message: "Invalid email"
+      });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
+
+    console.log("PASSWORD MATCH:", isMatch);
 
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid password" });
+      return res.status(400).json({
+        message: "Invalid password"
+      });
     }
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      {
+        id: user._id,
+        role: user.role
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      {
+        expiresIn: "7d"
+      }
     );
 
-    res.json({
-      message: "Login successful",
+    return res.json({
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
+      user
     });
+
   } catch (err) {
-    res.status(500).json({
-      message: "Server error",
-      error: err.message,
+    console.error("LOGIN ERROR:", err);
+
+    return res.status(500).json({
+      error: err.message
     });
   }
 });
