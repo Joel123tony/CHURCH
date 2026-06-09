@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 
+// 👇 professional icons
+import { FiEye, FiEyeOff } from "react-icons/fi";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,7 +18,6 @@ export default function Login() {
     try {
       setLoading(true);
 
-      // IMPORTANT: uses baseURL + /auth/login OR /api/auth/login depending on axios config
       const res = await API.post("/auth/login", {
         email,
         password,
@@ -35,7 +37,6 @@ export default function Login() {
     <div style={styles.container}>
       <div style={styles.card}>
 
-        {/* TITLE CHANGE */}
         <h2 style={styles.h2}>MTC Padikuppam</h2>
         <h4 style={styles.h4}>Admin Login</h4>
 
@@ -57,19 +58,21 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          {/* EYE BUTTON (SMOOTH TOGGLE STYLE) */}
+          {/* PROFESSIONAL TOGGLE ICON */}
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
             style={styles.eyeBtn}
           >
-            <span style={{ fontSize: "18px" }}>
-              {showPassword ? "🙈" : "👁️"}
-            </span>
+            {showPassword ? (
+              <FiEyeOff size={18} />
+            ) : (
+              <FiEye size={18} />
+            )}
           </button>
         </div>
 
-        {/* LOGIN BUTTON */}
+        {/* LOGIN */}
         <button
           onClick={handleLogin}
           style={styles.loginBtn}
@@ -78,7 +81,7 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* GO TO CLIENT */}
+        {/* CLIENT */}
         <button
           onClick={() => (window.location.href = "/")}
           style={styles.clientBtn}
@@ -110,7 +113,6 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "12px",
-    animation: "fadeIn 0.4s ease-in-out",
   },
 
   h2: {
@@ -149,7 +151,10 @@ const styles = {
     background: "transparent",
     border: "none",
     cursor: "pointer",
-    transition: "transform 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#666",
   },
 
   loginBtn: {
