@@ -15,12 +15,14 @@ export default function Login() {
     try {
       setLoading(true);
 
+      // IMPORTANT: uses baseURL + /auth/login OR /api/auth/login depending on axios config
       const res = await API.post("/auth/login", {
         email,
         password,
       });
 
       localStorage.setItem("token", res.data.token);
+
       navigate("/admin");
     } catch (err) {
       alert(err.response?.data?.message || "Login failed");
@@ -32,7 +34,10 @@ export default function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h2 style={styles.title}>Admin Login</h2>
+
+        {/* TITLE CHANGE */}
+        <h2 style={styles.h2}>MTC Padikuppam</h2>
+        <h4 style={styles.h4}>Admin Login</h4>
 
         {/* EMAIL */}
         <input
@@ -42,7 +47,7 @@ export default function Login() {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        {/* PASSWORD WITH TOGGLE */}
+        {/* PASSWORD */}
         <div style={styles.passwordBox}>
           <input
             style={styles.input}
@@ -52,12 +57,15 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
+          {/* EYE BUTTON (SMOOTH TOGGLE STYLE) */}
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            style={styles.toggleBtn}
+            style={styles.eyeBtn}
           >
-            {showPassword ? "Hide" : "Show"}
+            <span style={{ fontSize: "18px" }}>
+              {showPassword ? "🙈" : "👁️"}
+            </span>
           </button>
         </div>
 
@@ -70,13 +78,14 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* CLIENT BUTTON */}
+        {/* GO TO CLIENT */}
         <button
           onClick={() => (window.location.href = "/")}
           style={styles.clientBtn}
         >
           Go To MTC
         </button>
+
       </div>
     </div>
   );
@@ -89,33 +98,43 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#54091b",
+    background: "linear-gradient(135deg, #54091b, #1f0a10)",
   },
 
   card: {
-    width: "340px",
+    width: "360px",
     padding: "25px",
-    borderRadius: "12px",
+    borderRadius: "14px",
     background: "#fff",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+    boxShadow: "0 15px 40px rgba(0,0,0,0.3)",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
+    animation: "fadeIn 0.4s ease-in-out",
   },
 
-  title: {
+  h2: {
     textAlign: "center",
-    marginBottom: "10px",
-    fontWeight: "bold",
+    margin: 0,
     color: "#54091b",
+    fontWeight: "bold",
+  },
+
+  h4: {
+    textAlign: "center",
+    marginTop: "-5px",
+    marginBottom: "10px",
+    color: "#666",
+    fontWeight: "500",
   },
 
   input: {
     width: "100%",
     padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
+    borderRadius: "8px",
+    border: "1px solid #ddd",
     outline: "none",
+    fontSize: "14px",
   },
 
   passwordBox: {
@@ -124,20 +143,19 @@ const styles = {
     alignItems: "center",
   },
 
-  toggleBtn: {
+  eyeBtn: {
     position: "absolute",
     right: "10px",
     background: "transparent",
     border: "none",
-    color: "#e11d48",
     cursor: "pointer",
-    fontWeight: "bold",
+    transition: "transform 0.2s ease",
   },
 
   loginBtn: {
     padding: "10px",
     border: "none",
-    borderRadius: "6px",
+    borderRadius: "8px",
     background: "#e11d48",
     color: "#fff",
     cursor: "pointer",
@@ -147,7 +165,7 @@ const styles = {
   clientBtn: {
     padding: "10px",
     border: "1px solid #e11d48",
-    borderRadius: "6px",
+    borderRadius: "8px",
     background: "transparent",
     color: "#e11d48",
     cursor: "pointer",
