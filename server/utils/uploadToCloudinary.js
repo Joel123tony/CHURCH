@@ -1,23 +1,40 @@
-import cloudinary from "./cloudinary.js";
+import cloudinary from "../config/cloudinary.js";
 
-export const uploadToCloudinary = (fileBuffer, folder = "gallery") => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: "auto", // 🔥 supports image + video
-      },
-      (error, result) => {
-        if (error) return reject(error);
+export const uploadImage = async (req, res) => {
+  try {
+    console.log("FILE RECEIVED:", req.file); // 🔥 DEBUG
 
-        resolve({
-          url: result.secure_url,
-          public_id: result.public_id,
-          resource_type: result.resource_type,
-        });
-      }
-    );
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
 
-    stream.end(fileBuffer);
-  });
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "church" },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
+
+      stream.end(req.file.buffer);
+    });
+
+    return res.json({
+      success: true,
+      url: result.secure_url,
+      public_id: result.public_id,
+    });
+
+  } catch (err) {
+    console.error("UPLOAD ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
 };
