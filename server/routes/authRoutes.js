@@ -5,9 +5,11 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-/* =========================
-   LOGIN
-========================= */
+router.get("/test", (req, res) => {
+  res.json({ message: "Auth route working" });
+});
+
+/* LOGIN */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -40,7 +42,10 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
   }
 });
 
