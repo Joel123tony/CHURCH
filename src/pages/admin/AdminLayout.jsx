@@ -10,7 +10,6 @@ export default function AdminLayout() {
     const storedUser = getStoredUser();
     setUser(storedUser);
 
-    // 🔐 Protect admin routes
     if (!storedUser) {
       navigate("/admin/login");
     }
@@ -19,7 +18,6 @@ export default function AdminLayout() {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-
     setUser(null);
     navigate("/admin/login");
   };
@@ -34,11 +32,17 @@ export default function AdminLayout() {
 
   return (
     <div className="flex min-h-screen">
-      {/* SIDEBAR */}
-      <div className="w-64 bg-gray-900 text-white p-4 fixed h-full">
-        <h1 className="text-xl font-bold mb-2">MTC Admin</h1>
 
-        <p className="text-sm text-gray-300 mb-6">
+      {/* SIDEBAR */}
+      <div
+        className="w-64 text-white p-4 fixed h-full shadow-xl"
+        style={{ backgroundColor: "#54091b" }}   // 🟤 Sidebar color
+      >
+        <h1 className="text-xl font-bold mb-2">
+          MTC Admin
+        </h1>
+
+        <p className="text-sm text-gray-200 mb-6">
           {user?.name || "Administrator"}
         </p>
 
@@ -49,10 +53,16 @@ export default function AdminLayout() {
               to={link.to}
               end
               className={({ isActive }) =>
-                `hover:text-yellow-400 transition ${
-                  isActive ? "text-yellow-400 font-semibold" : ""
+                `transition px-2 py-1 rounded ${
+                  isActive
+                    ? "font-semibold"
+                    : "hover:opacity-80"
                 }`
               }
+              style={({ isActive }) => ({
+                color: isActive ? "#ee0039" : "#ffffff", // 🔴 secondary highlight
+                backgroundColor: isActive ? "rgba(238,0,57,0.1)" : "transparent",
+              })}
             >
               {link.label}
             </NavLink>
@@ -61,7 +71,8 @@ export default function AdminLayout() {
 
         <button
           onClick={logout}
-          className="mt-8 w-full bg-red-600 hover:bg-red-700 py-2 rounded"
+          className="mt-8 w-full py-2 rounded text-white font-semibold hover:opacity-90"
+          style={{ backgroundColor: "#ee0039" }} // 🔴 secondary color
         >
           Logout
         </button>
