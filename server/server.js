@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import app from "./app.js";
-import uploadRoutes from "./routes/upload.routes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 app.use("/api/upload", uploadRoutes);
 
