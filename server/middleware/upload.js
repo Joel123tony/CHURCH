@@ -1,5 +1,5 @@
 import multer from "multer";
-
+app.use("/api/upload", uploadRoutes);
 // memory storage for Cloudinary
 const storage = multer.memoryStorage();
 

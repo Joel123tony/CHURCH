@@ -5,7 +5,7 @@ import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 const router = express.Router();
 
 /* =========================
-   IMAGE UPLOAD (ADMIN ONLY)
+   UPLOAD IMAGE / VIDEO
 ========================= */
 router.post("/image", upload.single("image"), async (req, res) => {
   try {
@@ -19,6 +19,7 @@ router.post("/image", upload.single("image"), async (req, res) => {
       success: true,
       url: result.url,
       public_id: result.public_id,
+      resource_type: result.resource_type || "image",
     });
   } catch (err) {
     console.error("UPLOAD ERROR:", err);
