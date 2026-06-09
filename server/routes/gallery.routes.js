@@ -11,12 +11,29 @@ import {
 
 const router = express.Router();
 
+/* =========================
+   CREATE (UPLOAD + SAVE)
+========================= */
 router.post("/", upload.single("file"), uploadMedia);
 
+/* =========================
+   GET ALL (ADMIN)
+========================= */
 router.get("/", getAllMedia);
+
+/* =========================
+   GET CLIENT ONLY
+========================= */
 router.get("/client", getClientMedia);
 
+/* =========================
+   UPDATE MEDIA
+========================= */
 router.put("/:id", updateMedia);
+
+/* =========================
+   DELETE MEDIA
+========================= */
 router.delete("/:id", deleteMedia);
 
 export default router;

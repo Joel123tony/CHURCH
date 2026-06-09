@@ -3,7 +3,7 @@ import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 
 /* =========================
-   UPLOAD MEDIA
+   UPLOAD MEDIA (CREATE)
 ========================= */
 export const uploadMedia = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ export const uploadMedia = async (req, res) => {
     const result = await uploadToCloudinary(req.file.buffer);
 
     const media = await Gallery.create({
-      title: req.body.title,
+      title: req.body.title || "Untitled",
       url: result.url,
       public_id: result.public_id,
       mediaType: result.resource_type === "video" ? "video" : "image",
@@ -31,23 +31,31 @@ export const uploadMedia = async (req, res) => {
 };
 
 /* =========================
-   GET ALL (ADMIN)
+   GET ALL MEDIA (ADMIN)
 ========================= */
 export const getAllMedia = async (req, res) => {
-  const media = await Gallery.find().sort({ createdAt: -1 });
+  try {
+    const media = await Gallery.find().sort({ createdAt: -1 });
 
-  res.json({ success: true, media });
+    res.json({ success: true, media });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 };
 
 /* =========================
    GET CLIENT MEDIA ONLY
 ========================= */
 export const getClientMedia = async (req, res) => {
-  const media = await Gallery.find({ showInClient: true }).sort({
-    createdAt: -1,
-  });
+  try {
+    const media = await Gallery.find({ showInClient: true }).sort({
+      createdAt: -1,
+    });
 
-  res.json({ success: true, media });
+    res.json({ success: true, media });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 };
 
 /* =========================
@@ -55,40 +63,41 @@ export const getClientMedia = async (req, res) => {
 ========================= */
 export const updateMedia = async (req, res) => {
   try {
-    const media = await Gallery.findById(req.params.id);
+    const media = await Gallery.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
 
     if (!media) {
-      return res.status(404).json({ message: "Not found" });
+      return res.status(404).json({ success: false, message: "Not found" });
     }
-
-    media.title = req.body.title ?? media.title;
-    media.showInClient = req.body.showInClient ?? media.showInClient;
-
-    await media.save();
 
     res.json({ success: true, media });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
 /* =========================
-   DELETE MEDIA
+   DELETE MEDIA (CLOUDINARY SAFE)
 ========================= */
 export const deleteMedia = async (req, res) => {
   try {
     const media = await Gallery.findById(req.params.id);
 
     if (!media) {
-      return res.status(404).json({ message: "Not found" });
+      return res.status(404).json({ success: false, message: "Not found" });
     }
 
+    // delete from cloudinary
     await deleteFromCloudinary(media.public_id);
 
+    // delete from DB
     await media.deleteOne();
 
     res.json({ success: true, message: "Deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };

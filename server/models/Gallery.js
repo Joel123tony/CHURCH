@@ -1,27 +1,35 @@
 import mongoose from "mongoose";
 
-const GallerySchema = new mongoose.Schema(
+const gallerySchema = new mongoose.Schema(
   {
-    title: String,
+    title: {
+      type: String,
+      default: "Untitled",
+      trim: true,
+    },
+
     mediaType: {
       type: String,
       enum: ["image", "video"],
+      default: "image",
     },
 
-    url: String,
-    public_id: String, // Cloudinary image/video id
+    url: {
+      type: String,
+      required: true,
+    },
+
+    public_id: {
+      type: String,
+      required: true, // Cloudinary ID (for delete)
+    },
 
     showInClient: {
       type: Boolean,
       default: false,
     },
-
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Gallery", GallerySchema);
+export default mongoose.model("Gallery", gallerySchema);

@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 
+
 import AdminLayout from "./AdminLayout";
 import Dashboard from "./Dashboard";
 import Pastors from "./Pastors";

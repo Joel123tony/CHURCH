@@ -5,30 +5,31 @@ import API from "../../api/axios";
 export default function GalleryUpload({ onUpload }) {
   const [uploading, setUploading] = useState(false);
 
-  const onDrop = useCallback(async (acceptedFiles) => {
-    try {
-      setUploading(true);
+  const onDrop = useCallback(
+    async (acceptedFiles) => {
+      try {
+        setUploading(true);
 
-      const file = acceptedFiles[0];
-      const formData = new FormData();
+        const file = acceptedFiles[0];
+        const formData = new FormData();
 
-      formData.append("image", file);
+        formData.append("image", file);
 
-      const res = await API.post("/upload/image", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+        const res = await API.post("/upload/image", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
-      // send to parent
-      onUpload(res.data);
-
-    } catch (err) {
-      console.log("Upload error:", err);
-    } finally {
-      setUploading(false);
-    }
-  }, []);
+        onUpload(res.data);
+      } catch (err) {
+        console.log("Upload error:", err);
+      } finally {
+        setUploading(false);
+      }
+    },
+    [onUpload] // ✅ FIX
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -45,10 +46,10 @@ export default function GalleryUpload({ onUpload }) {
       <input {...getInputProps()} />
 
       {uploading ? (
-        <p>Uploading...</p>
+        <p className="text-blue-600 font-medium">Uploading...</p>
       ) : (
         <p className="text-gray-600">
-          Drag & drop image/video here, or click to select
+          Drag & drop image here, or click to select
         </p>
       )}
     </div>
