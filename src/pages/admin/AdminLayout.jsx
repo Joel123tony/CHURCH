@@ -36,11 +36,13 @@ export default function AdminLayout() {
       {/* SIDEBAR */}
       <div
         className="w-64 text-white p-4 fixed h-full shadow-xl"
-        style={{ backgroundColor: "#54091b" }}   // 🟤 Sidebar color
+        style={{ backgroundColor: "#54091b" }}
       >
-        <h1 className="text-xl font-bold mb-2">
+        <h1
+          className="text-xl font-bold mb-2"
+          style={{ color: "#EFBF04" }}
+        >
           MTC Admin
-          style={{ color: "#EFBF04" }} 
         </h1>
 
         <p className="text-sm text-gray-200 mb-6">
@@ -54,15 +56,15 @@ export default function AdminLayout() {
               to={link.to}
               end
               className={({ isActive }) =>
-                `transition px-2 py-1 rounded ${
-                  isActive
-                    ? "font-semibold"
-                    : "hover:opacity-80"
+                `px-2 py-1 rounded transition ${
+                  isActive ? "font-semibold" : "hover:opacity-80"
                 }`
               }
               style={({ isActive }) => ({
-                color: isActive ? "#ffffff" : "#ee0039" , // 🔴 secondary highlight
-                backgroundColor: isActive ? "rgba(238,0,57,0.1)" : "transparent",
+                color: isActive ? "#ffffff" : "#ee0039",
+                backgroundColor: isActive
+                  ? "rgba(238,0,57,0.15)"
+                  : "transparent",
               })}
             >
               {link.label}
@@ -73,7 +75,7 @@ export default function AdminLayout() {
         <button
           onClick={logout}
           className="mt-8 w-full py-2 rounded text-white font-semibold hover:opacity-90"
-          style={{ backgroundColor: "#ee0039" }} // 🔴 secondary color
+          style={{ backgroundColor: "#ee0039" }}
         >
           Logout
         </button>
