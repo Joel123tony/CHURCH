@@ -3,7 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
-import galleryRoutes from "./routes/gallery.routes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 app.use("/api/gallery", galleryRoutes);
 
