@@ -9,12 +9,11 @@ export const createPastor = async (req, res) => {
   try {
     let image = null;
 
-    // 🔥 STRICT CHECK (prevents silent crash)
-    if (req.file?.buffer) {
+    if (req.file && req.file.buffer) {
       const upload = await uploadToCloudinary(req.file.buffer);
 
       image = {
-        url: upload.url, // safe (we standardize in util)
+        url: upload.url || upload.secure_url, // 🔥 SAFE FIX
         public_id: upload.public_id,
       };
     }
@@ -61,6 +60,54 @@ export const getAllPastors = async (req, res) => {
 };
 
 /* =========================
+   PUBLIC PASTORS
+========================= */
+export const getPublicPastors = async (req, res) => {
+  try {
+    const pastors = await Pastor.find({ active: true }).sort({
+      joinedYear: -1,
+    });
+
+    return res.json({
+      success: true,
+      pastors,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      pastors: [],
+      message: err.message,
+    });
+  }
+};
+
+/* =========================
+   SEARCH PASTORS
+========================= */
+export const searchPastors = async (req, res) => {
+  try {
+    const { name = "" } = req.query;
+
+    const pastors = await Pastor.find({
+      name: { $regex: name, $options: "i" },
+    });
+
+    return res.json({
+      success: true,
+      pastors,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      pastors: [],
+      message: err.message,
+    });
+  }
+};
+
+/* =========================
    UPDATE PASTOR
 ========================= */
 export const updatePastor = async (req, res) => {
@@ -76,8 +123,7 @@ export const updatePastor = async (req, res) => {
 
     let updatedImage = pastor.image;
 
-    // 🔥 IF NEW FILE UPLOADED
-    if (req.file?.buffer) {
+    if (req.file && req.file.buffer) {
       if (pastor.image?.public_id) {
         await deleteFromCloudinary(pastor.image.public_id);
       }
@@ -85,7 +131,7 @@ export const updatePastor = async (req, res) => {
       const upload = await uploadToCloudinary(req.file.buffer);
 
       updatedImage = {
-        url: upload.url,
+        url: upload.url || upload.secure_url,
         public_id: upload.public_id,
       };
     }
@@ -128,7 +174,6 @@ export const deletePastor = async (req, res) => {
       });
     }
 
-    // 🔥 CLEAN CLOUDINARY DELETE
     if (pastor.image?.public_id) {
       await deleteFromCloudinary(pastor.image.public_id);
     }
