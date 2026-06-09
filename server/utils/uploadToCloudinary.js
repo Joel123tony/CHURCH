@@ -1,59 +1,44 @@
 import cloudinary from "../config/cloudinary.js";
 
-export const uploadImage = async (req, res) => {
-  try {
-    console.log("📦 FILE RECEIVED:", req.file);
-
-    // ✅ validate file
-    if (!req.file || !req.file.buffer) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded or invalid file buffer",
-      });
+/* =========================================
+   UPLOAD BUFFER → CLOUDINARY (IMAGE + VIDEO)
+========================================= */
+export const uploadToCloudinary = (buffer, folder = "church") => {
+  return new Promise((resolve, reject) => {
+    if (!buffer) {
+      return reject(new Error("No file buffer provided"));
     }
 
-    // 🔥 upload to cloudinary (image + video support)
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: "church",
-          resource_type: "auto", // ✅ IMPORTANT FIX (image + video)
-        },
-        (error, result) => {
-          if (error) {
-            console.error("Cloudinary error:", error);
-            return reject(error);
-          }
-          resolve(result);
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+
+        // 🔥 CRITICAL: supports image + video automatically
+        resource_type: "auto",
+
+        // optional safety
+        timeout: 60000,
+      },
+      (error, result) => {
+        if (error) {
+          console.error("❌ Cloudinary Upload Error:", error);
+          return reject(error);
         }
-      );
 
-      stream.end(req.file.buffer);
-    });
+        if (!result) {
+          return reject(new Error("Cloudinary returned empty result"));
+        }
 
-    // 🔥 safe fallback for url
-    const url = result?.secure_url || result?.url;
+        resolve({
+          url: result.secure_url,
+          public_id: result.public_id,
+          type: result.resource_type,
+          size: result.bytes,
+        });
+      }
+    );
 
-    if (!url) {
-      return res.status(500).json({
-        success: false,
-        message: "Upload failed: no URL returned from Cloudinary",
-      });
-    }
-
-    return res.json({
-      success: true,
-      url,
-      public_id: result.public_id,
-      type: result.resource_type,
-    });
-
-  } catch (err) {
-    console.error("❌ UPLOAD ERROR:", err);
-
-    return res.status(500).json({
-      success: false,
-      message: err.message || "Upload failed",
-    });
-  }
+    // 🔥 IMPORTANT: send buffer
+    stream.end(buffer);
+  });
 };

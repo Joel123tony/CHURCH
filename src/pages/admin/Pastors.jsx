@@ -17,14 +17,14 @@ export default function Pastors() {
     active: true,
   });
 
-  /* ================= FETCH ================= */
+  /* ================= FETCH PASTORS ================= */
   const fetchPastors = async () => {
     try {
       setFetching(true);
+
       const res = await API.get("/pastors");
 
       const data = res.data?.pastors || [];
-
       setPastors(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log("Fetch error:", err.message);
@@ -38,22 +38,21 @@ export default function Pastors() {
     fetchPastors();
   }, []);
 
-  /* ================= UPLOAD IMAGE ================= */
+  /* ================= UPLOAD IMAGE TO CLOUDINARY ================= */
   const uploadImage = async () => {
     if (!file) return null;
 
     try {
       const formData = new FormData();
-      formData.append("file", file); // 🔥 MUST BE "file"
+      formData.append("file", file);
 
-      const res = await API.post("/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const res = await API.post("/upload/media", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
-      return {
-        url: res.data.url,
-        public_id: res.data.public_id,
-      };
+      return res.data; // {url, public_id, type}
     } catch (err) {
       console.log("Upload error:", err.message);
       return null;
@@ -65,7 +64,7 @@ export default function Pastors() {
     try {
       setLoading(true);
 
-      const imageData = await uploadImage();
+      const upload = await uploadImage();
 
       const payload = {
         name: form.name,
@@ -74,12 +73,17 @@ export default function Pastors() {
         leftYear: form.leftYear,
         number: form.number,
         active: form.active,
-        image: imageData, // 🔥 FIXED
+        image: upload
+          ? {
+              url: upload.url,
+              public_id: upload.public_id,
+            }
+          : null,
       };
 
       const res = await API.post("/pastors", payload);
 
-      // 🔥 INSTANT UI UPDATE
+      // ✅ INSTANT UI UPDATE
       setPastors((prev) => [res.data.pastor, ...prev]);
 
       setForm({
@@ -92,7 +96,6 @@ export default function Pastors() {
       });
 
       setFile(null);
-
     } catch (err) {
       console.log("ADD ERROR:", err.message);
       alert("Error adding pastor");
@@ -101,13 +104,12 @@ export default function Pastors() {
     }
   };
 
-  /* ================= DELETE ================= */
+  /* ================= DELETE PASTOR ================= */
   const deletePastor = async (id) => {
     try {
       await API.delete(`/pastors/${id}`);
 
       setPastors((prev) => prev.filter((p) => p._id !== id));
-
     } catch (err) {
       console.log("DELETE ERROR:", err.message);
     }
@@ -206,6 +208,10 @@ export default function Pastors() {
 
           {fetching && <p>Loading pastors...</p>}
 
+          {!fetching && filtered.length === 0 && (
+            <p>No pastors found</p>
+          )}
+
           {filtered.map((p) => (
             <div key={p._id} style={styles.item}>
               <img
@@ -235,3 +241,71 @@ export default function Pastors() {
     </div>
   );
 }
+
+/* ================= STYLES ================= */
+const styles = {
+  page: {
+    padding: 20,
+    background: "#f4f4f4",
+    minHeight: "100vh",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 2fr",
+    gap: 20,
+  },
+  card: {
+    background: "#fff",
+    padding: 15,
+    borderRadius: 10,
+  },
+  input: {
+    width: "100%",
+    marginBottom: 10,
+    padding: 10,
+    border: "1px solid #ccc",
+    borderRadius: 6,
+  },
+  btn: {
+    width: "100%",
+    padding: 10,
+    background: "#16a34a",
+    color: "#fff",
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+  },
+  search: {
+    width: "100%",
+    padding: 10,
+    marginBottom: 15,
+  },
+  item: {
+    display: "flex",
+    gap: 10,
+    background: "#fff",
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  img: {
+    width: 60,
+    height: 60,
+    borderRadius: "50%",
+    objectFit: "cover",
+  },
+  delete: {
+    background: "red",
+    color: "#fff",
+    border: "none",
+    padding: 8,
+    borderRadius: 6,
+    cursor: "pointer",
+  },
+};
