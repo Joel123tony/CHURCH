@@ -5,6 +5,7 @@ import API from "../api/axios";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -19,10 +20,8 @@ export default function Login() {
         password,
       });
 
-      // store token (example)
       localStorage.setItem("token", res.data.token);
-
-      navigate("/admin"); // redirect admin dashboard
+      navigate("/admin");
     } catch (err) {
       alert(err.response?.data?.message || "Login failed");
     } finally {
@@ -35,6 +34,7 @@ export default function Login() {
       <div style={styles.card}>
         <h2 style={styles.title}>Admin Login</h2>
 
+        {/* EMAIL */}
         <input
           style={styles.input}
           placeholder="Email"
@@ -42,13 +42,24 @@ export default function Login() {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <input
-          style={styles.input}
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        {/* PASSWORD WITH TOGGLE */}
+        <div style={styles.passwordBox}>
+          <input
+            style={styles.input}
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            style={styles.toggleBtn}
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
 
         {/* LOGIN BUTTON */}
         <button
@@ -59,7 +70,7 @@ export default function Login() {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* GO TO CLIENT SITE BUTTON */}
+        {/* CLIENT BUTTON */}
         <button
           onClick={() => (window.location.href = "/")}
           style={styles.clientBtn}
@@ -78,15 +89,15 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #0f172a, #1e293b)",
+    background: "#54091b",
   },
 
   card: {
-    width: "320px",
+    width: "340px",
     padding: "25px",
     borderRadius: "12px",
     background: "#fff",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
@@ -95,20 +106,39 @@ const styles = {
   title: {
     textAlign: "center",
     marginBottom: "10px",
+    fontWeight: "bold",
+    color: "#54091b",
   },
 
   input: {
+    width: "100%",
     padding: "10px",
     borderRadius: "6px",
     border: "1px solid #ccc",
     outline: "none",
   },
 
+  passwordBox: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+  },
+
+  toggleBtn: {
+    position: "absolute",
+    right: "10px",
+    background: "transparent",
+    border: "none",
+    color: "#e11d48",
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
+
   loginBtn: {
     padding: "10px",
     border: "none",
     borderRadius: "6px",
-    background: "#16a34a",
+    background: "#e11d48",
     color: "#fff",
     cursor: "pointer",
     fontWeight: "bold",
@@ -116,10 +146,10 @@ const styles = {
 
   clientBtn: {
     padding: "10px",
-    border: "1px solid #16a34a",
+    border: "1px solid #e11d48",
     borderRadius: "6px",
     background: "transparent",
-    color: "#16a34a",
+    color: "#e11d48",
     cursor: "pointer",
     fontWeight: "bold",
   },
