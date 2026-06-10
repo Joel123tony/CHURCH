@@ -12,7 +12,7 @@ import Gallery from "./pages/admin/Gallery";
 import Messages from "./pages/admin/Messages";
 
 // CLIENT GALLERY
-import ClientGallery from "./components/pages/ClientGallery";
+import ClientGallery from "./pages/ClientGallery";
 
 export default function App() {
   return (
