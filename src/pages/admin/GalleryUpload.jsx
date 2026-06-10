@@ -1,19 +1,63 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import API from "../../api/axios";
+import imageCompression from "browser-image-compression";
 
 export default function GalleryUpload({ onUpload }) {
+  const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  const onDrop = useCallback(
-    async (acceptedFiles) => {
-      try {
-        setUploading(true);
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [event, setEvent] = useState("");
 
-        const file = acceptedFiles[0];
+  /* ================= DROP ================= */
+  const onDrop = useCallback(async (acceptedFiles) => {
+  const processed = await Promise.all(
+    acceptedFiles.map(async (file) => {
+
+      // ONLY compress images (not videos)
+      if (file.type.startsWith("image")) {
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 1,          // 1MB target
+          maxWidthOrHeight: 1600,
+          useWebWorker: true,
+        });
+
+        return {
+          file: compressed,
+          preview: URL.createObjectURL(compressed),
+        };
+      }
+
+      // videos unchanged
+      return {
+        file,
+        preview: URL.createObjectURL(file),
+      };
+    })
+  );
+
+  setFiles((prev) => [...prev, ...processed]);
+}, []);
+
+  /* ================= REMOVE FILE ================= */
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /* ================= UPLOAD ALL ================= */
+  const uploadAll = async () => {
+    if (!files.length) return;
+
+    try {
+      setUploading(true);
+
+      const uploadedResults = [];
+
+      for (const item of files) {
         const formData = new FormData();
-
-        formData.append("image", file);
+        formData.append("file", item.file); // FIXED KEY
 
         const res = await API.post("/upload/image", formData, {
           headers: {
@@ -21,37 +65,107 @@ export default function GalleryUpload({ onUpload }) {
           },
         });
 
-        onUpload(res.data);
-      } catch (err) {
-        console.log("Upload error:", err);
-      } finally {
-        setUploading(false);
+        uploadedResults.push({
+          ...res.data,
+          title,
+          date,
+          event,
+        });
       }
-    },
-    [onUpload] // ✅ FIX
-  );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    multiple: false,
-  });
+      onUpload(uploadedResults);
+
+      setFiles([]);
+      setTitle("");
+      setDate("");
+      setEvent("");
+    } catch (err) {
+      console.log("Upload error:", err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
-    <div
-      {...getRootProps()}
-      className={`border-2 border-dashed p-6 rounded-lg text-center cursor-pointer transition ${
-        isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
-      }`}
-    >
-      <input {...getInputProps()} />
+    <div className="space-y-4">
 
-      {uploading ? (
-        <p className="text-blue-600 font-medium">Uploading...</p>
-      ) : (
-        <p className="text-gray-600">
-          Drag & drop image here, or click to select
+      {/* METADATA */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="border p-2 rounded"
+        />
+
+        <input
+          value={event}
+          onChange={(e) => setEvent(e.target.value)}
+          placeholder="Event (optional)"
+          className="border p-2 rounded"
+        />
+      </div>
+
+      {/* DROPZONE */}
+      <div
+        {...getRootProps()}
+        className={`border-2 border-dashed p-6 rounded-lg text-center cursor-pointer ${
+          isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+        }`}
+      >
+        <input {...getInputProps()} />
+
+        <p>
+          Drag & drop files here OR click to select (images/videos)
         </p>
+      </div>
+
+      {/* PREVIEW GRID */}
+      {files.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {files.map((item, index) => (
+            <div key={index} className="relative">
+
+              {item.file.type.startsWith("video") ? (
+                <video
+                  src={item.preview}
+                  className="h-24 w-full object-cover rounded"
+                />
+              ) : (
+                <img
+                  src={item.preview}
+                  className="h-24 w-full object-cover rounded"
+                />
+              )}
+
+              <button
+                onClick={() => removeFile(index)}
+                className="absolute top-1 right-1 bg-red-500 text-white px-2 rounded"
+              >
+                X
+              </button>
+
+            </div>
+          ))}
+        </div>
       )}
+
+      {/* UPLOAD BUTTON */}
+      <button
+        onClick={uploadAll}
+        disabled={uploading}
+        className="bg-blue-600 text-white px-4 py-2 rounded"
+      >
+        {uploading ? "Uploading..." : "Upload All"}
+      </button>
+
     </div>
   );
 }

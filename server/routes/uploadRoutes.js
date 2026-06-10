@@ -5,9 +5,9 @@ import cloudinary from "../config/cloudinary.js";
 const router = express.Router();
 
 /* =========================
-   MEDIA UPLOAD (IMAGE + VIDEO)
+   OPTIMIZED UPLOAD (IMAGE + VIDEO)
 ========================= */
-router.post("/media", upload.single("file"), async (req, res) => {
+router.post("/image", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -17,10 +17,22 @@ router.post("/media", upload.single("file"), async (req, res) => {
     }
 
     const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
+      const stream = cloudinary.uploader.upload_stream(
         {
           folder: "church",
-          resource_type: "auto", // supports images & videos
+
+          // 🚀 OPTIMIZATION SETTINGS
+          resource_type: "auto",
+
+          // IMAGE OPTIMIZATION
+          transformation: [
+            {
+              quality: "auto:good",   // smart compression
+              fetch_format: "auto",   // converts to webp/avif automatically
+              width: 1600,            // prevents huge uploads
+              crop: "limit"
+            }
+          ],
         },
         (error, result) => {
           if (error) return reject(error);
@@ -28,21 +40,21 @@ router.post("/media", upload.single("file"), async (req, res) => {
         }
       );
 
-      uploadStream.end(req.file.buffer);
+      stream.end(req.file.buffer);
     });
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       url: result.secure_url,
       public_id: result.public_id,
-      type: result.resource_type,
+      resource_type: result.resource_type,
+      bytes: result.bytes,
     });
-  } catch (error) {
-    console.error("MEDIA UPLOAD ERROR:", error);
 
-    return res.status(500).json({
+  } catch (err) {
+    res.status(500).json({
       success: false,
-      message: error.message || "Upload failed",
+      message: err.message,
     });
   }
 });
