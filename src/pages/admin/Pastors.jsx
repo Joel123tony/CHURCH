@@ -1,86 +1,43 @@
 import { useEffect, useState } from "react";
 import API from "../../api/axios";
+import { toast } from "react-toastify";
+
+const defaultForm = {
+  name: "",
+  role: "Pastor",
+  bio: "",
+  joinedYear: "",
+  endYear: "",
+  education: "",
+  church: "Methodist Tamil Church Padikuppam",
+  email: "",
+  phone: "",
+  isActive: true,
+};
 
 export default function Pastors() {
   const [pastors, setPastors] = useState([]);
+  const [view, setView] = useState("current"); // current | former
   const [search, setSearch] = useState("");
 
+  const [form, setForm] = useState(defaultForm);
+  const [editId, setEditId] = useState(null);
+
   const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState("");
+  const [preview, setPreview] = useState(null);
 
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(false);
 
-  const [editingId, setEditingId] = useState(null);
-
-  const [toast, setToast] = useState({
-    show: false,
-    message: "",
-    color: "#16a34a",
-  });
-
-  const [form, setForm] = useState({
-    name: "",
-    bio: "",
-    joinedYear: "",
-    leftYear: "",
-    number: "",
-    active: true,
-  });
-
-  const showToast = (
-    message,
-    color = "#16a34a"
-  ) => {
-    setToast({
-      show: true,
-      message,
-      color,
-    });
-
-    setTimeout(() => {
-      setToast({
-        show: false,
-        message: "",
-        color: "#16a34a",
-      });
-    }, 3000);
-  };
-
-  const resetForm = () => {
-    setForm({
-      name: "",
-      bio: "",
-      joinedYear: "",
-      leftYear: "",
-      number: "",
-      active: true,
-    });
-
-    setEditingId(null);
-    setFile(null);
-    setPreview("");
-  };
-
+  // ---------------- FETCH ----------------
   const fetchPastors = async () => {
     try {
-      setFetching(true);
-
+      setLoading(true);
       const res = await API.get("/pastors");
-
-      setPastors(
-        Array.isArray(res.data?.pastors)
-          ? res.data.pastors
-          : []
-      );
-    } catch (err) {
-      console.error(err);
-      showToast(
-        "Failed to fetch pastors",
-        "#dc2626"
-      );
+      setPastors(res.data);
+    } catch {
+      toast.error("Failed to load pastors");
     } finally {
-      setFetching(false);
+      setLoading(false);
     }
   };
 
@@ -88,438 +45,324 @@ export default function Pastors() {
     fetchPastors();
   }, []);
 
-  const uploadImage = async () => {
-    if (!file) return null;
+  // ---------------- FILTER ----------------
+  const filteredPastors = pastors.filter((p) => {
+    const matchesSearch = p.name
+      .toLowerCase()
+      .includes(search.toLowerCase());
 
-    try {
-      const formData = new FormData();
+    if (view === "current") return p.isActive && matchesSearch;
+    if (view === "former") return !p.isActive && matchesSearch;
 
-      formData.append("file", file);
+    return matchesSearch;
+  });
 
-      const res = await API.post(
-        "/upload/media",
-        formData,
-        {
-          headers: {
-            "Content-Type":
-              "multipart/form-data",
-          },
-        }
-      );
+  // ---------------- INPUT ----------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
 
-      showToast("Image uploaded");
-
-      return {
-        url: res.data.url,
-        public_id: res.data.public_id,
-      };
-    } catch (err) {
-      console.error(err);
-
-      showToast(
-        "Image upload failed",
-        "#dc2626"
-      );
-
-      return null;
-    }
+    setForm({
+      ...form,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
-  const savePastor = async () => {
+  // ---------------- IMAGE ----------------
+  const handleImage = (e) => {
+    const selected = e.target.files[0];
+    setFile(selected);
+    setPreview(URL.createObjectURL(selected));
+  };
+
+  // ---------------- CLOUDINARY ----------------
+  const uploadImage = async () => {
+    if (!file) return "";
+
+    const data = new FormData();
+    data.append("file", file);
+    data.append("upload_preset", "pastors_upload");
+
+    const res = await fetch(
+      "https://api.cloudinary.com/v1_1/dhqc0n23k/image/upload",
+      {
+        method: "POST",
+        body: data,
+      }
+    );
+
+    const result = await res.json();
+    return result.secure_url;
+  };
+
+  // ---------------- SUBMIT ----------------
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     try {
       setLoading(true);
 
-      let uploadedImage = null;
-
-      if (file) {
-        uploadedImage =
-          await uploadImage();
-      }
+      let imageUrl = await uploadImage();
 
       const payload = {
-        name: form.name,
-        bio: form.bio,
-        joinedYear:
-          Number(form.joinedYear) || null,
-        leftYear: form.leftYear,
-        number: form.number,
-        active: form.active,
+        ...form,
+        image: imageUrl ? { url: imageUrl } : undefined,
       };
 
-      if (uploadedImage) {
-        payload.image = uploadedImage;
-      }
-
-      let res;
-
-      if (editingId) {
-        res = await API.put(
-          `/pastors/${editingId}`,
-          payload
-        );
-
-        setPastors((prev) =>
-          prev.map((p) =>
-            p._id === editingId
-              ? res.data.pastor
-              : p
-          )
-        );
-
-        showToast("Pastor updated");
+      if (editId) {
+        await API.put(`/pastors/${editId}`, payload);
+        toast.success("Pastor updated");
       } else {
-        res = await API.post(
-          "/pastors",
-          payload
-        );
-
-        setPastors((prev) => [
-          res.data.pastor,
-          ...prev,
-        ]);
-
-        showToast("Pastor created");
+        await API.post("/pastors", payload);
+        toast.success("Pastor added");
       }
 
-      resetForm();
-    } catch (err) {
-      console.error(err);
+      setForm(defaultForm);
+      setEditId(null);
+      setFile(null);
+      setPreview(null);
 
-      showToast(
-        err.response?.data?.message ||
-          "Save failed",
-        "#dc2626"
-      );
+      fetchPastors();
+    } catch {
+      toast.error("Operation failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const editPastor = (pastor) => {
-    setEditingId(pastor._id);
+  // ---------------- EDIT ----------------
+  const handleEdit = (p) => {
+    setEditId(p._id);
 
     setForm({
-      name: pastor.name || "",
-      bio: pastor.bio || "",
-      joinedYear:
-        pastor.joinedYear || "",
-      leftYear:
-        pastor.leftYear || "",
-      number: pastor.number || "",
-      active:
-        pastor.active ?? true,
+      name: p.name,
+      role: p.role,
+      bio: p.bio,
+      joinedYear: p.joinedYear,
+      endYear: p.endYear,
+      education: p.education,
+      church: p.church,
+      email: p.email,
+      phone: p.phone,
+      isActive: p.isActive,
     });
 
-    setPreview(
-      pastor.image?.url ||
-        pastor.image ||
-        ""
-    );
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-
-    showToast("Editing pastor");
+    setPreview(p.image?.url || null);
   };
 
-  const deletePastor = async (id) => {
-    if (
-      !window.confirm(
-        "Delete this pastor?"
-      )
-    )
-      return;
+  // ---------------- DELETE ----------------
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this pastor?")) return;
 
     try {
-      await API.delete(
-        `/pastors/${id}`
-      );
-
-      setPastors((prev) =>
-        prev.filter(
-          (p) => p._id !== id
-        )
-      );
-
-      showToast("Pastor deleted");
-    } catch (err) {
-      console.error(err);
-
-      showToast(
-        "Delete failed",
-        "#dc2626"
-      );
+      await API.delete(`/pastors/${id}`);
+      toast.success("Deleted");
+      fetchPastors();
+    } catch {
+      toast.error("Delete failed");
     }
   };
 
-  const filtered = pastors.filter(
-    (p) =>
-      (p.name || "")
-        .toLowerCase()
-        .includes(
-          search.toLowerCase()
-        ) ||
-      (p.bio || "")
-        .toLowerCase()
-        .includes(
-          search.toLowerCase()
-        )
-  );
-
+  // ---------------- UI ----------------
   return (
-    <div>
+    <div className="p-6 bg-gray-50 min-h-screen">
 
-      {toast.show && (
-        <div
-          style={{
-            position: "fixed",
-            top: 20,
-            right: 20,
-            background:
-              toast.color,
-            color: "#fff",
-            padding:
-              "12px 18px",
-            borderRadius: 8,
-            zIndex: 9999,
-            fontWeight: 600,
-          }}
-        >
-          {toast.message}
-        </div>
-      )}
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Pastors Management</h1>
 
-      <h2>
-        {editingId
-          ? "Edit Pastor"
-          : "Add Pastor"}
-      </h2>
-
-      <input
-        placeholder="Name"
-        value={form.name}
-        onChange={(e) =>
-          setForm({
-            ...form,
-            name: e.target.value,
-          })
-        }
-      />
-
-      <textarea
-        placeholder="Bio"
-        value={form.bio}
-        onChange={(e) =>
-          setForm({
-            ...form,
-            bio: e.target.value,
-          })
-        }
-      />
-
-      <input
-        type="file"
-        onChange={(e) => {
-          const selected =
-            e.target.files[0];
-
-          setFile(selected);
-
-          if (selected) {
-            setPreview(
-              URL.createObjectURL(
-                selected
-              )
-            );
-          }
-        }}
-      />
-
-      {preview && (
-        <img
-          src={preview}
-          alt="preview"
-          style={{
-            width: 150,
-            height: 150,
-            objectFit: "cover",
-            borderRadius: 10,
-            marginTop: 10,
-            display: "block",
-          }}
+        <input
+          className="border p-2 rounded w-64"
+          placeholder="Search pastor..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
-      )}
+      </div>
 
-      <button
-        onClick={savePastor}
-      >
-        {loading
-          ? editingId
-            ? "Updating..."
-            : "Adding..."
-          : editingId
-          ? "Update Pastor"
-          : "Add Pastor"}
-      </button>
-
-      {editingId && (
+      {/* TABS */}
+      <div className="flex gap-3 mb-6">
         <button
-          onClick={resetForm}
+          onClick={() => setView("current")}
+          className={`px-4 py-2 rounded ${
+            view === "current" ? "bg-green-600 text-white" : "bg-white"
+          }`}
         >
-          Cancel Edit
+          Current Pastors
         </button>
-      )}
 
-      <hr />
-
-      <input
-        placeholder="Search..."
-        value={search}
-        onChange={(e) =>
-          setSearch(
-            e.target.value
-          )
-        }
-      />
-
-      {fetching && (
-        <p>Loading...</p>
-      )}
-
-      {filtered.map((p) => (
-        <div
-          key={p._id}
-          style={{
-            display: "flex",
-            gap: 15,
-            marginBottom: 15,
-          }}
+        <button
+          onClick={() => setView("former")}
+          className={`px-4 py-2 rounded ${
+            view === "former" ? "bg-gray-700 text-white" : "bg-white"
+          }`}
         >
+          Former Pastors
+        </button>
+      </div>
+
+      {/* FORM */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-4 rounded shadow mb-6 grid md:grid-cols-3 gap-3"
+      >
+        <input
+          name="name"
+          placeholder="Name"
+          value={form.name}
+          onChange={handleChange}
+          className="border p-2 rounded"
+          required
+        />
+
+        <select
+          name="role"
+          value={form.role}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        >
+          <option>Pastor</option>
+          <option>Senior Pastor</option>
+          <option>Associate Pastor</option>
+          <option>Youth Pastor</option>
+          <option>Worship Pastor</option>
+          <option>Other</option>
+        </select>
+
+        <input
+          name="education"
+          placeholder="Education"
+          value={form.education}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        />
+
+        <input
+          name="joinedYear"
+          placeholder="Joined Year"
+          value={form.joinedYear}
+          onChange={handleChange}
+          className="border p-2 rounded"
+          required
+        />
+
+        <input
+          name="endYear"
+          placeholder="End Year"
+          value={form.endYear}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        />
+
+        <select
+          name="church"
+          value={form.church}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        >
+          <option>Methodist Tamil Church Padikuppam</option>
+          <option>Custom Church</option>
+        </select>
+
+        <input
+          name="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        />
+
+        <input
+          name="phone"
+          placeholder="Phone"
+          value={form.phone}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        />
+
+        <textarea
+          name="bio"
+          placeholder="Bio"
+          value={form.bio}
+          onChange={handleChange}
+          className="border p-2 rounded md:col-span-3"
+        />
+
+        {/* IMAGE */}
+        <input type="file" onChange={handleImage} className="md:col-span-3" />
+
+        {preview && (
           <img
-            src={
-              p.image?.url ||
-              p.image ||
-              "https://via.placeholder.com/60"
-            }
-            alt=""
-            width="60"
-            height="60"
+            src={preview}
+            className="w-24 h-24 object-cover rounded"
+            alt="preview"
           />
+        )}
 
-          <div>
-            <h3>{p.name}</h3>
-            <p>{p.bio}</p>
+        <label className="flex items-center gap-2 md:col-span-3">
+          <input
+            type="checkbox"
+            name="isActive"
+            checked={form.isActive}
+            onChange={handleChange}
+          />
+          Active Pastor
+        </label>
 
-            <button
-              onClick={() =>
-                editPastor(p)
-              }
-            >
-              Edit
-            </button>
+        <button
+          type="submit"
+          className="bg-blue-600 text-white p-2 rounded md:col-span-3"
+        >
+          {editId ? "Update Pastor" : "Add Pastor"}
+        </button>
+      </form>
 
-            <button
-              onClick={() =>
-                deletePastor(
-                  p._id
-                )
-              }
-            >
-              Delete
-            </button>
-          </div>
+      {/* LIST */}
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <div className="grid md:grid-cols-3 gap-4">
+          {filteredPastors.map((p) => (
+            <div key={p._id} className="bg-white shadow rounded overflow-hidden">
+
+              <img
+                src={p.image?.url || "/default.png"}
+                className="h-40 w-full object-cover"
+                alt={p.name}
+              />
+
+              <div className="p-3">
+                <h2 className="font-bold text-lg">{p.name}</h2>
+                <p className="text-sm text-gray-600">{p.role}</p>
+
+                <p className="text-xs mt-1">
+                  {p.joinedYear} - {p.endYear || "Present"}
+                </p>
+
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => handleEdit(p)}
+                    className="bg-yellow-500 text-white px-2 py-1 text-sm rounded"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(p._id)}
+                    className="bg-red-500 text-white px-2 py-1 text-sm rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                {p.isActive && (
+                  <span className="text-green-600 text-xs font-bold">
+                    ● Active
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
-/* ================= STYLES ================= */
-const styles = {
-  page: {
-    padding: 20,
-    background: "#f4f4f4",
-    minHeight: "100vh",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 2fr",
-    gap: 20,
-  },
-  card: {
-    background: "#fff",
-    padding: 15,
-    borderRadius: 10,
-  },
-  input: {
-    width: "100%",
-    marginBottom: 10,
-    padding: 10,
-    border: "1px solid #ccc",
-    borderRadius: 6,
-  },
-  btn: {
-    width: "100%",
-    padding: 10,
-    background: "#16a34a",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-  search: {
-    width: "100%",
-    padding: 10,
-    marginBottom: 15,
-  },
-  item: {
-    display: "flex",
-    gap: 10,
-    background: "#fff",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  img: {
-    width: 60,
-    height: 60,
-    borderRadius: "50%",
-    objectFit: "cover",
-  },
-  delete: {
-    background: "red",
-    color: "#fff",
-    border: "none",
-    padding: 8,
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-
-  edit: {
-  background: "#2563eb",
-  color: "#fff",
-  border: "none",
-  padding: 8,
-  borderRadius: 6,
-  cursor: "pointer",
-},
-
-cancel: {
-  width: "100%",
-  padding: 10,
-  marginTop: 10,
-  background: "#6b7280",
-  color: "#fff",
-  border: "none",
-  borderRadius: 6,
-  cursor: "pointer",
-},
-
-};

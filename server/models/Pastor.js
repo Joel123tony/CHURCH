@@ -21,24 +21,20 @@ const pastorSchema = new mongoose.Schema(
     },
 
     image: {
-  url: {
-    type: String,
-    default: "",
-  },
+      url: {
+        type: String,
+        default: "",
+      },
 
-  public_id: {
-    type: String,
-    default: "",
-  },
-},
-    public_id: {
-      type: String,
-      default: "",
+      public_id: {
+        type: String,
+        default: "",
+      },
     },
 
     joinedYear: {
       type: Number,
-      default: null,
+      required: true,
     },
 
     leftYear: {
@@ -46,9 +42,34 @@ const pastorSchema = new mongoose.Schema(
       default: null,
     },
 
+    education: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    church: {
+      type: String,
+      default: "Methodist Tamil Church Padikuppam",
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      default: "",
+      trim: true,
+      lowercase: true,
+    },
+
     number: {
       type: String,
       default: "",
+      trim: true,
+    },
+
+    currentPastor: {
+      type: Boolean,
+      default: false,
     },
 
     active: {
@@ -61,6 +82,4 @@ const pastorSchema = new mongoose.Schema(
   }
 );
 
-const Pastor = mongoose.model("Pastor", pastorSchema);
-
-export default Pastor;
+export default mongoose.model("Pastor", pastorSchema);
