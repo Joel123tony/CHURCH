@@ -5,7 +5,7 @@ import cloudinary from "../config/cloudinary.js";
 const router = express.Router();
 
 /* =========================
-   OPTIMIZED UPLOAD (IMAGE + VIDEO)
+   UPLOAD IMAGE / VIDEO
 ========================= */
 router.post("/image", upload.single("file"), async (req, res) => {
   try {
@@ -20,19 +20,9 @@ router.post("/image", upload.single("file"), async (req, res) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: "church",
-
-          // 🚀 OPTIMIZATION SETTINGS
           resource_type: "auto",
-
-          // IMAGE OPTIMIZATION
-          transformation: [
-            {
-              quality: "auto:good",   // smart compression
-              fetch_format: "auto",   // converts to webp/avif automatically
-              width: 1600,            // prevents huge uploads
-              crop: "limit"
-            }
-          ],
+          quality: "auto:good",
+          fetch_format: "auto",
         },
         (error, result) => {
           if (error) return reject(error);
@@ -48,7 +38,6 @@ router.post("/image", upload.single("file"), async (req, res) => {
       url: result.secure_url,
       public_id: result.public_id,
       resource_type: result.resource_type,
-      bytes: result.bytes,
     });
 
   } catch (err) {

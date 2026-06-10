@@ -11,24 +11,21 @@ import { connectDB } from "./config/db.js";
 // =========================
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
-
-// (optional if you use these)
 import pastorRoutes from "./routes/pastor.routes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
 const app = express();
 
 /* =========================
-   SECURITY / MIDDLEWARE
+   MIDDLEWARE
 ========================= */
 app.use(
   cors({
-    origin: "*", // 🔥 replace with frontend URL in production
+    origin: "*",
     credentials: true,
   })
 );
 
-// increase limits for images/videos
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
@@ -44,27 +41,15 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
-   API ROUTES
+   ROUTES
 ========================= */
-
-// 🔥 AUTH ROUTES (LOGIN / REGISTER)
 app.use("/api/auth", authRoutes);
-
-// 🔥 FILE UPLOAD (Cloudinary)
 app.use("/api/upload", uploadRoutes);
-
-// 🔥 PASTOR ROUTES (if separated)
-if (pastorRoutes) {
-  app.use("/api/pastors", pastorRoutes);
-}
-
-// 🔥 ADMIN ROUTES (dashboard, pastors, sermons)
-if (adminRoutes) {
-  app.use("/api/admin", adminRoutes);
-}
+app.use("/api/pastors", pastorRoutes);
+app.use("/api/admin", adminRoutes);
 
 /* =========================
-   DATABASE CONNECTION (SAFE + CLEAN)
+   START SERVER
 ========================= */
 const startServer = async () => {
   try {
