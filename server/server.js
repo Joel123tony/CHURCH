@@ -10,7 +10,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import pastorRoutes from "./routes/pastor.routes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import galleryRoutes from "./routes/galleryRoutes.js";
+import galleryRoutes from "./routes/gallery.routes.js";
 
 const app = express();
 
