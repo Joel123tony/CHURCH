@@ -1,10 +1,10 @@
 import cloudinary from "../config/cloudinary.js";
+import Gallery from "../models/Gallery.js";
 
 export const uploadImage = async (req, res) => {
   try {
     console.log("📦 FILE RECEIVED:", req.file);
 
-    // 🚨 VALIDATION FIX
     if (!req.file || !req.file.buffer) {
       return res.status(400).json({
         success: false,
@@ -12,18 +12,15 @@ export const uploadImage = async (req, res) => {
       });
     }
 
-    // 🔥 CLOUDINARY UPLOAD WRAPPER
+    // 🔥 UPLOAD TO CLOUDINARY
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: "church",
-          resource_type: "auto", // supports image + video
+          resource_type: "auto",
         },
         (error, result) => {
-          if (error) {
-            console.error("❌ Cloudinary error:", error);
-            return reject(error);
-          }
+          if (error) return reject(error);
           resolve(result);
         }
       );
@@ -31,7 +28,6 @@ export const uploadImage = async (req, res) => {
       stream.end(req.file.buffer);
     });
 
-    // 🔥 SAFE RESPONSE HANDLING
     if (!result) {
       return res.status(500).json({
         success: false,
@@ -39,11 +35,18 @@ export const uploadImage = async (req, res) => {
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      url: result.secure_url || result.url,
+    // 🔥 SAVE TO DATABASE (THIS WAS MISSING)
+    const media = await Gallery.create({
+      title: req.body.title || "Untitled",
+      url: result.secure_url,
       public_id: result.public_id,
-      type: result.resource_type,
+      mediaType: result.resource_type === "video" ? "video" : "image",
+      showInClient: false,
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: media,
     });
 
   } catch (err) {
