@@ -13,40 +13,46 @@ export default function GalleryUpload({ onUpload }) {
 
   /* ================= DROP ================= */
   const onDrop = useCallback(async (acceptedFiles) => {
-  const processed = await Promise.all(
-    acceptedFiles.map(async (file) => {
+    const processed = await Promise.all(
+      acceptedFiles.map(async (file) => {
+        if (file.type.startsWith("image")) {
+          const compressed = await imageCompression(file, {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1600,
+            useWebWorker: true,
+          });
 
-      // ONLY compress images (not videos)
-      if (file.type.startsWith("image")) {
-        const compressed = await imageCompression(file, {
-          maxSizeMB: 1,          // 1MB target
-          maxWidthOrHeight: 1600,
-          useWebWorker: true,
-        });
+          return {
+            file: compressed,
+            preview: URL.createObjectURL(compressed),
+          };
+        }
 
         return {
-          file: compressed,
-          preview: URL.createObjectURL(compressed),
+          file,
+          preview: URL.createObjectURL(file),
         };
-      }
+      })
+    );
 
-      // videos unchanged
-      return {
-        file,
-        preview: URL.createObjectURL(file),
-      };
-    })
-  );
+    setFiles((prev) => [...prev, ...processed]);
+  }, []);
 
-  setFiles((prev) => [...prev, ...processed]);
-}, []);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    multiple: true,
+    accept: {
+      "image/*": [],
+      "video/*": [],
+    },
+  });
 
-  /* ================= REMOVE FILE ================= */
+  /* ================= REMOVE ================= */
   const removeFile = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  /* ================= UPLOAD ALL ================= */
+  /* ================= UPLOAD ================= */
   const uploadAll = async () => {
     if (!files.length) return;
 
@@ -57,7 +63,7 @@ export default function GalleryUpload({ onUpload }) {
 
       for (const item of files) {
         const formData = new FormData();
-        formData.append("file", item.file); // FIXED KEY
+        formData.append("file", item.file);
 
         const res = await API.post("/upload/image", formData, {
           headers: {
@@ -121,13 +127,10 @@ export default function GalleryUpload({ onUpload }) {
         }`}
       >
         <input {...getInputProps()} />
-
-        <p>
-          Drag & drop files here OR click to select (images/videos)
-        </p>
+        <p>Drag & drop images/videos OR click to select</p>
       </div>
 
-      {/* PREVIEW GRID */}
+      {/* PREVIEW */}
       {files.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           {files.map((item, index) => (
