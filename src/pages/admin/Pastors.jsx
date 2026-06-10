@@ -7,6 +7,7 @@ export default function Pastors() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -40,70 +41,60 @@ export default function Pastors() {
 
   /* ================= UPLOAD IMAGE TO CLOUDINARY ================= */
   const uploadImage = async () => {
-    if (!file) return null;
+  if (!file) {
+    console.log("NO FILE SELECTED");
+    return null;
+  }
 
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
 
-      const res = await API.post("/upload/media", formData, {
+    console.log("FILE:", file);
+
+    const res = await API.post(
+      "/upload/media",
+      formData,
+      {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      });
+      }
+    );
 
-      return res.data; // {url, public_id, type}
-    } catch (err) {
-      console.log("Upload error:", err.message);
-      return null;
-    }
-  };
+    console.log("UPLOAD SUCCESS:", res.data);
 
+    return res.data;
+  } catch (err) {
+    console.error(
+      "UPLOAD FAILED:",
+      err.response?.data || err.message
+    );
+    return null;
+  }
+};
   /* ================= ADD PASTOR ================= */
-  const addPastor = async () => {
-    try {
-      setLoading(true);
+ if (editingId) {
+  res = await API.put(`/pastors/${editingId}`, payload);
 
-      const upload = await uploadImage();
+  setPastors((prev) =>
+    prev.map((p) =>
+      p._id === editingId ? res.data.pastor : p
+    )
+  );
 
-      const payload = {
-        name: form.name,
-        bio: form.bio,
-        joinedYear: Number(form.joinedYear) || null,
-        leftYear: form.leftYear,
-        number: form.number,
-        active: form.active,
-        image: upload
-          ? {
-              url: upload.url,
-              public_id: upload.public_id,
-            }
-          : null,
-      };
+  setEditingId(null);
+} else {
+  res = await API.post("/pastors", payload);
 
-      const res = await API.post("/pastors", payload);
+  setPastors((prev) => [
+    res.data.pastor,
+    ...prev,
+  ]);
+}
 
-      // ✅ INSTANT UI UPDATE
-      setPastors((prev) => [res.data.pastor, ...prev]);
-
-      setForm({
-        name: "",
-        bio: "",
-        joinedYear: "",
-        leftYear: "",
-        number: "",
-        active: true,
-      });
-
-      setFile(null);
-    } catch (err) {
-      console.log("ADD ERROR:", err.message);
-      alert("Error adding pastor");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+// ✅ INSTANT UI UPDATE
+setPastors((prev) => [res.data.pastor, ...prev]);
   /* ================= DELETE PASTOR ================= */
   const deletePastor = async (id) => {
     try {
@@ -128,7 +119,9 @@ export default function Pastors() {
       <div style={styles.grid}>
         {/* LEFT FORM */}
         <div style={styles.card}>
-          <h3>Add Pastor</h3>
+         <h3>
+  {editingId ? "Edit Pastor" : "Add Pastor"}
+</h3>
 
           <input
             style={styles.input}
@@ -193,7 +186,13 @@ export default function Pastors() {
           </label>
 
           <button style={styles.btn} onClick={addPastor}>
-            {loading ? "Adding..." : "Add Pastor"}
+            {loading
+  ? editingId
+    ? "Updating..."
+    : "Adding..."
+  : editingId
+  ? "Update Pastor"
+  : "Add Pastor"}
           </button>
         </div>
 
@@ -215,7 +214,11 @@ export default function Pastors() {
           {filtered.map((p) => (
             <div key={p._id} style={styles.item}>
               <img
-                src={p.image?.url || "https://via.placeholder.com/60"}
+                src={
+  p.image?.url ||
+  p.image ||
+  "https://via.placeholder.com/60"
+}
                 style={styles.img}
                 alt="pastor"
               />
@@ -228,12 +231,27 @@ export default function Pastors() {
                 </small>
               </div>
 
-              <button
-                style={styles.delete}
-                onClick={() => deletePastor(p._id)}
-              >
-                X
-              </button>
+             <div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: "5px",
+  }}
+>
+  <button
+    style={styles.edit}
+    onClick={() => editPastor(p)}
+  >
+    Edit
+  </button>
+
+  <button
+    style={styles.delete}
+    onClick={() => deletePastor(p._id)}
+  >
+    Delete
+  </button>
+</div>
             </div>
           ))}
         </div>
@@ -308,4 +326,14 @@ const styles = {
     borderRadius: 6,
     cursor: "pointer",
   },
+
+  edit: {
+  background: "#2563eb",
+  color: "#fff",
+  border: "none",
+  padding: 8,
+  borderRadius: 6,
+  cursor: "pointer",
+},
+
 };

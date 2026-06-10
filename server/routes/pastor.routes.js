@@ -28,14 +28,22 @@ router.get("/public", getPublicPastors);
 router.get("/search", searchPastors);
 
 /* =========================
-   CREATE PASTOR (UPLOAD FIX)
+   CREATE PASTOR
 ========================= */
-router.post("/", upload.single("file"), createPastor);
+router.post(
+  "/",
+  upload.single("file"),
+  createPastor
+);
 
 /* =========================
-   UPDATE PASTOR (UPLOAD FIX)
+   UPDATE PASTOR
 ========================= */
-router.put("/:id", upload.single("file"), updatePastor);
+router.put(
+  "/:id",
+  upload.single("file"),
+  updatePastor
+);
 
 /* =========================
    DELETE PASTOR
