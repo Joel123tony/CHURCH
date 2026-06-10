@@ -1,25 +1,46 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { getStoredUser } from "../../utils/auth";
 
 export default function AdminLayout() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = getStoredUser();
-    setUser(storedUser);
+    const token = localStorage.getItem("token");
 
-    if (!storedUser) {
+    // No token → go login
+    if (!token) {
       navigate("/admin/login");
+      return;
+    }
+
+    // Try loading user
+    try {
+      const storedUser = JSON.parse(
+        localStorage.getItem("user")
+      );
+
+      if (storedUser) {
+        setUser(storedUser);
+      } else {
+        setUser({
+          name: "Administrator",
+        });
+      }
+    } catch {
+      setUser({
+        name: "Administrator",
+      });
     }
   }, [navigate]);
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setUser(null);
-    navigate("/admin/login");
+
+    navigate("/admin/login", {
+      replace: true,
+    });
   };
 
   const links = [
@@ -31,39 +52,43 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen">
-
+    <div className="flex min-h-screen bg-gray-100">
       {/* SIDEBAR */}
-      <div
-        className="w-64 text-white p-4 fixed h-full shadow-xl"
+      <aside
+        className="w-64 fixed left-0 top-0 h-screen shadow-2xl flex flex-col"
         style={{ backgroundColor: "#54091b" }}
       >
-        <h1
-          className="text-xl font-bold mb-2"
-          style={{ color: "#EFBF04" }}
-        >
-          MTC Admin
-        </h1>
+        {/* HEADER */}
+        <div className="p-5 border-b border-white/10">
+          <h1
+            className="text-2xl font-bold"
+            style={{ color: "#EFBF04" }}
+          >
+            MTC Admin
+          </h1>
 
-        <p className="text-sm text-gray-200 mb-6">
-          {user?.name || "Administrator"}
-        </p>
+          <p className="text-gray-300 text-sm mt-2">
+            {user?.name || "Administrator"}
+          </p>
+        </div>
 
-        <nav className="flex flex-col gap-3">
+        {/* MENU */}
+        <nav className="flex-1 p-4 flex flex-col gap-2">
           {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
-              end
+              end={link.to === "/admin"}
               className={({ isActive }) =>
-                `px-2 py-1 rounded transition ${
-                  isActive ? "font-semibold" : "hover:opacity-80"
+                `px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+                  isActive
+                    ? "text-white shadow"
+                    : "text-gray-200 hover:text-white"
                 }`
               }
               style={({ isActive }) => ({
-                color: isActive ? "#ffffff" : "#ee0039",
                 backgroundColor: isActive
-                  ? "rgba(238,0,57,0.15)"
+                  ? "#ee0039"
                   : "transparent",
               })}
             >
@@ -72,19 +97,24 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <button
-          onClick={logout}
-          className="mt-8 w-full py-2 rounded text-white font-semibold hover:opacity-90"
-          style={{ backgroundColor: "#ee0039" }}
-        >
-          Logout
-        </button>
-      </div>
+        {/* LOGOUT */}
+        <div className="p-4 border-t border-white/10">
+          <button
+            onClick={logout}
+            className="w-full py-3 rounded-lg font-semibold text-white transition-all hover:scale-[1.02]"
+            style={{
+              backgroundColor: "#ee0039",
+            }}
+          >
+            Logout
+          </button>
+        </div>
+      </aside>
 
-      {/* CONTENT */}
-      <div className="flex-1 ml-64 p-6 bg-gray-100 min-h-screen">
+      {/* MAIN CONTENT */}
+      <main className="flex-1 ml-64 p-6 min-h-screen">
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 }

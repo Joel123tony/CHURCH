@@ -15,30 +15,38 @@ export default function Login() {
 
   /* ================= LOGIN ================= */
   const handleLogin = async () => {
+  if (!email || !password) {
+    alert("Please enter email and password");
+    return;
+  }
+
   try {
     setLoading(true);
 
-    console.log("API URL:", import.meta.env.VITE_API_URL);
-    console.log(
-      "Request URL:",
-      `${import.meta.env.VITE_API_URL}/auth/login`
-    );
-
     const res = await API.post("/auth/login", {
-      email,
+      email: email.trim(),
       password,
     });
 
     console.log("LOGIN RESPONSE:", res.data);
 
-    localStorage.setItem("token", res.data.token);
+    // Save JWT token
+    if (res.data?.token) {
+      localStorage.setItem("token", res.data.token);
+    }
 
-    navigate("/admin");
+    // Save user object
+    if (res.data?.user) {
+      localStorage.setItem(
+        "user",
+        JSON.stringify(res.data.user)
+      );
+    }
+
+    navigate("/admin", { replace: true });
 
   } catch (err) {
     console.error("FULL LOGIN ERROR:", err);
-    console.error("STATUS:", err.response?.status);
-    console.error("DATA:", err.response?.data);
 
     alert(
       err.response?.data?.message ||
