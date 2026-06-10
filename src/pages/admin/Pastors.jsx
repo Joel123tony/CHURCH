@@ -74,27 +74,116 @@ export default function Pastors() {
   }
 };
   /* ================= ADD PASTOR ================= */
- if (editingId) {
-  res = await API.put(`/pastors/${editingId}`, payload);
+const addPastor = async () => {
+  try {
+    setLoading(true);
 
-  setPastors((prev) =>
-    prev.map((p) =>
-      p._id === editingId ? res.data.pastor : p
-    )
-  );
+    const upload = await uploadImage();
 
-  setEditingId(null);
-} else {
-  res = await API.post("/pastors", payload);
+    const payload = {
+      name: form.name,
+      bio: form.bio,
+      joinedYear: Number(form.joinedYear) || null,
+      leftYear: form.leftYear,
+      number: form.number,
+      active: form.active,
+    };
 
-  setPastors((prev) => [
-    res.data.pastor,
-    ...prev,
-  ]);
-}
+    // Only attach image if a new image was uploaded
+    if (upload) {
+      payload.image = {
+        url: upload.url,
+        public_id: upload.public_id,
+      };
+    }
 
-// ✅ INSTANT UI UPDATE
-setPastors((prev) => [res.data.pastor, ...prev]);
+    let res;
+
+    if (editingId) {
+      res = await API.put(
+        `/pastors/${editingId}`,
+        payload
+      );
+
+      setPastors((prev) =>
+        prev.map((p) =>
+          p._id === editingId
+            ? res.data.pastor
+            : p
+        )
+      );
+    } else {
+      res = await API.post(
+        "/pastors",
+        payload
+      );
+
+      setPastors((prev) => [
+        res.data.pastor,
+        ...prev,
+      ]);
+    }
+
+    setForm({
+      name: "",
+      bio: "",
+      joinedYear: "",
+      leftYear: "",
+      number: "",
+      active: true,
+    });
+
+    setFile(null);
+    setEditingId(null);
+
+  } catch (err) {
+    console.error(
+      "SAVE ERROR:",
+      err.response?.data || err.message
+    );
+
+    alert(
+      err.response?.data?.message ||
+      "Failed to save pastor"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+/*=========cancle btn========== */
+
+{editingId && (
+  <button
+    style={{
+      width: "100%",
+      padding: 10,
+      marginTop: 10,
+      background: "#6b7280",
+      color: "#fff",
+      border: "none",
+      borderRadius: 6,
+      cursor: "pointer",
+    }}
+    onClick={() => {
+      setEditingId(null);
+      setFile(null);
+
+      setForm({
+        name: "",
+        bio: "",
+        joinedYear: "",
+        leftYear: "",
+        number: "",
+        active: true,
+      });
+    }}
+  >
+    Cancel Edit
+  </button>
+)}
+
   /* ================= DELETE PASTOR ================= */
   const deletePastor = async (id) => {
     try {
