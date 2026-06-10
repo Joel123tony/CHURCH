@@ -9,72 +9,70 @@ export default function Pastor() {
   const [searched, setSearched] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // ---------------- SAFE DATA EXTRACTOR ----------------
+  // ---------------- SAFE EXTRACT ----------------
   const extractArray = (res) => {
     const data = res?.data;
-
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.data)) return data.data;
-
+    if (Array.isArray(data?.pastors)) return data.pastors;
     return [];
   };
 
-  // ---------------- IMAGE HELPER ----------------
-  const getImage = (p) => {
-    return p?.image?.url || p?.photo || "/placeholder.png";
-  };
+  // ---------------- IMAGE ----------------
+  const getImage = (p) =>
+    p?.image?.url || "/placeholder.png";
 
-  // ---------------- LOAD ALL PASTORS ----------------
+  // ---------------- FETCH ----------------
   useEffect(() => {
     API.get("/pastors")
       .then((res) => {
-        const pastors = extractArray(res);
+        const list = extractArray(res);
 
-        const activeOnly = pastors.filter(
-          (p) => p.active !== false
-        );
+        // ONLY ACTIVE PASTORS FOR CURRENT VIEW
+        const active = list.filter((p) => p?.isActive !== false);
 
-        setPastors(activeOnly);
+        setPastors(active);
       })
       .catch((err) => {
-        console.error("Error loading pastors:", err);
+        console.error(err);
         setPastors([]);
       });
   }, []);
 
+  // ---------------- CURRENT PASTOR ----------------
   const currentPastor =
-    pastors.find((p) => p.isCurrent) || pastors[0];
+    pastors.find((p) => p?.isActive === true) || pastors[0];
 
-  // ---------------- SEARCH ----------------
-  const searchPastors = async () => {
-    try {
-      const res = await API.get(
-        `/pastors/search?name=${searchName}&year=${searchYear}`
-      );
+  // ---------------- SEARCH (FIXED FRONTEND LOGIC) ----------------
+  const searchPastors = () => {
+    const filtered = (pastors || []).filter((p) => {
+      const name = p?.name || "";
+      const year = String(p?.joinedYear || "") + String(p?.endYear || "");
 
-      const pastors = extractArray(res);
+      const matchName =
+        searchName.trim() === ""
+          ? true
+          : name.toLowerCase().includes(searchName.toLowerCase());
 
-      const filtered = pastors.filter(
-        (p) => p.active !== false
-      );
+      const matchYear =
+        searchYear.trim() === ""
+          ? true
+          : year.includes(searchYear);
 
-      setResults(filtered);
-      setSearched(true);
-      setShowModal(true);
-    } catch (err) {
-      console.error("Search error:", err);
-      setResults([]);
-      setSearched(true);
-      setShowModal(true);
-    }
+      return matchName && matchYear;
+    });
+
+    setResults(filtered);
+    setSearched(true);
+    setShowModal(true);
   };
 
-  // ---------------- CLOSE MODAL ----------------
   const closeModal = () => {
     setShowModal(false);
     setResults([]);
   };
 
+  // ---------------- UI ----------------
   return (
     <>
       <section className="bg-[#5b1320] py-16 px-6">
@@ -99,18 +97,23 @@ export default function Pastor() {
 
                     <div className="space-y-4 text-[#5b1320]">
                       <p>
-                        <strong>Pastor Name :</strong>{" "}
+                        <strong>Pastor Name:</strong>{" "}
                         {currentPastor.name}
                       </p>
 
                       <p>
-                        <strong>Join Date :</strong>{" "}
+                        <strong>Joined Year:</strong>{" "}
                         {currentPastor.joinedYear}
                       </p>
 
                       <p>
-                        <strong>Details :</strong>{" "}
-                        {currentPastor.details}
+                        <strong>Bio:</strong>{" "}
+                        {currentPastor.bio}
+                      </p>
+
+                      <p>
+                        <strong>End Year:</strong>{" "}
+                        {currentPastor.endYear || "Present"}
                       </p>
                     </div>
                   </div>
@@ -125,14 +128,11 @@ export default function Pastor() {
 
                 </div>
               ) : (
-                <p className="text-[#5b1320]">
-                  No pastor data found.
-                </p>
+                <p className="text-[#5b1320]">No pastor data found.</p>
               )}
-
             </div>
 
-            {/* ================= SEARCH PANEL ================= */}
+            {/* ================= SEARCH ================= */}
             <div className="bg-[#d8cbb7] rounded-3xl p-6">
 
               <h3 className="text-center font-bold text-[#5b1320] mb-4">
@@ -140,7 +140,6 @@ export default function Pastor() {
               </h3>
 
               <input
-                type="text"
                 placeholder="Search By Name"
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
@@ -148,7 +147,6 @@ export default function Pastor() {
               />
 
               <input
-                type="text"
                 placeholder="Search By Year"
                 value={searchYear}
                 onChange={(e) => setSearchYear(e.target.value)}
@@ -162,18 +160,9 @@ export default function Pastor() {
                 Search
               </button>
 
-              <div className="mt-6">
-                {!searched && (
-                  <p className="text-center text-[#5b1320] text-sm">
-                    Search by pastor name or year
-                  </p>
-                )}
-
-                {searched && results.length === 0 && (
-                  <p className="text-center text-[#5b1320] text-sm">
-                    No pastors found
-                  </p>
-                )}
+              <div className="mt-6 text-center text-sm text-[#5b1320]">
+                {!searched && "Search by name or year"}
+                {searched && results.length === 0 && "No pastors found"}
               </div>
 
             </div>
@@ -199,38 +188,30 @@ export default function Pastor() {
               Search Results
             </h2>
 
-            {results.length > 0 ? (
-              results.map((p) => (
-                <div
-                  key={p._id}
-                  className="mb-6 border-b border-[#5b1320]/20 pb-4"
-                >
+            {results.map((p) => (
+              <div
+                key={p._id}
+                className="mb-6 border-b border-[#5b1320]/20 pb-4"
+              >
+                <h3 className="text-xl font-bold text-[#5b1320]">
+                  {p.name}
+                </h3>
 
-                  <h3 className="text-xl font-bold text-[#5b1320]">
-                    {p.name}
-                  </h3>
+                <p className="text-[#5b1320]">
+                  {p.joinedYear} - {p.endYear || "Present"}
+                </p>
 
-                  <p className="text-[#5b1320]">
-                    {p.joinedYear} - {p.leftYear || "Present"}
-                  </p>
+                <p className="text-[#5b1320] mt-2">
+                  {p.bio}
+                </p>
 
-                  <p className="text-[#5b1320] mt-2">
-                    {p.details}
-                  </p>
-
-                  <img
-                    src={getImage(p)}
-                    alt={p.name}
-                    className="w-40 h-40 object-cover rounded-xl mt-3"
-                  />
-                </div>
-              ))
-            ) : (
-              <p className="text-[#5b1320]">
-                No pastors found
-              </p>
-            )}
-
+                <img
+                  src={getImage(p)}
+                  alt={p.name}
+                  className="w-40 h-40 object-cover rounded-xl mt-3"
+                />
+              </div>
+            ))}
           </div>
         </div>
       )}

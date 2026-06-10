@@ -17,7 +17,7 @@ const defaultForm = {
 
 export default function Pastors() {
   const [pastors, setPastors] = useState([]);
-  const [view, setView] = useState("current"); // current | former
+  const [view, setView] = useState("current");
   const [search, setSearch] = useState("");
 
   const [form, setForm] = useState(defaultForm);
@@ -32,10 +32,19 @@ export default function Pastors() {
   const fetchPastors = async () => {
     try {
       setLoading(true);
+
       const res = await API.get("/pastors");
-      setPastors(res.data);
-    } catch {
+
+      // ✅ SAFE NORMALIZATION (FIX FOR YOUR CRASH)
+      const data = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data || res.data?.pastors || [];
+
+      setPastors(data);
+    } catch (err) {
+      console.log(err);
       toast.error("Failed to load pastors");
+      setPastors([]);
     } finally {
       setLoading(false);
     }
@@ -45,14 +54,16 @@ export default function Pastors() {
     fetchPastors();
   }, []);
 
-  // ---------------- FILTER ----------------
-  const filteredPastors = pastors.filter((p) => {
-    const matchesSearch = p.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
+  // ---------------- FILTER (CRASH SAFE) ----------------
+  const filteredPastors = (pastors || []).filter((p) => {
+    const name = p?.name || "";
 
-    if (view === "current") return p.isActive && matchesSearch;
-    if (view === "former") return !p.isActive && matchesSearch;
+    const matchesSearch = name
+      .toLowerCase()
+      .includes((search || "").toLowerCase());
+
+    if (view === "current") return p?.isActive && matchesSearch;
+    if (view === "former") return !p?.isActive && matchesSearch;
 
     return matchesSearch;
   });
@@ -69,7 +80,9 @@ export default function Pastors() {
 
   // ---------------- IMAGE ----------------
   const handleImage = (e) => {
-    const selected = e.target.files[0];
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
   };
@@ -91,7 +104,7 @@ export default function Pastors() {
     );
 
     const result = await res.json();
-    return result.secure_url;
+    return result?.secure_url || "";
   };
 
   // ---------------- SUBMIT ----------------
@@ -101,7 +114,7 @@ export default function Pastors() {
     try {
       setLoading(true);
 
-      let imageUrl = await uploadImage();
+      const imageUrl = await uploadImage();
 
       const payload = {
         ...form,
@@ -122,7 +135,8 @@ export default function Pastors() {
       setPreview(null);
 
       fetchPastors();
-    } catch {
+    } catch (err) {
+      console.log(err);
       toast.error("Operation failed");
     } finally {
       setLoading(false);
@@ -131,22 +145,22 @@ export default function Pastors() {
 
   // ---------------- EDIT ----------------
   const handleEdit = (p) => {
-    setEditId(p._id);
+    setEditId(p?._id);
 
     setForm({
-      name: p.name,
-      role: p.role,
-      bio: p.bio,
-      joinedYear: p.joinedYear,
-      endYear: p.endYear,
-      education: p.education,
-      church: p.church,
-      email: p.email,
-      phone: p.phone,
-      isActive: p.isActive,
+      name: p?.name || "",
+      role: p?.role || "Pastor",
+      bio: p?.bio || "",
+      joinedYear: p?.joinedYear || "",
+      endYear: p?.endYear || "",
+      education: p?.education || "",
+      church: p?.church || "",
+      email: p?.email || "",
+      phone: p?.phone || "",
+      isActive: p?.isActive ?? true,
     });
 
-    setPreview(p.image?.url || null);
+    setPreview(p?.image?.url || null);
   };
 
   // ---------------- DELETE ----------------
@@ -157,7 +171,7 @@ export default function Pastors() {
       await API.delete(`/pastors/${id}`);
       toast.success("Deleted");
       fetchPastors();
-    } catch {
+    } catch (err) {
       toast.error("Delete failed");
     }
   };
@@ -252,16 +266,6 @@ export default function Pastors() {
           className="border p-2 rounded"
         />
 
-        <select
-          name="church"
-          value={form.church}
-          onChange={handleChange}
-          className="border p-2 rounded"
-        >
-          <option>Methodist Tamil Church Padikuppam</option>
-          <option>Custom Church</option>
-        </select>
-
         <input
           name="email"
           placeholder="Email"
@@ -286,18 +290,13 @@ export default function Pastors() {
           className="border p-2 rounded md:col-span-3"
         />
 
-        {/* IMAGE */}
         <input type="file" onChange={handleImage} className="md:col-span-3" />
 
         {preview && (
-          <img
-            src={preview}
-            className="w-24 h-24 object-cover rounded"
-            alt="preview"
-          />
+          <img src={preview} className="w-24 h-24 rounded object-cover" />
         )}
 
-        <label className="flex items-center gap-2 md:col-span-3">
+        <label className="flex gap-2 md:col-span-3">
           <input
             type="checkbox"
             name="isActive"
@@ -321,39 +320,38 @@ export default function Pastors() {
       ) : (
         <div className="grid md:grid-cols-3 gap-4">
           {filteredPastors.map((p) => (
-            <div key={p._id} className="bg-white shadow rounded overflow-hidden">
+            <div key={p?._id} className="bg-white shadow rounded overflow-hidden">
 
               <img
-                src={p.image?.url || "/default.png"}
+                src={p?.image?.url || "/default.png"}
                 className="h-40 w-full object-cover"
-                alt={p.name}
               />
 
               <div className="p-3">
-                <h2 className="font-bold text-lg">{p.name}</h2>
-                <p className="text-sm text-gray-600">{p.role}</p>
+                <h2 className="font-bold">{p?.name}</h2>
+                <p className="text-sm text-gray-600">{p?.role}</p>
 
                 <p className="text-xs mt-1">
-                  {p.joinedYear} - {p.endYear || "Present"}
+                  {p?.joinedYear} - {p?.endYear || "Present"}
                 </p>
 
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => handleEdit(p)}
-                    className="bg-yellow-500 text-white px-2 py-1 text-sm rounded"
+                    className="bg-yellow-500 px-2 py-1 text-white rounded text-sm"
                   >
                     Edit
                   </button>
 
                   <button
-                    onClick={() => handleDelete(p._id)}
-                    className="bg-red-500 text-white px-2 py-1 text-sm rounded"
+                    onClick={() => handleDelete(p?._id)}
+                    className="bg-red-500 px-2 py-1 text-white rounded text-sm"
                   >
                     Delete
                   </button>
                 </div>
 
-                {p.isActive && (
+                {p?.isActive && (
                   <span className="text-green-600 text-xs font-bold">
                     ● Active
                   </span>
