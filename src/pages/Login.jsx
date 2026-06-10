@@ -15,35 +15,40 @@ export default function Login() {
 
   /* ================= LOGIN ================= */
   const handleLogin = async () => {
-    if (!email || !password) {
-      alert("Please enter email and password");
-      return;
-    }
+  try {
+    setLoading(true);
 
-    try {
-      setLoading(true);
+    console.log("API URL:", import.meta.env.VITE_API_URL);
+    console.log(
+      "Request URL:",
+      `${import.meta.env.VITE_API_URL}/auth/login`
+    );
 
-      const res = await API.post("/auth/login", {
-        email,
-        password,
-      });
+    const res = await API.post("/auth/login", {
+      email,
+      password,
+    });
 
-      const token = res?.data?.token;
+    console.log("LOGIN RESPONSE:", res.data);
 
-      if (!token) {
-        throw new Error("No token received from server");
-      }
+    localStorage.setItem("token", res.data.token);
 
-      localStorage.setItem("token", token);
+    navigate("/admin");
 
-      navigate("/admin");
-    } catch (err) {
-      console.error("LOGIN ERROR:", err);
-      alert(err.response?.data?.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err) {
+    console.error("FULL LOGIN ERROR:", err);
+    console.error("STATUS:", err.response?.status);
+    console.error("DATA:", err.response?.data);
+
+    alert(
+      err.response?.data?.message ||
+      err.response?.data?.error ||
+      "Login failed"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={styles.container}>
