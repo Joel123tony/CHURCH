@@ -14,12 +14,23 @@ import galleryRoutes from "./routes/gallery.routes.js";
 
 const app = express();
 
-/* MIDDLEWARE */
-app.use(cors({ origin: "*", credentials: true }));
+/* =========================
+   MIDDLEWARE
+========================= */
+app.use(
+  cors({
+    origin: "*", // for production later replace with frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-/* HEALTH CHECK */
+/* =========================
+   HEALTH CHECK
+========================= */
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -28,14 +39,18 @@ app.get("/", (req, res) => {
   });
 });
 
-/* ROUTES */
+/* =========================
+   ROUTES
+========================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/pastors", pastorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gallery", galleryRoutes);
 
-/* START SERVER */
+/* =========================
+   START SERVER
+========================= */
 const startServer = async () => {
   try {
     await connectDB();
@@ -44,10 +59,11 @@ const startServer = async () => {
     const PORT = process.env.PORT || 5000;
 
     app.listen(PORT, () => {
-      console.log("🚀 Server running on port", PORT);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   } catch (err) {
     console.error("❌ Server failed:", err.message);
+    process.exit(1);
   }
 };
 
