@@ -21,10 +21,16 @@ const pastorSchema = new mongoose.Schema(
     },
 
     image: {
-      type: String,
-      default: "",
-    },
+  url: {
+    type: String,
+    default: "",
+  },
 
+  public_id: {
+    type: String,
+    default: "",
+  },
+},
     public_id: {
       type: String,
       default: "",
