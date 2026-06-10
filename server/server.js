@@ -10,20 +10,16 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import pastorRoutes from "./routes/pastor.routes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import galleryRoutes from "./routes/galleryRoutes.js"; // ✅ IMPORTANT
+import galleryRoutes from "./routes/galleryRoutes.js";
 
 const app = express();
 
-/* =========================
-   MIDDLEWARE
-========================= */
+/* MIDDLEWARE */
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-/* =========================
-   HEALTH CHECK
-========================= */
+/* HEALTH CHECK */
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -32,18 +28,14 @@ app.get("/", (req, res) => {
   });
 });
 
-/* =========================
-   ROUTES
-========================= */
+/* ROUTES */
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/pastors", pastorRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/gallery", galleryRoutes); // ✅ FIXED
+app.use("/api/gallery", galleryRoutes);
 
-/* =========================
-   START SERVER
-========================= */
+/* START SERVER */
 const startServer = async () => {
   try {
     await connectDB();
@@ -52,12 +44,10 @@ const startServer = async () => {
     const PORT = process.env.PORT || 5000;
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌐 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log("🚀 Server running on port", PORT);
     });
   } catch (err) {
-    console.error("❌ Failed to start server:", err.message);
-    process.exit(1);
+    console.error("❌ Server failed:", err.message);
   }
 };
 
