@@ -3,12 +3,12 @@ import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 
 /* =========================
-   UPLOAD MEDIA (CREATE)
+   UPLOAD MEDIA
 ========================= */
 export const uploadMedia = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
+      return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
     const result = await uploadToCloudinary(req.file.buffer);
@@ -23,10 +23,10 @@ export const uploadMedia = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      media,
+      data: media,
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -37,9 +37,12 @@ export const getAllMedia = async (req, res) => {
   try {
     const media = await Gallery.find().sort({ createdAt: -1 });
 
-    res.json({ success: true, media });
+    res.json({
+      success: true,
+      data: media,
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -48,16 +51,20 @@ export const getAllMedia = async (req, res) => {
 ========================= */
 export const getClientMedia = async (req, res) => {
   try {
-    const media = await Gallery.find({ showInClient: true }).sort({
-      createdAt: -1,
-    });
+    const media = await Gallery.find({
+      clientPriority: { $ne: null },
+    })
+      .sort({ clientPriority: 1 })
+      .limit(4);
 
-    res.json({ success: true, media });
+    res.json({
+      success: true,
+      data: media,
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
-
 /* =========================
    UPDATE MEDIA
 ========================= */
@@ -73,14 +80,17 @@ export const updateMedia = async (req, res) => {
       return res.status(404).json({ success: false, message: "Not found" });
     }
 
-    res.json({ success: true, media });
+    res.json({
+      success: true,
+      data: media,
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
 /* =========================
-   DELETE MEDIA (CLOUDINARY SAFE)
+   DELETE MEDIA
 ========================= */
 export const deleteMedia = async (req, res) => {
   try {
@@ -90,14 +100,14 @@ export const deleteMedia = async (req, res) => {
       return res.status(404).json({ success: false, message: "Not found" });
     }
 
-    // delete from cloudinary
     await deleteFromCloudinary(media.public_id);
-
-    // delete from DB
     await media.deleteOne();
 
-    res.json({ success: true, message: "Deleted successfully" });
+    res.json({
+      success: true,
+      message: "Deleted successfully",
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };

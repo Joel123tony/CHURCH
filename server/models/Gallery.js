@@ -21,12 +21,13 @@ const gallerySchema = new mongoose.Schema(
 
     public_id: {
       type: String,
-      required: true, // Cloudinary ID (for delete)
+      required: true,
     },
 
-    showInClient: {
-      type: Boolean,
-      default: false,
+    // 🔥 NEW: homepage control system
+    clientPriority: {
+      type: Number,
+      default: null,
     },
   },
   { timestamps: true }

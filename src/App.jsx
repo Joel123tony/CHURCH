@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
-import Login from "./pages/Login"; // ✅ ADD THIS
+import Login from "./pages/Login";
 
 // ADMIN
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -11,6 +11,9 @@ import Events from "./pages/admin/Events";
 import Gallery from "./pages/admin/Gallery";
 import Messages from "./pages/admin/Messages";
 
+// CLIENT GALLERY
+import ClientGallery from "./components/pages/ClientGallery";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -19,10 +22,13 @@ export default function App() {
         {/* USER */}
         <Route path="/" element={<Home />} />
 
-        {/* ADMIN LOGIN (IMPORTANT) */}
+        {/* PUBLIC GALLERY (CLIENT SIDE) */}
+        <Route path="/gallery" element={<ClientGallery />} />
+
+        {/* ADMIN LOGIN */}
         <Route path="/admin/login" element={<Login />} />
 
-        {/* ADMIN WRAPPER */}
+        {/* ADMIN PANEL */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="pastors" element={<Pastors />} />

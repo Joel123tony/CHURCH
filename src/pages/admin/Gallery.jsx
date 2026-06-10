@@ -6,29 +6,20 @@ import GalleryUpload from "./GalleryUpload";
 export default function Gallery() {
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  /* =========================
-     SEARCH
-  ========================== */
   const [search, setSearch] = useState("");
 
-  /* =========================
-     EDIT MODAL STATE
-  ========================== */
   const [editItem, setEditItem] = useState(null);
   const [editTitle, setEditTitle] = useState("");
-  const [showInClient, setShowInClient] = useState(false);
+  const [clientPriority, setClientPriority] = useState(null);
 
-  /* =========================
-     FETCH MEDIA
-  ========================== */
+  /* ================= FETCH ================= */
   const fetchMedia = async () => {
     try {
       setLoading(true);
       const res = await API.get("/gallery");
-      setMedia(res.data.media || []);
+      setMedia(res?.data?.data || []);
     } catch (err) {
-      console.log("Fetch error:", err);
+      setMedia([]);
     } finally {
       setLoading(false);
     }
@@ -38,121 +29,142 @@ export default function Gallery() {
     fetchMedia();
   }, []);
 
-  /* =========================
-     DELETE MEDIA
-  ========================== */
+  /* ================= DELETE ================= */
   const deleteMedia = async (id) => {
     try {
       await API.delete(`/gallery/${id}`);
-      setMedia((prev) => prev.filter((item) => item._id !== id));
-    } catch (err) {
-      console.log("Delete error:", err);
-    }
+      setMedia((prev) => prev.filter((i) => i._id !== id));
+    } catch (err) {}
   };
 
-  /* =========================
-     AFTER UPLOAD
-  ========================== */
+  /* ================= UPLOAD ================= */
   const handleUpload = async (uploadRes) => {
     try {
-      const payload = {
+      const res = await API.post("/gallery", {
         title: "Untitled",
         url: uploadRes.url,
         public_id: uploadRes.public_id,
         mediaType: uploadRes.resource_type || "image",
-        showInClient: false,
-      };
+        clientPriority: null,
+      });
 
-      const res = await API.post("/gallery", payload);
-
-      setMedia((prev) => [res.data.item, ...prev]);
-    } catch (err) {
-      console.log("Upload save error:", err);
-    }
+      setMedia((prev) => [res?.data?.data, ...prev]);
+    } catch (err) {}
   };
 
-  /* =========================
-     OPEN EDIT MODAL
-  ========================== */
+  /* ================= EDIT OPEN ================= */
   const openEdit = (item) => {
     setEditItem(item);
-    setEditTitle(item.title);
-    setShowInClient(item.showInClient || false);
+    setEditTitle(item.title || "");
+    setClientPriority(item.clientPriority || null);
   };
 
-  /* =========================
-     UPDATE MEDIA
-  ========================== */
+  /* ================= UPDATE ================= */
   const updateMedia = async () => {
     try {
       const res = await API.put(`/gallery/${editItem._id}`, {
         title: editTitle,
-        showInClient,
+        clientPriority,
       });
 
       setMedia((prev) =>
-        prev.map((item) =>
-          item._id === editItem._id ? res.data.item : item
+        prev.map((i) =>
+          i._id === editItem._id ? res?.data?.data : i
         )
       );
 
       setEditItem(null);
+      setEditTitle("");
+      setClientPriority(null);
     } catch (err) {
-      console.log("Update error:", err);
+      console.log(err);
     }
   };
 
-  /* =========================
-     FILTER MEDIA
-  ========================== */
-  const filteredMedia = media.filter((item) =>
+  /* ================= FILTER ================= */
+  const filtered = (media || []).filter((item) =>
     item.title?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
 
-      {/* ================= HEADER ================= */}
-      <h1 className="text-xl font-bold">Gallery Admin</h1>
-
-      {/* ================= UPLOAD ================= */}
-      <GalleryUpload onUpload={handleUpload} />
-
-      {/* ================= SEARCH ================= */}
-      <input
-        type="text"
-        placeholder="Search by title..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full border p-2 rounded"
-      />
-
-      {/* ================= LOADING ================= */}
-      {loading && (
-        <p className="text-gray-500 text-sm">Loading gallery...</p>
-      )}
-
-      {/* ================= GRID ================= */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-        {filteredMedia.map((item) => (
-          <MediaCard
-            key={item._id}
-            item={item}
-            onDelete={deleteMedia}
-            onEdit={openEdit}
-          />
-        ))}
-
+      {/* HEADER */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">📸 Gallery CMS</h1>
       </div>
 
-      {/* ================= EDIT MODAL ================= */}
+      {/* UPLOAD */}
+      <div className="bg-white p-4 rounded-xl shadow">
+        <GalleryUpload onUpload={handleUpload} />
+      </div>
+
+      {/* SEARCH */}
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search media..."
+        className="w-full p-3 border rounded-lg shadow-sm"
+      />
+
+      {/* LOADING */}
+      {loading && (
+        <p className="text-gray-500">Loading gallery...</p>
+      )}
+
+      {/* GRID */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {filtered.map((item) => (
+          <div
+            key={item._id}
+            className="relative group bg-white rounded-xl overflow-hidden shadow hover:shadow-xl transition"
+          >
+            {/* MEDIA */}
+            {item.mediaType === "video" ? (
+              <video
+                src={item.url}
+                className="h-40 w-full object-cover"
+              />
+            ) : (
+              <img
+                src={item.url}
+                className="h-40 w-full object-cover"
+              />
+            )}
+
+            {/* BADGE */}
+            <span className="absolute top-2 left-2 text-xs bg-black/70 text-white px-2 py-1 rounded">
+              {item.mediaType}
+            </span>
+
+            {/* HOVER ACTIONS */}
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+
+              <button
+                onClick={() => openEdit(item)}
+                className="bg-blue-500 text-white px-3 py-1 rounded"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={() => deleteMedia(item._id)}
+                className="bg-red-500 text-white px-3 py-1 rounded"
+              >
+                Delete
+              </button>
+
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* EDIT MODAL */}
       {editItem && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-[90%] max-w-md space-y-4">
 
-          <div className="bg-white p-5 rounded w-[90%] max-w-md space-y-4">
-
-            <h2 className="text-lg font-bold">Edit Media</h2>
+            <h2 className="text-xl font-bold">Edit Media</h2>
 
             {/* TITLE */}
             <input
@@ -162,19 +174,21 @@ export default function Gallery() {
               placeholder="Title"
             />
 
-            {/* SHOW IN CLIENT */}
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showInClient}
-                onChange={(e) => setShowInClient(e.target.checked)}
-              />
-              Show in Client Page
-            </label>
+            {/* HOMEPAGE PRIORITY */}
+            <input
+              type="number"
+              min="1"
+              max="4"
+              placeholder="Homepage Position (1-4)"
+              value={clientPriority || ""}
+              onChange={(e) =>
+                setClientPriority(Number(e.target.value))
+              }
+              className="w-full border p-2 rounded"
+            />
 
             {/* ACTIONS */}
             <div className="flex justify-end gap-2">
-
               <button
                 onClick={() => setEditItem(null)}
                 className="px-3 py-1 bg-gray-400 text-white rounded"
@@ -184,14 +198,13 @@ export default function Gallery() {
 
               <button
                 onClick={updateMedia}
-                className="px-3 py-1 bg-blue-500 text-white rounded"
+                className="px-3 py-1 bg-blue-600 text-white rounded"
               >
                 Save
               </button>
-
             </div>
-          </div>
 
+          </div>
         </div>
       )}
 
