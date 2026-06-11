@@ -7,14 +7,18 @@ export async function connectDB() {
     }
 
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 15000,
-      family: 4, // IMPORTANT for Windows DNS issues
+      serverSelectionTimeoutMS: 20000,
+      family: 4,
+      maxPoolSize: 10,
     });
 
     console.log("✅ MongoDB Connected:", conn.connection.host);
   } catch (err) {
     console.error("❌ MongoDB connection failed:");
     console.error(err.message);
-    process.exit(1);
+
+    // IMPORTANT: do NOT crash immediately in dev
+    // so frontend doesn't freeze completely
+    return null;
   }
 }

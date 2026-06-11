@@ -14,6 +14,13 @@ import galleryRoutes from "./routes/gallery.routes.js";
 
 const app = express();
 
+
+
+console.log("ENV TEST:", {
+  mongo: process.env.MONGO_URI ? "OK" : "MISSING",
+  port: process.env.PORT
+});
+
 /* =========================
    MIDDLEWARE
 ========================= */
@@ -48,18 +55,13 @@ app.use("/api/gallery", galleryRoutes);
    START SERVER
 ========================= */
 const startServer = async () => {
-  try {
-    await connectDB();
+  await connectDB(); // do not block crash
 
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on ${PORT}`);
-    });
+  const PORT = process.env.PORT || 5000;
 
-  } catch (err) {
-    console.error("❌ Server failed:", err.message);
-    process.exit(1);
-  }
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on ${PORT}`);
+  });
 };
 
 startServer();

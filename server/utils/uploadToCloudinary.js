@@ -1,19 +1,18 @@
 import cloudinary from "../config/cloudinary.js";
 
-/* =========================================
-   UPLOAD BUFFER → CLOUDINARY (IMAGE + VIDEO)
-========================================= */
+/* ================================
+   SAFE CLOUDINARY UPLOAD
+================================ */
 export const uploadToCloudinary = (buffer, folder = "church") => {
   return new Promise((resolve, reject) => {
     if (!buffer) {
       return reject(new Error("No file buffer provided"));
     }
 
-    const stream = cloudinary.uploader.upload_stream(
+    const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
-        resource_type: "auto", // supports image + video
-        timeout: 60000,
+        resource_type: "auto",
       },
       (error, result) => {
         if (error) {
@@ -21,19 +20,25 @@ export const uploadToCloudinary = (buffer, folder = "church") => {
           return reject(error);
         }
 
-        if (!result) {
-          return reject(new Error("Cloudinary returned empty result"));
+        if (!result || !result.secure_url) {
+          return reject(new Error("Invalid Cloudinary response"));
         }
 
         resolve({
           url: result.secure_url,
           public_id: result.public_id,
-          type: result.resource_type,
-          size: result.bytes,
+          resource_type: result.resource_type,
+          bytes: result.bytes,
         });
       }
     );
 
-    stream.end(buffer);
+    // safety wrapper (prevents infinite hang)
+    uploadStream.on("error", (err) => {
+      console.error("❌ Stream Error:", err);
+      reject(err);
+    });
+
+    uploadStream.end(buffer);
   });
 };

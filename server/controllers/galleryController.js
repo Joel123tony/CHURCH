@@ -68,24 +68,49 @@ export const getClientMedia = async (req, res) => {
 /* =========================
    UPDATE MEDIA
 ========================= */
-export const updateMedia = async (req, res) => {
+export const uploadMedia = async (req, res) => {
   try {
-    const media = await Gallery.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    console.log("👉 FILE:", req.file);
 
-    if (!media) {
-      return res.status(404).json({ success: false, message: "Not found" });
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
     }
 
-    res.json({
+    const buffer = req.file.buffer || null;
+
+    if (!buffer) {
+      return res.status(400).json({
+        success: false,
+        message: "File buffer missing (multer issue)",
+      });
+    }
+
+    const result = await uploadToCloudinary(buffer);
+
+    const media = await Gallery.create({
+      title: req.body.title || "Untitled",
+      url: result.url,
+      public_id: result.public_id,
+      mediaType: result.resource_type?.includes("video")
+        ? "video"
+        : "image",
+      showInClient: req.body.showInClient === "true" || req.body.showInClient === true,
+    });
+
+    return res.status(201).json({
       success: true,
       data: media,
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("UPLOAD ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 
