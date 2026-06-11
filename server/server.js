@@ -16,10 +16,7 @@ const app = express();
 
 
 
-console.log("ENV TEST:", {
-  mongo: process.env.MONGO_URI ? "OK" : "MISSING",
-  port: process.env.PORT
-});
+
 
 /* =========================
    MIDDLEWARE
