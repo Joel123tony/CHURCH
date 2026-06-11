@@ -1,5 +1,6 @@
 import express from "express";
 import upload from "../middleware/upload.js";
+import Pastor from "../models/Pastor.js";
 
 import {
   createPastor,
@@ -16,6 +17,25 @@ const router = express.Router();
    GET ALL PASTORS (ADMIN)
 ========================= */
 router.get("/", getAllPastors);
+
+/* =========================
+   GET CURRENT PASTOR
+========================= */
+router.get("/current", async (req, res) => {
+  try {
+    const pastor = await Pastor.findOne({ isCurrent: true });
+
+    return res.json({
+      success: true,
+      pastor,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
 
 /* =========================
    PUBLIC PASTORS
@@ -55,38 +75,44 @@ router.delete("/:id", deletePastor);
 ========================= */
 router.put("/current/:id", async (req, res) => {
   try {
-    await Pastor.updateMany({}, {
-      isCurrent: false,
-    });
+    const { id } = req.params;
 
-    const pastor = await Pastor.findByIdAndUpdate(
-      req.params.id,
-      {
-        isCurrent: true,
-      },
-      { new: true }
+    // Remove current flag from all pastors
+    await Pastor.updateMany(
+      {},
+      { $set: { isCurrent: false } }
     );
 
-    res.json(pastor);
-  } catch (err) {
-    res.status(500).json({
-      message: err.message,
-    });
-  }
-});
+    // Set selected pastor as current
+    const pastor = await Pastor.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          isCurrent: true,
+        },
+      },
+      {
+        new: true,
+      }
+    );
 
-/* =========================
-   GET CURRENT PASTOR
-========================= */
-router.get("/current", async (req, res) => {
-  try {
-    const pastor = await Pastor.findOne({
-      isCurrent: true,
-    });
+    if (!pastor) {
+      return res.status(404).json({
+        success: false,
+        message: "Pastor not found",
+      });
+    }
 
-    res.json(pastor);
+    return res.json({
+      success: true,
+      message: "Current pastor updated successfully",
+      pastor,
+    });
   } catch (err) {
-    res.status(500).json({
+    console.error("SET CURRENT PASTOR ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
       message: err.message,
     });
   }

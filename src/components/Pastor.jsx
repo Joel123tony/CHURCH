@@ -40,6 +40,10 @@ export default function Pastor() {
   const currentPastor =
     pastors.find((p) => p?.isCurrent === true) || null;
 
+  const serviceYears = currentPastor?.joinedYear
+    ? new Date().getFullYear() - currentPastor.joinedYear
+    : 0;
+
   const searchPastors = () => {
     const filtered = pastors.filter((p) => {
       const nameMatch =
@@ -72,26 +76,21 @@ export default function Pastor() {
     <>
       <section className="bg-[#5b1320] py-16 px-6">
         <div className="max-w-7xl mx-auto">
-
           <h2 className="text-white text-3xl font-bold mb-8">
             Pastor
           </h2>
 
           <div className="grid lg:grid-cols-4 gap-6">
-
             {/* CURRENT PASTOR */}
             <div className="lg:col-span-3 bg-[#d8cbb7] rounded-3xl p-8">
-
               {currentPastor ? (
                 <div className="grid md:grid-cols-2 gap-8 items-center">
-
                   <div>
                     <h3 className="text-xl font-bold text-[#5b1320] mb-6">
                       Current Pastor
                     </h3>
 
                     <div className="space-y-4 text-[#5b1320]">
-
                       <p>
                         <strong>Pastor Name:</strong>{" "}
                         {currentPastor.name}
@@ -108,15 +107,21 @@ export default function Pastor() {
                       </p>
 
                       <p>
+                        <strong>Years of Service:</strong>{" "}
+                        {serviceYears} Year
+                        {serviceYears !== 1 ? "s" : ""}
+                      </p>
+
+                      <p>
                         <strong>Serving Until:</strong>{" "}
                         {currentPastor.leftYear || "Present"}
                       </p>
 
                       <p>
                         <strong>Bio:</strong>{" "}
-                        {currentPastor.bio || "No details available"}
+                        {currentPastor.bio ||
+                          "No details available"}
                       </p>
-
                     </div>
                   </div>
 
@@ -127,7 +132,6 @@ export default function Pastor() {
                       className="w-64 h-64 object-cover rounded-3xl shadow-lg"
                     />
                   </div>
-
                 </div>
               ) : (
                 <div className="text-center py-10">
@@ -136,12 +140,10 @@ export default function Pastor() {
                   </h3>
                 </div>
               )}
-
             </div>
 
             {/* SEARCH */}
             <div className="bg-[#d8cbb7] rounded-3xl p-6">
-
               <h3 className="text-center font-bold text-[#5b1320] mb-4">
                 Search Pastors
               </h3>
@@ -168,9 +170,7 @@ export default function Pastor() {
               >
                 Search
               </button>
-
             </div>
-
           </div>
         </div>
       </section>
@@ -178,9 +178,7 @@ export default function Pastor() {
       {/* SEARCH MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-
           <div className="bg-[#d8cbb7] rounded-3xl p-8 w-full max-w-4xl relative max-h-[80vh] overflow-y-auto">
-
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full"
@@ -205,7 +203,6 @@ export default function Pastor() {
                   className="border-b border-[#5b1320]/20 pb-6 mb-6"
                 >
                   <div className="flex flex-col md:flex-row gap-6">
-
                     <img
                       src={getImage(p)}
                       alt={p.name}
@@ -213,7 +210,6 @@ export default function Pastor() {
                     />
 
                     <div>
-
                       <h3 className="text-xl font-bold text-[#5b1320]">
                         {p.name}
                       </h3>
@@ -231,16 +227,12 @@ export default function Pastor() {
                       <p className="mt-3 text-[#5b1320]">
                         {p.bio || "No details available"}
                       </p>
-
                     </div>
-
                   </div>
                 </div>
               ))
             )}
-
           </div>
-
         </div>
       )}
     </>
