@@ -17,13 +17,10 @@ const app = express();
 /* =========================
    MIDDLEWARE
 ========================= */
-app.use(
-  cors({
-    origin: "*", // for production later replace with frontend URL
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+}));
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -34,8 +31,7 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "🚀 API is running (PRO MAX)",
-    time: new Date().toISOString(),
+    message: "🚀 API running",
   });
 });
 
@@ -54,13 +50,12 @@ app.use("/api/gallery", galleryRoutes);
 const startServer = async () => {
   try {
     await connectDB();
-    console.log("✅ MongoDB connected");
 
     const PORT = process.env.PORT || 5000;
-
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 Server running on ${PORT}`);
     });
+
   } catch (err) {
     console.error("❌ Server failed:", err.message);
     process.exit(1);

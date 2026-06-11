@@ -50,4 +50,46 @@ router.put(
 ========================= */
 router.delete("/:id", deletePastor);
 
+/* =========================
+   SET CURRENT PASTOR
+========================= */
+router.put("/current/:id", async (req, res) => {
+  try {
+    await Pastor.updateMany({}, {
+      isCurrent: false,
+    });
+
+    const pastor = await Pastor.findByIdAndUpdate(
+      req.params.id,
+      {
+        isCurrent: true,
+      },
+      { new: true }
+    );
+
+    res.json(pastor);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+});
+
+/* =========================
+   GET CURRENT PASTOR
+========================= */
+router.get("/current", async (req, res) => {
+  try {
+    const pastor = await Pastor.findOne({
+      isCurrent: true,
+    });
+
+    res.json(pastor);
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+});
+
 export default router;

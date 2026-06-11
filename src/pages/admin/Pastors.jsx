@@ -209,7 +209,7 @@ export default function Pastors() {
             view === "former" ? "bg-gray-700 text-white" : "bg-white"
           }`}
         >
-          Former Pastors
+          Pastor's List
         </button>
       </div>
 
@@ -291,20 +291,29 @@ export default function Pastors() {
         />
 
         <input type="file" onChange={handleImage} className="md:col-span-3" />
+{preview && (
+  <div className="relative w-fit">
 
-        {preview && (
-          <img src={preview} className="w-24 h-24 rounded object-cover" />
-        )}
+    <img
+      src={preview}
+      className="w-32 h-32 rounded-xl object-cover"
+    />
 
-        <label className="flex gap-2 md:col-span-3">
-          <input
-            type="checkbox"
-            name="isActive"
-            checked={form.isActive}
-            onChange={handleChange}
-          />
-          Active Pastor
-        </label>
+    <button
+      type="button"
+      onClick={() => {
+        setPreview(null);
+        setFile(null);
+      }}
+      className="absolute -top-2 -right-2 bg-red-600 text-white w-6 h-6 rounded-full"
+    >
+      ×
+    </button>
+
+  </div>
+)}
+
+      
 
         <button
           type="submit"
@@ -350,6 +359,16 @@ export default function Pastors() {
                     Delete
                   </button>
                 </div>
+                <button
+  onClick={async () => {
+    await API.put(`/pastors/current/${p._id}`);
+    fetchPastors();
+    toast.success("Current pastor updated");
+  }}
+  className="bg-green-600 text-white px-2 py-1 rounded text-sm"
+>
+  Set Current
+</button>
 
                 {p?.isActive && (
                   <span className="text-green-600 text-xs font-bold">

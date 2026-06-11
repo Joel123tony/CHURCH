@@ -67,14 +67,9 @@ const pastorSchema = new mongoose.Schema(
       trim: true,
     },
 
-    currentPastor: {
+    isCurrent: {
       type: Boolean,
       default: false,
-    },
-
-    active: {
-      type: Boolean,
-      default: true,
     },
   },
   {
