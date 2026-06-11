@@ -101,23 +101,13 @@ export default function Pastor() {
                         {currentPastor.role}
                       </p>
 
-                      <p>
-                        <strong>Joined Year:</strong>{" "}
-                        {currentPastor.joinedYear}
-                      </p>
-
-                      <p>
+                                          <p>
                         <strong>Years of Service:</strong>{" "}
                         {serviceYears} Year
                         {serviceYears !== 1 ? "s" : ""}
                       </p>
 
-                      <p>
-                        <strong>Serving Until:</strong>{" "}
-                        {currentPastor.leftYear || "Present"}
-                      </p>
-
-                      <p>
+                                 <p>
                         <strong>Bio:</strong>{" "}
                         {currentPastor.bio ||
                           "No details available"}

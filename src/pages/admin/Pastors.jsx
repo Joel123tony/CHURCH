@@ -55,18 +55,21 @@ export default function Pastors() {
   }, []);
 
   // ---------------- FILTER (CRASH SAFE) ----------------
-  const filteredPastors = (pastors || []).filter((p) => {
-    const name = p?.name || "";
+const filteredPastors = (pastors || []).filter((p) => {
+  const name = p?.name || "";
 
-    const matchesSearch = name
-      .toLowerCase()
-      .includes((search || "").toLowerCase());
+  const matchesSearch = name
+    .toLowerCase()
+    .includes((search || "").toLowerCase());
 
-    if (view === "current") return p?.isActive && matchesSearch;
-    if (view === "former") return !p?.isActive && matchesSearch;
+  if (view === "current")
+    return p?.isCurrent === true && matchesSearch;
 
-    return matchesSearch;
-  });
+  if (view === "former")
+    return p?.isCurrent !== true && matchesSearch;
+
+  return matchesSearch;
+});
 
   // ---------------- INPUT ----------------
   const handleChange = (e) => {
@@ -116,10 +119,18 @@ export default function Pastors() {
 
       const imageUrl = await uploadImage();
 
-      const payload = {
-        ...form,
-        image: imageUrl ? { url: imageUrl } : undefined,
-      };
+const payload = {
+  name: form.name,
+  role: form.role,
+  bio: form.bio,
+  joinedYear: Number(form.joinedYear),
+  leftYear: form.endYear ? Number(form.endYear) : null,
+  education: form.education,
+  church: form.church,
+  email: form.email,
+  number: form.phone,
+  image: imageUrl ? { url: imageUrl } : undefined,
+};
 
       if (editId) {
         await API.put(`/pastors/${editId}`, payload);
@@ -143,6 +154,7 @@ export default function Pastors() {
     }
   };
 
+  
   // ---------------- EDIT ----------------
   const handleEdit = (p) => {
     setEditId(p?._id);
@@ -157,7 +169,7 @@ export default function Pastors() {
       church: p?.church || "",
       email: p?.email || "",
       phone: p?.phone || "",
-      isActive: p?.isActive ?? true,
+     isCurrent: p?.isCurrent ?? false,
     });
 
     setPreview(p?.image?.url || null);
@@ -329,54 +341,82 @@ export default function Pastors() {
       ) : (
         <div className="grid md:grid-cols-3 gap-4">
           {filteredPastors.map((p) => (
-            <div key={p?._id} className="bg-white shadow rounded overflow-hidden">
-
-              <img
-                src={p?.image?.url || "/default.png"}
-                className="h-40 w-full object-cover"
-              />
-
-              <div className="p-3">
-                <h2 className="font-bold">{p?.name}</h2>
-                <p className="text-sm text-gray-600">{p?.role}</p>
-
-                <p className="text-xs mt-1">
-                  {p?.joinedYear} - {p?.endYear || "Present"}
-                </p>
-
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => handleEdit(p)}
-                    className="bg-yellow-500 px-2 py-1 text-white rounded text-sm"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(p?._id)}
-                    className="bg-red-500 px-2 py-1 text-white rounded text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-                <button
-  onClick={async () => {
-    await API.put(`/pastors/current/${p._id}`);
-    fetchPastors();
-    toast.success("Current pastor updated");
-  }}
-  className="bg-green-600 text-white px-2 py-1 rounded text-sm"
+           <div
+  key={p?._id}
+  className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border-2 ${
+    p?.isCurrent
+      ? "border-green-500"
+      : "border-transparent"
+  }`}
 >
-  Set Current
-</button>
+  <img
+    src={p?.image?.url || "/default.png"}
+    alt={p?.name}
+    className="h-52 w-full object-cover"
+  />
 
-                {p?.isActive && (
-                  <span className="text-green-600 text-xs font-bold">
-                    ● Active
-                  </span>
-                )}
-              </div>
-            </div>
+  <div className="p-4">
+    <div className="flex items-center justify-between">
+      <h2 className="font-bold text-xl">
+        {p?.name}
+      </h2>
+
+      {p?.isCurrent && (
+        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+          Current
+        </span>
+      )}
+    </div>
+
+    <p className="text-gray-600 mt-1">
+      {p?.role}
+    </p>
+
+    <p className="text-sm text-gray-500 mt-2">
+      {p?.joinedYear} - {p?.endYear || "Present"}
+    </p>
+
+    <div className="flex flex-wrap gap-3 mt-5">
+      <button
+        onClick={() => handleEdit(p)}
+        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+      >
+        Edit
+      </button>
+
+      <button
+        onClick={() => handleDelete(p?._id)}
+        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+      >
+        Delete
+      </button>
+
+      {p?.isCurrent ? (
+        <button
+          disabled
+          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-default"
+        >
+          ⭐ Pastor Now
+        </button>
+      ) : (
+        <button
+          onClick={async () => {
+            try {
+              await API.put(`/pastors/current/${p._id}`);
+              toast.success("Current pastor updated");
+              fetchPastors();
+            } catch (err) {
+              toast.error("Failed to update pastor");
+            }
+          }}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+        >
+          Set Current
+        </button>
+      )}
+    </div>
+  </div>
+</div>
           ))}
         </div>
       )}
