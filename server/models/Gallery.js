@@ -8,10 +8,15 @@ const gallerySchema = new mongoose.Schema(
       trim: true,
     },
 
+    eventDate: {
+      type: Date,
+      default: null,
+    },
+
     mediaType: {
       type: String,
       enum: ["image", "video"],
-      default: "image",
+      required: true,
     },
 
     url: {
@@ -24,13 +29,24 @@ const gallerySchema = new mongoose.Schema(
       required: true,
     },
 
-    // 🔥 NEW: homepage control system
+    /* =========================
+       HOMEPAGE GALLERY SYSTEM
+       null = hidden
+       1-4 = shown on homepage
+    ========================= */
     clientPriority: {
       type: Number,
       default: null,
+      min: 1,
+      max: 4,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-export default mongoose.model("Gallery", gallerySchema);
+export default mongoose.model(
+  "Gallery",
+  gallerySchema
+);

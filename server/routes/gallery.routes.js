@@ -7,33 +7,58 @@ import {
   getClientMedia,
   updateMedia,
   deleteMedia,
+  toggleClientGallery,
 } from "../controllers/galleryController.js";
 
 const router = express.Router();
 
 /* =========================
-   CREATE (UPLOAD + SAVE)
+   TOGGLE HOMEPAGE GALLERY
 ========================= */
-router.post("/", upload.single("file"), uploadMedia);
+router.patch(
+  "/toggle-client/:id",
+  toggleClientGallery
+);
 
 /* =========================
-   GET ALL (ADMIN)
+   CREATE MEDIA
 ========================= */
-router.get("/", getAllMedia);
+router.post(
+  "/",
+  upload.single("file"),
+  uploadMedia
+);
 
 /* =========================
-   GET CLIENT ONLY
+   ADMIN GALLERY
 ========================= */
-router.get("/client", getClientMedia);
+router.get(
+  "/",
+  getAllMedia
+);
+
+/* =========================
+   CLIENT HOMEPAGE GALLERY
+========================= */
+router.get(
+  "/client",
+  getClientMedia
+);
 
 /* =========================
    UPDATE MEDIA
 ========================= */
-router.put("/:id", updateMedia);
+router.put(
+  "/:id",
+  updateMedia
+);
 
 /* =========================
    DELETE MEDIA
 ========================= */
-router.delete("/:id", deleteMedia);
+router.delete(
+  "/:id",
+  deleteMedia
+);
 
 export default router;

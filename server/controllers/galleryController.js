@@ -10,20 +10,24 @@ export const uploadMedia = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "No file uploaded",
+        message: "File is required",
       });
     }
 
-    const result = await uploadToCloudinary(req.file.buffer);
+    const result = await uploadToCloudinary(
+      req.file.buffer
+    );
 
     const media = await Gallery.create({
       title: req.body.title || "Untitled",
+      eventDate: req.body.eventDate || null,
+      mediaType:
+        result.resource_type === "video"
+          ? "video"
+          : "image",
       url: result.url,
       public_id: result.public_id,
-      mediaType: result.resource_type === "video" ? "video" : "image",
-      showInClient:
-        req.body.showInClient === "true" ||
-        req.body.showInClient === true,
+      clientPriority: null,
     });
 
     return res.status(201).json({
@@ -32,6 +36,7 @@ export const uploadMedia = async (req, res) => {
     });
   } catch (err) {
     console.error("UPLOAD ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: err.message,
@@ -40,18 +45,19 @@ export const uploadMedia = async (req, res) => {
 };
 
 /* =========================
-   GET ALL MEDIA (ADMIN)
+   ADMIN LIST
 ========================= */
 export const getAllMedia = async (req, res) => {
   try {
-    const media = await Gallery.find().sort({ createdAt: -1 });
+    const media = await Gallery.find()
+      .sort({ createdAt: -1 });
 
-    res.json({
+    return res.json({
       success: true,
       data: media,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: err.message,
     });
@@ -59,22 +65,29 @@ export const getAllMedia = async (req, res) => {
 };
 
 /* =========================
-   GET CLIENT MEDIA
+   CLIENT GALLERY
 ========================= */
-export const getClientMedia = async (req, res) => {
+export const getClientMedia = async (
+  req,
+  res
+) => {
   try {
     const media = await Gallery.find({
-      clientPriority: { $exists: true },
+      clientPriority: {
+        $ne: null,
+      },
     })
-      .sort({ clientPriority: 1 })
+      .sort({
+        clientPriority: 1,
+      })
       .limit(4);
 
-    res.json({
+    return res.json({
       success: true,
       data: media,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: err.message,
     });
@@ -84,27 +97,37 @@ export const getClientMedia = async (req, res) => {
 /* =========================
    UPDATE MEDIA
 ========================= */
-export const updateMedia = async (req, res) => {
+export const updateMedia = async (
+  req,
+  res
+) => {
   try {
-    const media = await Gallery.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const media =
+      await Gallery.findByIdAndUpdate(
+        req.params.id,
+        {
+          title: req.body.title,
+          eventDate:
+            req.body.eventDate || null,
+        },
+        {
+          new: true,
+        }
+      );
 
     if (!media) {
       return res.status(404).json({
         success: false,
-        message: "Not found",
+        message: "Media not found",
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: media,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: err.message,
     });
@@ -114,28 +137,118 @@ export const updateMedia = async (req, res) => {
 /* =========================
    DELETE MEDIA
 ========================= */
-export const deleteMedia = async (req, res) => {
+export const deleteMedia = async (
+  req,
+  res
+) => {
   try {
-    const media = await Gallery.findById(req.params.id);
+    const media =
+      await Gallery.findById(
+        req.params.id
+      );
 
     if (!media) {
       return res.status(404).json({
         success: false,
-        message: "Not found",
+        message: "Media not found",
       });
     }
 
-    await deleteFromCloudinary(media.public_id);
+    await deleteFromCloudinary(
+      media.public_id,
+      media.mediaType
+    );
+
     await media.deleteOne();
 
-    res.json({
+    return res.json({
       success: true,
       message: "Deleted successfully",
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: err.message,
     });
   }
 };
+
+/* =========================
+   TOGGLE HOMEPAGE GALLERY
+========================= */
+export const toggleClientGallery =
+  async (req, res) => {
+    try {
+      const media =
+        await Gallery.findById(
+          req.params.id
+        );
+
+      if (!media) {
+        return res.status(404).json({
+          success: false,
+          message: "Media not found",
+        });
+      }
+
+      /* REMOVE FROM GALLERY */
+      if (
+        media.clientPriority !== null
+      ) {
+        media.clientPriority = null;
+
+        await media.save();
+
+        return res.json({
+          success: true,
+          data: media,
+        });
+      }
+
+      /* CURRENT ITEMS */
+      const selected =
+        await Gallery.find({
+          clientPriority: {
+            $ne: null,
+          },
+        });
+
+      if (selected.length >= 4) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Only 4 media items can be shown on homepage",
+        });
+      }
+
+      /* FIND AVAILABLE SLOT */
+      const usedSlots = selected
+        .map(
+          (item) =>
+            item.clientPriority
+        )
+        .filter(Boolean);
+
+      let slot = 1;
+
+      while (
+        usedSlots.includes(slot)
+      ) {
+        slot++;
+      }
+
+      media.clientPriority = slot;
+
+      await media.save();
+
+      return res.json({
+        success: true,
+        data: media,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  };
