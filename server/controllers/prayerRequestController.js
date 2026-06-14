@@ -73,3 +73,30 @@ export const markAsPrayed = async (
     });
   }
 };
+/* COUNTS */
+export const getPrayerCounts = async (
+  req,
+  res
+) => {
+  try {
+    const pending = await PrayerRequest.countDocuments({
+      status: "pending",
+    });
+
+    const completed =
+      await PrayerRequest.countDocuments({
+        status: "prayed",
+      });
+
+    res.json({
+      success: true,
+      pending,
+      completed,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

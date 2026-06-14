@@ -8,6 +8,7 @@ export default function PrayerRequestModal({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [request, setRequest] = useState("");
+  const [success, setSuccess] = useState(false);
 
   if (!isOpen) return null;
 
@@ -24,51 +25,19 @@ export default function PrayerRequestModal({
         }
       );
 
-      const message = `
-🇬🇧 ENGLISH
-
-Methodist Tamil Church Members
-
-Prayer Request
-
-Name: ${name}
-
-Request:
-${request}
-
-Please uphold this request in your prayers.
-
-────────────────────
-
-🇮🇳 தமிழ்
-
-மெதடிஸ்ட் தமிழ் திருச்சபை உறுப்பினர்கள்
-
-ஜெபக் கோரிக்கை
-
-பெயர்: ${name}
-
-கோரிக்கை:
-${request}
-
-இந்த ஜெபக் கோரிக்கைக்காக ஜெபிக்குமாறு அன்புடன் கேட்டுக்கொள்கிறோம்.
-`;
-
-      window.open(
-        `https://wa.me/?text=${encodeURIComponent(message)}`,
-        "_blank"
-      );
-
-      alert("Prayer Request Submitted");
+      setSuccess(true);
 
       setName("");
       setPhone("");
       setRequest("");
 
-      onClose();
+      setTimeout(() => {
+        setSuccess(false);
+        onClose();
+      }, 2500);
+
     } catch (err) {
       console.error(err);
-      alert("Failed to submit request");
     }
   };
 
@@ -79,6 +48,12 @@ ${request}
         <h2 className="text-2xl font-bold text-primary mb-6">
           Prayer Request
         </h2>
+
+        {success && (
+          <div className="mb-4 bg-green-100 border border-green-500 text-green-700 px-4 py-3 rounded-xl">
+            Prayer Request Submitted Successfully
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit}

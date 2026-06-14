@@ -3,6 +3,9 @@ import Pastor from "../models/Pastor.js";
 import Sermon from "../models/Sermon.js";
 import upload from "../middleware/upload.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
+import Event from "../models/Event.js";
+import Gallery from "../models/Gallery.js";
+import PrayerRequest from "../models/PrayerRequest.js";
 
 const router = express.Router();
 
@@ -11,20 +14,28 @@ const router = express.Router();
 ========================= */
 router.get("/dashboard", async (req, res) => {
   try {
-    const [pastorsCount, sermonsCount, latestSermons] =
-      await Promise.all([
-        Pastor.countDocuments(),
-        Sermon.countDocuments(),
-        Sermon.find().sort({ createdAt: -1 }).limit(5),
-      ]);
+    const [
+      pastorsCount,
+      eventsCount,
+      galleryCount,
+      prayerCount,
+    ] = await Promise.all([
+      Pastor.countDocuments(),
+      Event.countDocuments(),
+      Gallery.countDocuments(),
+      PrayerRequest.countDocuments({
+        status: "pending",
+      }),
+    ]);
 
     res.json({
       success: true,
       counts: {
         pastors: pastorsCount,
-        sermons: sermonsCount,
+        events: eventsCount,
+        gallery: galleryCount,
+        prayerRequests: prayerCount,
       },
-      latestSermons,
     });
   } catch (err) {
     res.status(500).json({

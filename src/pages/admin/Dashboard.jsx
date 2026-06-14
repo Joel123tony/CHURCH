@@ -25,21 +25,25 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow">
-        <h1 className="text-2xl font-bold mb-2">
+    <div className="space-y-6 p-3 sm:p-6">
+
+      {/* HEADER */}
+      <div className="bg-white p-4 sm:p-6 rounded-2xl shadow">
+        <h1 className="text-xl sm:text-2xl font-bold mb-2">
           {user
             ? `Welcome ${user.username || user.name || "Admin"}`
             : "Dashboard"}
         </h1>
 
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm sm:text-base">
           Church Admin Dashboard
         </p>
       </div>
 
+      {/* STATS */}
       {stats?.counts && (
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
           <div className="bg-white p-4 rounded-xl shadow">
             <p className="text-sm text-gray-500">Pastors</p>
             <p className="text-2xl font-bold">
@@ -48,18 +52,28 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white p-4 rounded-xl shadow">
-            <p className="text-sm text-gray-500">Sermons</p>
+            <p className="text-sm text-gray-500">Events</p>
             <p className="text-2xl font-bold">
-              {stats.counts.sermons}
+              {stats.counts.events}
             </p>
           </div>
 
           <div className="bg-white p-4 rounded-xl shadow">
-            <p className="text-sm text-gray-500">Users</p>
+            <p className="text-sm text-gray-500">Gallery</p>
             <p className="text-2xl font-bold">
-              {stats.counts.users}
+              {stats.counts.gallery}
             </p>
           </div>
+
+          <div className="bg-white p-4 rounded-xl shadow border-l-4 border-red-500">
+            <p className="text-sm text-gray-500">
+              Pending Prayer Requests
+            </p>
+            <p className="text-2xl font-bold text-red-600">
+              {stats.counts.prayerRequests}
+            </p>
+          </div>
+
         </div>
       )}
     </div>

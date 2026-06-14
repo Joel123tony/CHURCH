@@ -10,6 +10,7 @@ import Pastors from "./pages/admin/Pastors";
 import Events from "./pages/admin/Events";
 import Gallery from "./pages/admin/Gallery";
 import Messages from "./pages/admin/Messages";
+import PrayerRequests from "./pages/admin/PrayerRequests";
 
 // CLIENT GALLERY
 import ClientGallery from "./pages/ClientGallery";
@@ -35,6 +36,10 @@ export default function App() {
           <Route path="events" element={<Events />} />
           <Route path="gallery" element={<Gallery />} />
           <Route path="messages" element={<Messages />} />
+          <Route
+  path="prayer-requests"
+  element={<PrayerRequests />}
+/>
         </Route>
 
       </Routes>

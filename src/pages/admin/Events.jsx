@@ -6,7 +6,9 @@ export default function Events() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [venue, setVenue] = useState("Methodist Tamil church Padikuppam");
+  const [venue, setVenue] = useState(
+    "Methodist Tamil church Padikuppam"
+  );
 
   const [editId, setEditId] = useState(null);
 
@@ -34,7 +36,6 @@ export default function Events() {
     div.style.zIndex = 9999;
 
     document.body.appendChild(div);
-
     setTimeout(() => div.remove(), 3000);
   };
 
@@ -86,75 +87,84 @@ export default function Events() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
 
       <h1 className="text-2xl font-bold">Events Admin</h1>
 
       {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-4 rounded shadow space-y-3"
+        className="bg-white p-4 sm:p-6 rounded-2xl shadow space-y-3"
       >
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Title"
-          className="border p-2 w-full"
+          placeholder="Event Title"
+          className="border p-3 w-full rounded-xl"
         />
 
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="border p-2 w-full"
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="border p-3 w-full rounded-xl"
+          />
 
-  <input
-  type="time"
-  value={time}
-  onChange={(e) => setTime(e.target.value)}
-  className="border p-2 w-full"
-/>
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="border p-3 w-full rounded-xl"
+          />
+        </div>
 
         <select
           value={venue}
           onChange={(e) => setVenue(e.target.value)}
-          className="border p-2 w-full"
+          className="border p-3 w-full rounded-xl"
         >
           <option>Methodist Tamil church Padikuppam</option>
           <option>Custom</option>
         </select>
 
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-xl font-medium">
           {editId ? "Update Event" : "Create Event"}
         </button>
       </form>
 
       {/* LIST */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {events.map((e) => (
           <div
             key={e._id}
-            className="bg-gray-100 p-3 rounded flex justify-between"
+            className="bg-white p-4 rounded-2xl shadow flex flex-col gap-2"
           >
-            <div>
-              <h2 className="font-bold">{e.title}</h2>
-              <p>{new Date(e.date).toDateString()}</p>
-              <p>{e.time}</p>
-              <p>{e.venue}</p>
-            </div>
+            <h2 className="font-bold text-lg">{e.title}</h2>
 
-            <div className="space-x-2">
+            <p className="text-sm text-gray-600">
+              📅 {new Date(e.date).toDateString()}
+            </p>
+
+            <p className="text-sm text-gray-600">
+              ⏰ {e.time}
+            </p>
+
+            <p className="text-sm text-gray-500">
+              📍 {e.venue}
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-2 mt-3">
               <button
                 onClick={() => handleEdit(e)}
-                className="bg-yellow-500 px-3 py-1 rounded"
+                className="w-full sm:w-auto bg-yellow-500 px-4 py-2 rounded-xl text-white"
               >
                 Edit
               </button>
 
               <button
                 onClick={() => handleDelete(e._id)}
-                className="bg-red-500 text-white px-3 py-1 rounded"
+                className="w-full sm:w-auto bg-red-500 px-4 py-2 rounded-xl text-white"
               >
                 Delete
               </button>
@@ -162,6 +172,7 @@ export default function Events() {
           </div>
         ))}
       </div>
+
     </div>
   );
 }

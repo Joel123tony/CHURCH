@@ -190,236 +190,213 @@ const payload = {
 
   // ---------------- UI ----------------
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+  <div className="min-h-screen bg-gray-50 px-3 md:px-6 py-4">
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Pastors Management</h1>
+    {/* HEADER */}
+    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 max-w-7xl mx-auto">
+      <h1 className="text-xl md:text-2xl font-bold">
+        Pastors Management
+      </h1>
 
-        <input
-          className="border p-2 rounded w-64"
-          placeholder="Search pastor..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <input
+        className="border p-2 rounded w-full md:w-72"
+        placeholder="Search pastor..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+    </div>
 
-      {/* TABS */}
-      <div className="flex gap-3 mb-6">
-        <button
-          onClick={() => setView("current")}
-          className={`px-4 py-2 rounded ${
-            view === "current" ? "bg-green-600 text-white" : "bg-white"
-          }`}
-        >
-          Current Pastors
-        </button>
-
-        <button
-          onClick={() => setView("former")}
-          className={`px-4 py-2 rounded ${
-            view === "former" ? "bg-gray-700 text-white" : "bg-white"
-          }`}
-        >
-          Pastor's List
-        </button>
-      </div>
-
-      {/* FORM */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-4 rounded shadow mb-6 grid md:grid-cols-3 gap-3"
+    {/* TABS */}
+    <div className="flex flex-wrap gap-3 mb-6 max-w-7xl mx-auto">
+      <button
+        onClick={() => setView("current")}
+        className={`px-4 py-2 rounded ${
+          view === "current"
+            ? "bg-green-600 text-white"
+            : "bg-white"
+        }`}
       >
-        <input
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-          className="border p-2 rounded"
-          required
-        />
+        Current Pastors
+      </button>
 
-        <select
-          name="role"
-          value={form.role}
-          onChange={handleChange}
-          className="border p-2 rounded"
-        >
-          <option>Pastor</option>
-          <option>Senior Pastor</option>
-          <option>Associate Pastor</option>
-          <option>Youth Pastor</option>
-          <option>Worship Pastor</option>
-          <option>Other</option>
-        </select>
+      <button
+        onClick={() => setView("former")}
+        className={`px-4 py-2 rounded ${
+          view === "former"
+            ? "bg-gray-700 text-white"
+            : "bg-white"
+        }`}
+      >
+        Pastor's List
+      </button>
+    </div>
 
-        <input
-          name="education"
-          placeholder="Education"
-          value={form.education}
-          onChange={handleChange}
-          className="border p-2 rounded"
-        />
-
-        <input
-          name="joinedYear"
-          placeholder="Joined Year"
-          value={form.joinedYear}
-          onChange={handleChange}
-          className="border p-2 rounded"
-          required
-        />
-
-        <input
-          name="endYear"
-          placeholder="End Year"
-          value={form.endYear}
-          onChange={handleChange}
-          className="border p-2 rounded"
-        />
-
-        <input
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          className="border p-2 rounded"
-        />
-
-        <input
-          name="phone"
-          placeholder="Phone"
-          value={form.phone}
-          onChange={handleChange}
-          className="border p-2 rounded"
-        />
-
-        <textarea
-          name="bio"
-          placeholder="Bio"
-          value={form.bio}
-          onChange={handleChange}
-          className="border p-2 rounded md:col-span-3"
-        />
-
-        <input type="file" onChange={handleImage} className="md:col-span-3" />
-{preview && (
-  <div className="relative w-fit">
-
-    <img
-      src={preview}
-      className="w-32 h-32 rounded-xl object-cover"
-    />
-
-    <button
-      type="button"
-      onClick={() => {
-        setPreview(null);
-        setFile(null);
-      }}
-      className="absolute -top-2 -right-2 bg-red-600 text-white w-6 h-6 rounded-full"
+    {/* FORM CONTAINER (FIXED WIDTH ISSUE) */}
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white p-4 rounded shadow mb-6 grid grid-cols-1 md:grid-cols-3 gap-3 max-w-7xl mx-auto"
     >
-      ×
-    </button>
+      {/* keep your inputs same */}
+      <input
+        name="name"
+        placeholder="Name"
+        value={form.name}
+        onChange={handleChange}
+        className="border p-2 rounded"
+        required
+      />
 
-  </div>
-)}
-
-      
-
-        <button
-          type="submit"
-          className="bg-blue-600 text-white p-2 rounded md:col-span-3"
-        >
-          {editId ? "Update Pastor" : "Add Pastor"}
-        </button>
-      </form>
-
-      {/* LIST */}
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="grid md:grid-cols-3 gap-4">
-          {filteredPastors.map((p) => (
-           <div
-  key={p?._id}
-  className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border-2 ${
-    p?.isCurrent
-      ? "border-green-500"
-      : "border-transparent"
-  }`}
->
-  <img
-    src={p?.image?.url || "/default.png"}
-    alt={p?.name}
-    className="h-52 w-full object-cover"
-  />
-
-  <div className="p-4">
-    <div className="flex items-center justify-between">
-      <h2 className="font-bold text-xl">
-        {p?.name}
-      </h2>
-
-      {p?.isCurrent && (
-        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
-          Current
-        </span>
-      )}
-    </div>
-
-    <p className="text-gray-600 mt-1">
-      {p?.role}
-    </p>
-
-    <p className="text-sm text-gray-500 mt-2">
-      {p?.joinedYear} - {p?.endYear || "Present"}
-    </p>
-
-    <div className="flex flex-wrap gap-3 mt-5">
-      <button
-        onClick={() => handleEdit(p)}
-        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+      <select
+        name="role"
+        value={form.role}
+        onChange={handleChange}
+        className="border p-2 rounded"
       >
-        Edit
-      </button>
+        <option>Pastor</option>
+        <option>Senior Pastor</option>
+        <option>Associate Pastor</option>
+        <option>Youth Pastor</option>
+        <option>Worship Pastor</option>
+        <option>Other</option>
+      </select>
 
-      <button
-        onClick={() => handleDelete(p?._id)}
-        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-      >
-        Delete
-      </button>
+      <input
+        name="education"
+        placeholder="Education"
+        value={form.education}
+        onChange={handleChange}
+        className="border p-2 rounded"
+      />
 
-      {p?.isCurrent ? (
-        <button
-          disabled
-          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium cursor-default"
-        >
-          ⭐ Pastor Now
-        </button>
-      ) : (
-        <button
-          onClick={async () => {
-            try {
-              await API.put(`/pastors/current/${p._id}`);
-              toast.success("Current pastor updated");
-              fetchPastors();
-            } catch (err) {
-              toast.error("Failed to update pastor");
-            }
-          }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-        >
-          Set Current
-        </button>
-      )}
-    </div>
-  </div>
-</div>
-          ))}
+      <input
+        name="joinedYear"
+        placeholder="Joined Year"
+        value={form.joinedYear}
+        onChange={handleChange}
+        className="border p-2 rounded"
+        required
+      />
+
+      <input
+        name="endYear"
+        placeholder="End Year"
+        value={form.endYear}
+        onChange={handleChange}
+        className="border p-2 rounded"
+      />
+
+      <input
+        name="email"
+        placeholder="Email"
+        value={form.email}
+        onChange={handleChange}
+        className="border p-2 rounded"
+      />
+
+      <input
+        name="phone"
+        placeholder="Phone"
+        value={form.phone}
+        onChange={handleChange}
+        className="border p-2 rounded"
+      />
+
+      <textarea
+        name="bio"
+        placeholder="Bio"
+        value={form.bio}
+        onChange={handleChange}
+        className="border p-2 rounded md:col-span-3"
+      />
+
+      <input type="file" onChange={handleImage} className="md:col-span-3" />
+
+      {preview && (
+        <div className="relative w-fit">
+          <img
+            src={preview}
+            className="w-32 h-32 rounded-xl object-cover"
+          />
+
+          <button
+            type="button"
+            onClick={() => {
+              setPreview(null);
+              setFile(null);
+            }}
+            className="absolute -top-2 -right-2 bg-red-600 text-white w-6 h-6 rounded-full"
+          >
+            ×
+          </button>
         </div>
       )}
-    </div>
-  );
-}
+
+      <button
+        type="submit"
+        className="bg-blue-600 text-white p-2 rounded md:col-span-3"
+      >
+        {editId ? "Update Pastor" : "Add Pastor"}
+      </button>
+    </form>
+
+    {/* LIST (FIXED DESKTOP SPACING ISSUE) */}
+    {loading ? (
+      <p className="text-center">Loading...</p>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-7xl mx-auto">
+        {filteredPastors.map((p) => (
+          <div
+            key={p?._id}
+            className={`bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border-2 ${
+              p?.isCurrent ? "border-green-500" : "border-transparent"
+            }`}
+          >
+            <img
+              src={p?.image?.url || "/default.png"}
+              alt={p?.name}
+              className="h-52 w-full object-cover"
+            />
+
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-xl">{p?.name}</h2>
+
+                {p?.isCurrent && (
+                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    Current
+                  </span>
+                )}
+              </div>
+
+              <p className="text-gray-600 mt-1">{p?.role}</p>
+
+              <p className="text-sm text-gray-500 mt-2">
+                {p?.joinedYear} - {p?.endYear || "Present"}
+              </p>
+
+              <div className="flex flex-wrap gap-3 mt-5">
+                <button className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm">
+                  Edit
+                </button>
+
+                <button className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm">
+                  Delete
+                </button>
+
+                {p?.isCurrent ? (
+                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
+                    ⭐ Pastor Now
+                  </button>
+                ) : (
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                    Set Current
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}

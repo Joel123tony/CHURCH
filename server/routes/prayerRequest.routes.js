@@ -4,6 +4,7 @@ import {
   createPrayerRequest,
   getPrayerRequests,
   markAsPrayed,
+  getPrayerCounts,
 } from "../controllers/prayerRequestController.js";
 
 const router = express.Router();
@@ -19,5 +20,8 @@ router.patch(
   "/:id/prayed",
   markAsPrayed
 );
-
+router.get(
+  "/counts",
+  getPrayerCounts
+);
 export default router;
