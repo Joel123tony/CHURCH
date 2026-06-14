@@ -7,6 +7,8 @@ import { connectDB } from "./config/db.js";
 
 import youtubeRoutes from "./routes/youtubeRoutes.js";
 
+
+
 /* ROUTES */
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -14,6 +16,8 @@ import pastorRoutes from "./routes/pastor.routes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
+import prayerRequestRoutes from "./routes/prayerRequest.routes.js";
+
 
 const app = express();
 
@@ -52,6 +56,13 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/youtube", youtubeRoutes);
+app.use(
+  "/api/prayer-requests",
+  prayerRequestRoutes
+);
+
+
+
 /* DEBUG 404 */
 app.use((req, res) => {
   res.status(404).json({
