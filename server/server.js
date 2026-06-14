@@ -5,6 +5,8 @@ import express from "express";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 
+import youtubeRoutes from "./routes/youtubeRoutes.js";
+
 /* ROUTES */
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -49,7 +51,7 @@ app.use("/api/pastors", pastorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/events", eventRoutes);
-
+app.use("/api/youtube", youtubeRoutes);
 /* DEBUG 404 */
 app.use((req, res) => {
   res.status(404).json({
