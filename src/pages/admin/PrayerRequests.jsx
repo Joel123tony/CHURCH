@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
 import API from "../../api/axios";
+import { FaWhatsapp, FaCopy } from "react-icons/fa";
 
 export default function PrayerRequests() {
   const [requests, setRequests] = useState([]);
   const [selected, setSelected] = useState(null);
+
+  const [selectedRequests, setSelectedRequests] =
+    useState([]);
+
+  const [showShareModal, setShowShareModal] =
+    useState(false);
+
+  const [language, setLanguage] =
+    useState("english");
 
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] =
@@ -15,7 +25,7 @@ export default function PrayerRequests() {
         "/prayer-requests"
       );
 
-      setRequests(res.data.data);
+      setRequests(res.data.data || []);
     } catch (err) {
       console.log(err);
     }
@@ -35,6 +45,14 @@ export default function PrayerRequests() {
     } catch (err) {
       console.log(err);
     }
+  };
+
+  const toggleRequest = (id) => {
+    setSelectedRequests((prev) =>
+      prev.includes(id)
+        ? prev.filter((i) => i !== id)
+        : [...prev, id]
+    );
   };
 
   const filteredRequests =
@@ -63,13 +81,104 @@ export default function PrayerRequests() {
       );
     });
 
+  const selectAllRequests = () => {
+    const ids =
+      filteredRequests.map(
+        (r) => r._id
+      );
+
+    setSelectedRequests(ids);
+  };
+
+  const clearSelection = () => {
+    setSelectedRequests([]);
+  };
+
+  const buildPrayerMessage = () => {
+    const selectedItems =
+      requests.filter((r) =>
+        selectedRequests.includes(
+          r._id
+        )
+      );
+
+    if (!selectedItems.length)
+      return "";
+
+    let header = "";
+
+    if (language === "english") {
+  header =
+    "*METHODIST TAMIL CHURCH*\n" +
+    "*PRAYER REQUESTS*\n\n" +
+    "Please uphold the following requests in prayer.\n\n";
+}
+
+if (language === "tamil") {
+  header =
+    "*மெதடிஸ்ட் தமிழ் திருச்சபை*\n" +
+    "*ஜெப விண்ணப்பங்கள்*\n\n" +
+    "பின்வரும் விண்ணப்பங்களுக்காக ஜெபிக்கவும்.\n\n";
+}
+
+if (language === "both") {
+  header =
+    "*METHODIST TAMIL CHURCH*\n" +
+    "*PRAYER REQUESTS / ஜெப விண்ணப்பங்கள்*\n\n";
+}
+    const body = selectedItems
+      .map(
+        (item, index) =>
+          `${index + 1}. ${
+            item.name
+          }\n\n${item.request}`
+      )
+      .join(
+        "\n\n━━━━━━━━━━━━━━\n\n"
+      );
+
+    return header + body;
+  };
+
+  const copyPrayerRequests =
+    async () => {
+      try {
+        const message =
+          buildPrayerMessage();
+
+        await navigator.clipboard.writeText(
+          message
+        );
+
+        alert(
+          "Prayer requests copied successfully"
+        );
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+  const sharePrayerRequests = () => {
+    const message =
+      buildPrayerMessage();
+
+    const url =
+      `https://wa.me/?text=${encodeURIComponent(
+        message
+      )}`;
+
+    window.open(
+      url,
+      "_blank"
+    );
+  };
+
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">
         Prayer Requests
       </h1>
 
-      {/* SEARCH */}
       <input
         type="text"
         placeholder="Search prayer requests..."
@@ -80,7 +189,6 @@ export default function PrayerRequests() {
         className="w-full mb-5 border rounded-xl p-3"
       />
 
-      {/* TABS */}
       <div className="flex gap-3 mb-6">
         <button
           onClick={() =>
@@ -96,7 +204,8 @@ export default function PrayerRequests() {
           {
             requests.filter(
               (i) =>
-                i.status === "pending"
+                i.status ===
+                "pending"
             ).length
           }
           )
@@ -116,14 +225,55 @@ export default function PrayerRequests() {
           {
             requests.filter(
               (i) =>
-                i.status === "prayed"
+                i.status ===
+                "prayed"
             ).length
           }
           )
         </button>
       </div>
 
-      {/* LIST */}
+      {filteredRequests.length >
+        0 && (
+        <div className="flex flex-wrap gap-3 mb-5">
+          <button
+            onClick={
+              selectAllRequests
+            }
+            className="bg-blue-600 text-white px-4 py-2 rounded-xl"
+          >
+            Select All
+          </button>
+
+          <button
+            onClick={
+              clearSelection
+            }
+            className="bg-gray-500 text-white px-4 py-2 rounded-xl"
+          >
+            Clear
+          </button>
+
+          {selectedRequests.length >
+            0 && (
+            <button
+              onClick={() =>
+                setShowShareModal(
+                  true
+                )
+              }
+              className="bg-green-600 text-white px-5 py-2 rounded-xl"
+            >
+              Share Requests (
+              {
+                selectedRequests.length
+              }
+              )
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="space-y-4">
         {filteredRequests.length ===
         0 ? (
@@ -137,56 +287,79 @@ export default function PrayerRequests() {
                 key={item._id}
                 className="bg-white rounded-2xl p-5 shadow"
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-lg">
-                      {item.name}
-                    </h3>
-
-                    <p className="text-gray-500 text-sm">
-                      {new Date(
-                        item.createdAt
-                      ).toLocaleString(
-                        "en-IN"
-                      )}
-                    </p>
-                  </div>
-
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      item.status ===
-                      "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-green-100 text-green-700"
-                    }`}
-                  >
-                    {item.status}
-                  </span>
-                </div>
-
-                <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={() =>
-                      setSelected(item)
+                <div className="flex items-start gap-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedRequests.includes(
+                      item._id
+                    )}
+                    onChange={() =>
+                      toggleRequest(
+                        item._id
+                      )
                     }
-                    className="bg-blue-600 text-white px-4 py-2 rounded-xl"
-                  >
-                    View
-                  </button>
+                    className="w-5 h-5 mt-1"
+                  />
 
-                  {item.status ===
-                    "pending" && (
-                    <button
-                      onClick={() =>
-                        markPrayed(
-                          item._id
-                        )
-                      }
-                      className="bg-green-600 text-white px-4 py-2 rounded-xl"
-                    >
-                      Prayed
-                    </button>
-                  )}
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-lg">
+                          {
+                            item.name
+                          }
+                        </h3>
+
+                        <p className="text-gray-500 text-sm">
+                          {new Date(
+                            item.createdAt
+                          ).toLocaleString(
+                            "en-IN"
+                          )}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          item.status ===
+                          "pending"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {
+                          item.status
+                        }
+                      </span>
+                    </div>
+
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        onClick={() =>
+                          setSelected(
+                            item
+                          )
+                        }
+                        className="bg-blue-600 text-white px-4 py-2 rounded-xl"
+                      >
+                        View
+                      </button>
+
+                      {item.status ===
+                        "pending" && (
+                        <button
+                          onClick={() =>
+                            markPrayed(
+                              item._id
+                            )
+                          }
+                          className="bg-green-600 text-white px-4 py-2 rounded-xl"
+                        >
+                          Prayed
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )
@@ -194,7 +367,6 @@ export default function PrayerRequests() {
         )}
       </div>
 
-      {/* MODAL */}
       {selected && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-6 max-w-xl w-full">
@@ -230,6 +402,76 @@ export default function PrayerRequests() {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md">
+            <h2 className="text-2xl font-bold mb-5">
+              Share Prayer Requests
+            </h2>
+
+            <label className="block mb-2 font-medium">
+              Language
+            </label>
+
+            <select
+              value={language}
+              onChange={(e) =>
+                setLanguage(
+                  e.target.value
+                )
+              }
+              className="w-full border rounded-xl p-3 mb-5"
+            >
+              <option value="english">
+                English
+              </option>
+
+              <option value="tamil">
+                Tamil
+              </option>
+
+              <option value="both">
+                English +
+                Tamil
+              </option>
+            </select>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={
+                  sharePrayerRequests
+                }
+                className="bg-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+              >
+                <FaWhatsapp />
+                WhatsApp Share
+              </button>
+
+              <button
+                onClick={
+                  copyPrayerRequests
+                }
+                className="bg-blue-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+              >
+                <FaCopy />
+                Copy Request
+              </button>
+
+              <button
+                onClick={() =>
+                  setShowShareModal(
+                    false
+                  )
+                }
+                className="bg-gray-500 text-white py-3 rounded-xl font-semibold"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ export default function PrayerRequestModal({
   const [phone, setPhone] = useState("");
   const [request, setRequest] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -16,12 +17,20 @@ export default function PrayerRequestModal({
     e.preventDefault();
 
     try {
+      setLoading(true);
+
+      // 🚀 UPDATED API (matches your backend system)
       await axios.post(
-        "https://church-rp0n.onrender.com/api/prayer-requests",
+        "https://church-rp0n.onrender.com/api/prayer/format",
         {
-          name,
-          phone,
-          request,
+          requests: [
+            {
+              name,
+              request,
+              phone,
+            },
+          ],
+          mode: "en-ta",
         }
       );
 
@@ -34,10 +43,13 @@ export default function PrayerRequestModal({
       setTimeout(() => {
         setSuccess(false);
         onClose();
-      }, 2500);
+      }, 2000);
 
     } catch (err) {
-      console.error(err);
+      console.error("Prayer submit error:", err);
+      alert("Failed to submit prayer request");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,18 +67,14 @@ export default function PrayerRequestModal({
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
+
           <input
             type="text"
             placeholder="Name"
             required
             value={name}
-            onChange={(e) =>
-              setName(e.target.value)
-            }
+            onChange={(e) => setName(e.target.value)}
             className="w-full border rounded-xl p-3"
           />
 
@@ -74,9 +82,7 @@ export default function PrayerRequestModal({
             type="text"
             placeholder="Phone Number (Optional)"
             value={phone}
-            onChange={(e) =>
-              setPhone(e.target.value)
-            }
+            onChange={(e) => setPhone(e.target.value)}
             className="w-full border rounded-xl p-3"
           />
 
@@ -85,18 +91,18 @@ export default function PrayerRequestModal({
             placeholder="Prayer Request"
             required
             value={request}
-            onChange={(e) =>
-              setRequest(e.target.value)
-            }
+            onChange={(e) => setRequest(e.target.value)}
             className="w-full border rounded-xl p-3"
           />
 
           <div className="flex gap-3">
+
             <button
               type="submit"
+              disabled={loading}
               className="flex-1 bg-primary text-white py-3 rounded-xl"
             >
-              Submit Request
+              {loading ? "Submitting..." : "Submit Request"}
             </button>
 
             <button
@@ -106,7 +112,9 @@ export default function PrayerRequestModal({
             >
               Close
             </button>
+
           </div>
+
         </form>
 
       </div>
