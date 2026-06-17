@@ -53,7 +53,7 @@ export default function Pastors() {
   useEffect(() => {
     fetchPastors();
   }, []);
-
+const [selectedPastor, setSelectedPastor] = useState(null);
   // ---------------- FILTER (CRASH SAFE) ----------------
 const filteredPastors = (pastors || []).filter((p) => {
   const name = p?.name || "";
@@ -125,7 +125,14 @@ const payload = {
   bio: form.bio,
   joinedYear: Number(form.joinedYear),
   leftYear: form.endYear ? Number(form.endYear) : null,
-  education: form.education,
+ education: [
+  ...educations.filter(
+    (e) => e && e !== "Other"
+  ),
+  ...(customEducation
+    ? [customEducation]
+    : []),
+],
   church: form.church,
   email: form.email,
   number: form.phone,
@@ -187,6 +194,20 @@ const payload = {
       toast.error("Delete failed");
     }
   };
+  const [educations, setEducations] = useState([""]);
+const [customEducation, setCustomEducation] = useState("");
+const educationOptions = [
+  "B.Th (Bachelor of Theology)",
+  "B.D (Bachelor of Divinity)",
+  "M.Div (Master of Divinity)",
+  "M.Th (Master of Theology)",
+  "D.Min (Doctor of Ministry)",
+  "Ph.D Theology",
+  "Dip.Th (Diploma in Theology)",
+  "B.A Theology",
+  "M.A Theology",
+  "Other",
+];
 
   // ---------------- UI ----------------
   return (
@@ -260,13 +281,70 @@ const payload = {
         <option>Other</option>
       </select>
 
-      <input
-        name="education"
-        placeholder="Education"
-        value={form.education}
-        onChange={handleChange}
-        className="border p-2 rounded"
-      />
+  <div className="md:col-span-3 space-y-3">
+  <label className="font-semibold">
+    Educational Qualifications
+  </label>
+
+  {educations.map((edu, index) => (
+    <div key={index} className="flex gap-2">
+      <select
+        value={edu}
+        onChange={(e) => {
+          const updated = [...educations];
+          updated[index] = e.target.value;
+          setEducations(updated);
+        }}
+        className="border p-2 rounded flex-1"
+      >
+        <option value="">Select Degree</option>
+
+        {educationOptions.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+
+      {educations.length > 1 && (
+        <button
+          type="button"
+          onClick={() =>
+            setEducations(
+              educations.filter((_, i) => i !== index)
+            )
+          }
+          className="bg-red-500 text-white px-3 rounded"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  ))}
+
+  {/* Custom Degree */}
+  {educations.includes("Other") && (
+    <input
+      type="text"
+      placeholder="Enter Custom Degree"
+      value={customEducation}
+      onChange={(e) =>
+        setCustomEducation(e.target.value)
+      }
+      className="border p-2 rounded w-full"
+    />
+  )}
+
+  <button
+    type="button"
+    onClick={() =>
+      setEducations([...educations, ""])
+    }
+    className="bg-green-600 text-white px-4 py-2 rounded"
+  >
+    + Add Additional Education
+  </button>
+</div>
 
       <input
         name="joinedYear"
@@ -375,13 +453,26 @@ const payload = {
               </p>
 
               <div className="flex flex-wrap gap-3 mt-5">
-                <button className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm">
-                  Edit
-                </button>
+                <button
+  onClick={() => setSelectedPastor(p)}
+  className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm"
+>
+  View
+</button>
 
-                <button className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm">
-                  Delete
-                </button>
+<button
+  onClick={() => handleEdit(p)}
+  className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm"
+>
+  Edit
+</button>
+
+<button
+  onClick={() => handleDelete(p._id)}
+  className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm"
+>
+  Delete
+</button>
 
                 {p?.isCurrent ? (
                   <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
@@ -398,5 +489,92 @@ const payload = {
         ))}
       </div>
     )}
+    {selectedPastor && (
+  <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+
+      <div className="relative">
+        <img
+          src={selectedPastor?.image?.url || "/default.png"}
+          alt={selectedPastor?.name}
+          className="w-full h-80 object-cover"
+        />
+
+        <button
+          onClick={() => setSelectedPastor(null)}
+          className="absolute top-4 right-4 bg-red-600 text-white w-10 h-10 rounded-full"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="p-6">
+
+        <h2 className="text-3xl font-bold">
+          {selectedPastor?.name}
+        </h2>
+
+        <p className="text-lg text-gray-600">
+          {selectedPastor?.role}
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-4 mt-6">
+
+          <div>
+            <p className="font-semibold">Church</p>
+            <p>{selectedPastor?.church || "-"}</p>
+          </div>
+
+          <div>
+            <p className="font-semibold">Years Served</p>
+            <p>
+              {selectedPastor?.joinedYear} -
+              {" "}
+              {selectedPastor?.leftYear || "Present"}
+            </p>
+          </div>
+
+          <div>
+            <p className="font-semibold">Email</p>
+            <p>{selectedPastor?.email || "-"}</p>
+          </div>
+
+          <div>
+            <p className="font-semibold">Phone</p>
+            <p>{selectedPastor?.number || "-"}</p>
+          </div>
+
+        </div>
+
+        <div className="mt-6">
+          <h3 className="font-semibold mb-2">
+            Education
+          </h3>
+
+          {Array.isArray(selectedPastor?.education) ? (
+            <ul className="list-disc ml-5">
+              {selectedPastor.education.map((edu, i) => (
+                <li key={i}>{edu}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>{selectedPastor?.education || "-"}</p>
+          )}
+        </div>
+
+        <div className="mt-6">
+          <h3 className="font-semibold mb-2">
+            Biography
+          </h3>
+
+          <p className="text-gray-700 whitespace-pre-wrap">
+            {selectedPastor?.bio || "No biography available"}
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
   </div>
 )}

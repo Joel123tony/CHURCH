@@ -71,10 +71,9 @@ export default function Events() {
     <div className="max-w-6xl mx-auto px-6">
 
       {/* TITLE */}
-      <h2 className="text-4xl font-bold text-white mb-10 text-center">
-        Church Events
-      </h2>
-
+    <h2 className="text-white text-3xl font-bold">
+      Events
+              </h2>
       <div className="grid md:grid-cols-2 gap-10">
 
         {/* ================= LATEST ================= */}

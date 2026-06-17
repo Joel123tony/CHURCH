@@ -4,8 +4,11 @@ import History from "../components/History";
 import Events from "../components/Events";
 import Gallery from "../components/Gallery";
 import Pastor from "../components/Pastor";
+import YoutubeSection from "../components/YoutubeSection";
 import Contact from "../components/Contact";
+
 import Footer from "../components/Footer";
+
 
 export default function Home() {
   return (
@@ -36,14 +39,20 @@ export default function Home() {
         <section id="gallery" className="scroll-mt-24">
           <Gallery />
         </section>
-        {/* PASTORS */}
-        <section id="pastors" className="scroll-mt-24">
-          <Pastor />
-        </section>
-            {/* CONTACT */}
-        <section id="contact" className="scroll-mt-24">
-          <Contact />
-        </section>
+   {/* PASTORS */}
+<section id="pastors" className="scroll-mt-24">
+  <Pastor />
+</section>
+
+{/* YOUTUBE */}
+<section id="youtube" className="scroll-mt-24">
+  <YoutubeSection />
+</section>
+
+{/* CONTACT */}
+<section id="contact" className="scroll-mt-24">
+  <Contact />
+</section>
 
         {/* FOOTER */}
         <Footer />
