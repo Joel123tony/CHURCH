@@ -4,6 +4,7 @@ import API from "../api/axios";
 export default function Hero() {
   const [live, setLive] = useState(false);
   const [videoId, setVideoId] = useState("");
+  const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -11,30 +12,27 @@ export default function Hero() {
 
     const fetchYoutubeVideo = async () => {
       try {
-        // ✅ FIXED: use SMART backend endpoint (NOT /latest)
         const res = await API.get("/youtube");
+        const data = res?.data;
 
-        const data = res?.data || {};
+        if (!data) {
+          setVideoId("");
+          setLive(false);
+          setTitle("");
+          return;
+        }
 
-        // SAFE parsing (handles all backend formats)
-        const id =
-          data.videoId ||
-          data.id ||
-          data.video ||
-          "";
-
-        const isLive =
-          data.live === true ||
-          data.isLive === true ||
-          false;
-
-        setVideoId(id);
-        setLive(isLive);
+        // ✅ STRICT backend mapping (NO guessing)
+        setVideoId(data.videoId || "");
+        setLive(Boolean(data.live));
+        setTitle(data.title || "");
 
       } catch (err) {
         console.error("YouTube API Error:", err);
+
         setVideoId("");
         setLive(false);
+        setTitle("");
       } finally {
         setLoading(false);
       }
@@ -42,7 +40,6 @@ export default function Hero() {
 
     fetchYoutubeVideo();
 
-    // ✅ safer interval (only runs if page stays open)
     interval = setInterval(fetchYoutubeVideo, 30000);
 
     return () => clearInterval(interval);
@@ -52,7 +49,7 @@ export default function Hero() {
     <section className="bg-primary text-white py-16">
       <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-10">
 
-        {/* ================= LEFT SIDE ================= */}
+        {/* LEFT SIDE */}
         <div>
           <h1 className="text-4xl font-bold mb-6">
             MTC Padikuppam
@@ -80,7 +77,7 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* ================= RIGHT SIDE ================= */}
+        {/* RIGHT SIDE */}
         <div className="bg-cream rounded-3xl p-4 text-primary shadow-lg">
 
           {/* LOADING */}
@@ -98,7 +95,7 @@ export default function Hero() {
             <iframe
               className="w-full h-72 rounded-2xl"
               src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0`}
-              title="MTC Padikuppam YouTube"
+              title={title || "YouTube Video"}
               allow="autoplay; encrypted-media"
               allowFullScreen
             />

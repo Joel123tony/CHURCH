@@ -6,9 +6,9 @@ const router = express.Router();
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const API_KEY = process.env.YOUTUBE_API_KEY;
 
-/* -----------------------------
-   SAFE YOUTUBE FETCH HELPER
-------------------------------*/
+/* =========================
+   SAFE FETCH WITH TIMEOUT
+========================= */
 const fetchYouTube = async (params) => {
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
 
@@ -20,7 +20,6 @@ const fetchYouTube = async (params) => {
     url.searchParams.set(key, value);
   });
 
-  // ⛑ timeout safety (prevents hanging requests)
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
 
@@ -33,77 +32,86 @@ const fetchYouTube = async (params) => {
 };
 
 /* =====================================================
-   SMART: LIVE OR LATEST (MAIN ENDPOINT - KEEP THIS)
+   🔥 MAIN ENDPOINT (SMART LIVE + LATEST)
+   /api/youtube
 ===================================================== */
 router.get("/", async (req, res) => {
   try {
-    // 🔴 CHECK LIVE
+    // 🔴 TRY LIVE STREAM (MORE RELIABLE QUERY)
     const liveData = await fetchYouTube({
       eventType: "live",
       type: "video",
+      maxResults: 1,
     });
 
-    if (liveData?.items?.length > 0) {
+    const liveVideo = liveData?.items?.[0];
+
+    if (liveVideo?.id?.videoId) {
       return res.json({
         live: true,
-        videoId: liveData.items[0].id.videoId,
+        videoId: liveVideo.id.videoId,
+        title: liveVideo.snippet.title,
       });
     }
 
-    // 🎥 FALLBACK LATEST
+    // 🎥 FALLBACK: LATEST VIDEO
     const latestData = await fetchYouTube({
       order: "date",
       type: "video",
       maxResults: 1,
     });
 
+    const latestVideo = latestData?.items?.[0];
+
     return res.json({
       live: false,
-      videoId: latestData?.items?.[0]?.id?.videoId || null,
+      videoId: latestVideo?.id?.videoId || null,
+      title: latestVideo?.snippet?.title || "No video found",
     });
   } catch (err) {
     console.error("YouTube Smart API Error:", err);
 
-    return res.status(500).json({
+    return res.status(200).json({
       live: false,
       videoId: null,
+      title: "Service unavailable",
     });
   }
 });
 
 /* =====================================================
-   LIVE ONLY (UNCHANGED BEHAVIOR)
+   🔥 LIVE ONLY ENDPOINT
+   /api/youtube/live
 ===================================================== */
 router.get("/live", async (req, res) => {
   try {
     const data = await fetchYouTube({
       eventType: "live",
       type: "video",
+      maxResults: 1,
     });
 
-    if (data?.items?.length) {
-      return res.json({
-        live: true,
-        videoId: data.items[0].id.videoId,
-      });
-    }
+    const video = data?.items?.[0];
 
     return res.json({
-      live: false,
-      videoId: null,
+      live: !!video?.id?.videoId,
+      videoId: video?.id?.videoId || null,
+      title: video?.snippet?.title || null,
     });
   } catch (err) {
     console.error("Live API Error:", err);
 
-    return res.status(500).json({
+    return res.status(200).json({
       live: false,
       videoId: null,
+      title: null,
     });
   }
 });
 
 /* =====================================================
-   LATEST 4 VIDEOS (UNCHANGED OUTPUT STRUCTURE)
+   🔥 LATEST VIDEOS (STABLE LIST)
+   /api/youtube/latest
 ===================================================== */
 router.get("/latest", async (req, res) => {
   try {
@@ -115,16 +123,17 @@ router.get("/latest", async (req, res) => {
 
     const videos =
       data?.items?.map((item) => ({
-        id: item.id.videoId,
-        title: item.snippet.title,
-        thumbnail: item.snippet.thumbnails?.high?.url,
-        publishedAt: item.snippet.publishedAt,
+        id: item?.id?.videoId,
+        title: item?.snippet?.title,
+        thumbnail: item?.snippet?.thumbnails?.high?.url,
+        publishedAt: item?.snippet?.publishedAt,
       })) || [];
 
     return res.json(videos);
   } catch (err) {
     console.error("Latest API Error:", err);
-    return res.status(500).json([]);
+
+    return res.status(200).json([]);
   }
 });
 

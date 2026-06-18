@@ -22,7 +22,7 @@ import youtubeRoutes from "./routes/youtubeRoutes.js";
 const app = express();
 
 /* =========================
-   TRUST PROXY (Render/VPS safe)
+   TRUST PROXY (Render safe)
 ========================= */
 app.set("trust proxy", 1);
 
@@ -32,35 +32,50 @@ app.set("trust proxy", 1);
 app.use(helmet());
 
 /* =========================
-   REQUEST LOGGING
+   LOGGING
 ========================= */
 app.use(morgan("dev"));
 
 /* =========================
-   RATE LIMIT (PROTECTION)
-   prevents API abuse + YouTube quota burn
+   RATE LIMIT (basic protection)
 ========================= */
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 120, // adjust later if needed
+  windowMs: 60 * 1000,
+  max: 120,
 });
 app.use(limiter);
 
 /* =========================
-   CORS (SAFE DEFAULT)
+   CORS (FIXED PROPERLY)
 ========================= */
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://church-rp0n.onrender.com"
+];
+
 app.use(
   cors({
-    origin: "*",
+    origin: function (origin, callback) {
+      // allow mobile apps / postman
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(null, false);
+      }
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
 );
 
 app.options("*", cors());
 
 /* =========================
-   BODY PARSING
+   BODY PARSER
 ========================= */
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -129,7 +144,7 @@ const startServer = async () => {
     });
   } catch (err) {
     console.error("❌ DB CONNECTION FAILED:", err);
-    process.exit(1); // important: stop broken server
+    process.exit(1);
   }
 };
 
