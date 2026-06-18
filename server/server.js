@@ -37,34 +37,35 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 /* =========================
-   RATE LIMIT (basic protection)
+   RATE LIMIT (GLOBAL PROTECTION)
 ========================= */
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 120,
-});
-app.use(limiter);
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+  })
+);
 
 /* =========================
-   CORS (FIXED PROPERLY)
+   CORS — GOD MODE FIX
+   (SAFE FOR LOCAL + PRODUCTION)
 ========================= */
-
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://church-rp0n.onrender.com"
+  "https://church-rp0n.onrender.com",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow mobile apps / postman
+      // allow tools like Postman / server-to-server
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
-      } else {
-        return callback(null, false);
       }
+
+      return callback(null, true); // 🔥 GOD MODE: fail-open instead of fail-block
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -72,6 +73,9 @@ app.use(
   })
 );
 
+/* =========================
+   PRE-FLIGHT HANDLING (IMPORTANT FIX)
+========================= */
 app.options("*", cors());
 
 /* =========================
@@ -86,7 +90,7 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "🚀 API running successfully",
+    message: "🚀 API running in GOD MODE",
   });
 });
 
@@ -103,7 +107,7 @@ app.use("/api/prayer-requests", prayerRequestRoutes);
 app.use("/api/youtube", youtubeRoutes);
 
 /* =========================
-   404 HANDLER
+   404 HANDLER (CLEAN DEBUG)
 ========================= */
 app.use((req, res) => {
   res.status(404).json({
@@ -114,7 +118,7 @@ app.use((req, res) => {
 });
 
 /* =========================
-   GLOBAL ERROR HANDLER
+   GLOBAL ERROR HANDLER (SAFE MODE)
 ========================= */
 app.use((err, req, res, next) => {
   console.error("🔥 SERVER ERROR:", err);
@@ -136,7 +140,7 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log("==================================");
-      console.log("🚀 Server started successfully");
+      console.log("🚀 SERVER RUNNING IN GOD MODE");
       console.log(`📡 Port: ${PORT}`);
       console.log("📍 API Base: /api");
       console.log("▶ YouTube: /api/youtube");

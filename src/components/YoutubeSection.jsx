@@ -12,12 +12,10 @@ export default function YoutubeSection() {
   const loadVideos = async () => {
     try {
       const res = await API.get("/youtube/latest");
-
-      console.log("YouTube API:", res.data);
-
       setVideos(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("YouTube Error:", err);
+      setVideos([]);
     } finally {
       setLoading(false);
     }
@@ -49,11 +47,9 @@ export default function YoutubeSection() {
                 className="group"
               >
                 <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300">
+
                   <img
-                    src={
-                      video.thumbnail ||
-                      `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`
-                    }
+                    src={video.thumbnail}
                     alt={video.title}
                     className="w-full h-56 object-cover group-hover:scale-105 transition duration-300"
                     onError={(e) => {
@@ -68,12 +64,11 @@ export default function YoutubeSection() {
 
                     {video.publishedAt && (
                       <p className="text-sm text-gray-500 mt-2">
-                        {new Date(
-                          video.publishedAt
-                        ).toLocaleDateString()}
+                        {new Date(video.publishedAt).toLocaleDateString()}
                       </p>
                     )}
                   </div>
+
                 </div>
               </a>
             ))}

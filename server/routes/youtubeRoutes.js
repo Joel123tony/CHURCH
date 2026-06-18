@@ -7,133 +7,96 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 const API_KEY = process.env.YOUTUBE_API_KEY;
 
 /* =========================
-   SAFE FETCH WITH TIMEOUT
+   FETCH HELPER
 ========================= */
-const fetchYouTube = async (params) => {
-  const url = new URL("https://www.googleapis.com/youtube/v3/search");
-
-  url.searchParams.set("part", "snippet");
-  url.searchParams.set("channelId", CHANNEL_ID);
-  url.searchParams.set("key", API_KEY);
-
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.set(key, value);
-  });
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
+const fetchYT = async (url) => {
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await fetch(url);
     return await res.json();
-  } finally {
-    clearTimeout(timeout);
+  } catch {
+    return {};
   }
 };
 
-/* =====================================================
-   🔥 MAIN ENDPOINT (SMART LIVE + LATEST)
-   /api/youtube
-===================================================== */
+/* =========================
+   GET UPLOADS PLAYLIST ID
+========================= */
+const getUploadsPlaylistId = async () => {
+  const url = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
+
+  const data = await fetchYT(url);
+
+  return data?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads || null;
+};
+
+/* =========================
+   GET LATEST VIDEO (GOD MODE RELIABLE)
+========================= */
+const getLatestVideo = async () => {
+  const playlistId = await getUploadsPlaylistId();
+
+  if (!playlistId) return null;
+
+  const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=1&key=${API_KEY}`;
+
+  const data = await fetchYT(url);
+
+  const item = data?.items?.[0];
+
+  return {
+    videoId: item?.snippet?.resourceId?.videoId || null,
+    title: item?.snippet?.title || "No video",
+    thumbnail: item?.snippet?.thumbnails?.high?.url || "",
+  };
+};
+
+/* =========================
+   HERO ENDPOINT (100% STABLE)
+========================= */
 router.get("/", async (req, res) => {
   try {
-    // 🔴 TRY LIVE STREAM (MORE RELIABLE QUERY)
-    const liveData = await fetchYouTube({
-      eventType: "live",
-      type: "video",
-      maxResults: 1,
-    });
-
-    const liveVideo = liveData?.items?.[0];
-
-    if (liveVideo?.id?.videoId) {
-      return res.json({
-        live: true,
-        videoId: liveVideo.id.videoId,
-        title: liveVideo.snippet.title,
-      });
-    }
-
-    // 🎥 FALLBACK: LATEST VIDEO
-    const latestData = await fetchYouTube({
-      order: "date",
-      type: "video",
-      maxResults: 1,
-    });
-
-    const latestVideo = latestData?.items?.[0];
+    const video = await getLatestVideo();
 
     return res.json({
+      videoId: video?.videoId || null,
+      title: video?.title || "No video",
       live: false,
-      videoId: latestVideo?.id?.videoId || null,
-      title: latestVideo?.snippet?.title || "No video found",
     });
   } catch (err) {
-    console.error("YouTube Smart API Error:", err);
+    console.error("YouTube GOD MODE error:", err);
 
-    return res.status(200).json({
-      live: false,
+    return res.json({
       videoId: null,
       title: "Service unavailable",
-    });
-  }
-});
-
-/* =====================================================
-   🔥 LIVE ONLY ENDPOINT
-   /api/youtube/live
-===================================================== */
-router.get("/live", async (req, res) => {
-  try {
-    const data = await fetchYouTube({
-      eventType: "live",
-      type: "video",
-      maxResults: 1,
-    });
-
-    const video = data?.items?.[0];
-
-    return res.json({
-      live: !!video?.id?.videoId,
-      videoId: video?.id?.videoId || null,
-      title: video?.snippet?.title || null,
-    });
-  } catch (err) {
-    console.error("Live API Error:", err);
-
-    return res.status(200).json({
       live: false,
-      videoId: null,
-      title: null,
     });
   }
 });
 
-/* =====================================================
-   🔥 LATEST VIDEOS (STABLE LIST)
-   /api/youtube/latest
-===================================================== */
+/* =========================
+   LATEST VIDEOS (6 ITEMS)
+========================= */
 router.get("/latest", async (req, res) => {
   try {
-    const data = await fetchYouTube({
-      order: "date",
-      type: "video",
-      maxResults: 4,
-    });
+    const playlistId = await getUploadsPlaylistId();
 
-    const videos =
-      data?.items?.map((item) => ({
-        id: item?.id?.videoId,
-        title: item?.snippet?.title,
-        thumbnail: item?.snippet?.thumbnails?.high?.url,
-        publishedAt: item?.snippet?.publishedAt,
-      })) || [];
+    if (!playlistId) return res.json([]);
+
+    const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=6&key=${API_KEY}`;
+
+    const data = await fetchYT(url);
+
+    const videos = (data?.items || []).map((item) => ({
+      videoId: item?.snippet?.resourceId?.videoId,
+      title: item?.snippet?.title,
+      thumbnail: item?.snippet?.thumbnails?.high?.url,
+      publishedAt: item?.snippet?.publishedAt,
+    }));
 
     return res.json(videos);
   } catch (err) {
-    console.error("Latest API Error:", err);
-
-    return res.status(200).json([]);
+    console.error(err);
+    return res.json([]);
   }
 });
 

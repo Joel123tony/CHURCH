@@ -1,59 +1,113 @@
 import axios from "axios";
 
-const CHANNEL_ID = "UC5mM5x7g4c4Z7wzW4eLw6AA"; // replace with your actual channel ID
+const CHANNEL_ID = process.env.CHANNEL_ID;
 
+const YT_BASE = "https://www.googleapis.com/youtube/v3/search";
+
+/* =========================
+   SAFE AXIOS WRAPPER
+========================= */
+const safeGet = async (params) => {
+  try {
+    const res = await axios.get(YT_BASE, { params });
+    return res.data;
+  } catch (err) {
+    console.error("YouTube API Error:", err.message);
+    return { items: [] };
+  }
+};
+
+/* =========================
+   SAFE EXTRACTOR
+========================= */
+const getVideoId = (item) => {
+  return item?.id?.videoId || null;
+};
+
+/* =========================
+   🔴 LIVE CHECK (SAFE)
+========================= */
+const getLiveVideo = async (apiKey) => {
+  const data = await safeGet({
+    part: "snippet",
+    channelId: CHANNEL_ID,
+    eventType: "live",
+    type: "video",
+    maxResults: 1,
+    key: apiKey,
+  });
+
+  const item = data?.items?.[0];
+
+  if (!item) return null;
+
+  return {
+    videoId: getVideoId(item),
+    title: item?.snippet?.title || "Live Video",
+  };
+};
+
+/* =========================
+   🎥 LATEST VIDEO (SAFE)
+========================= */
+const getLatestVideo = async (apiKey) => {
+  const data = await safeGet({
+    part: "snippet",
+    channelId: CHANNEL_ID,
+    order: "date",
+    type: "video",
+    maxResults: 1,
+    key: apiKey,
+  });
+
+  const item = data?.items?.[0];
+
+  if (!item) return null;
+
+  return {
+    videoId: getVideoId(item),
+    title: item?.snippet?.title || "Latest Video",
+  };
+};
+
+/* =========================
+   🚀 MAIN CONTROLLER (GOD MODE)
+========================= */
 export const getCurrentVideo = async (req, res) => {
   try {
     const apiKey = process.env.YOUTUBE_API_KEY;
 
-    // Check for live stream
-    const liveResponse = await axios.get(
-      "https://www.googleapis.com/youtube/v3/search",
-      {
-        params: {
-          part: "snippet",
-          channelId: CHANNEL_ID,
-          eventType: "live",
-          type: "video",
-          key: apiKey,
-        },
-      }
-    );
-
-    if (liveResponse.data.items.length > 0) {
-      return res.json({
-        success: true,
-        isLive: true,
-        videoId: liveResponse.data.items[0].id.videoId,
+    if (!apiKey || !CHANNEL_ID) {
+      return res.status(200).json({
+        success: false,
+        videoId: null,
+        isLive: false,
+        message: "Missing API config",
       });
     }
 
-    // Latest uploaded video
-    const latestResponse = await axios.get(
-      "https://www.googleapis.com/youtube/v3/search",
-      {
-        params: {
-          part: "snippet",
-          channelId: CHANNEL_ID,
-          order: "date",
-          maxResults: 1,
-          type: "video",
-          key: apiKey,
-        },
-      }
-    );
+    // STEP 1: try live
+    const liveVideo = await getLiveVideo(apiKey);
+
+    // STEP 2: fallback latest
+    const latestVideo = await getLatestVideo(apiKey);
+
+    const selected = liveVideo || latestVideo;
 
     return res.json({
       success: true,
-      isLive: false,
-      videoId: latestResponse.data.items[0].id.videoId,
+      isLive: !!liveVideo,
+      videoId: selected?.videoId || null,
+      title: selected?.title || "No video found",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Controller Crash:", error.message);
 
-    res.status(500).json({
+    return res.status(200).json({
       success: false,
-      message: "Failed to fetch YouTube data",
+      isLive: false,
+      videoId: null,
+      title: "Service unavailable",
     });
   }
 };

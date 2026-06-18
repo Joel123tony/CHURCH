@@ -1,48 +1,54 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import API from "../api/axios";
 
 export default function Hero() {
-  const [live, setLive] = useState(false);
-  const [videoId, setVideoId] = useState("");
-  const [title, setTitle] = useState("");
+  const [video, setVideo] = useState({
+    videoId: "",
+    title: "",
+  });
+
   const [loading, setLoading] = useState(true);
+  const intervalRef = useRef(null);
+  const retryRef = useRef(0);
+
+  const fetchYoutubeVideo = async () => {
+    try {
+      const res = await API.get("/youtube");
+      const data = res?.data || {};
+
+      const id = data?.videoId || "";
+      const title = data?.title || "";
+
+      setVideo({ videoId: id, title });
+
+      retryRef.current = 0; // reset retry on success
+    } catch (err) {
+      console.error("Hero API error:", err);
+
+      // 🔥 Retry logic (self-healing)
+      retryRef.current += 1;
+
+      if (retryRef.current < 3) {
+        setTimeout(fetchYoutubeVideo, 2000);
+      } else {
+        setVideo({ videoId: "", title: "" });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let interval;
-
-    const fetchYoutubeVideo = async () => {
-      try {
-        const res = await API.get("/youtube");
-        const data = res?.data;
-
-        if (!data) {
-          setVideoId("");
-          setLive(false);
-          setTitle("");
-          return;
-        }
-
-        // ✅ STRICT backend mapping (NO guessing)
-        setVideoId(data.videoId || "");
-        setLive(Boolean(data.live));
-        setTitle(data.title || "");
-
-      } catch (err) {
-        console.error("YouTube API Error:", err);
-
-        setVideoId("");
-        setLive(false);
-        setTitle("");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchYoutubeVideo();
 
-    interval = setInterval(fetchYoutubeVideo, 30000);
+    // clear old interval if exists
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
-    return () => clearInterval(interval);
+    intervalRef.current = setInterval(() => {
+      fetchYoutubeVideo();
+    }, 60000); // safer interval (1 min)
+
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   return (
@@ -59,22 +65,6 @@ export default function Hero() {
             Methodist Tamil Church serves the local community through worship,
             prayer, biblical teaching, discipleship, fellowship, and outreach ministries.
           </p>
-
-          <div className="grid md:grid-cols-2 gap-4 mt-8">
-            <div className="bg-cream text-primary p-5 rounded-xl shadow">
-              <h3 className="font-bold mb-2">Address</h3>
-              <p>
-                No. 1, Vandiamman Koil Street,
-                <br />
-                Mogappair East, Chennai
-              </p>
-            </div>
-
-            <div className="bg-cream text-primary p-5 rounded-xl shadow">
-              <h3 className="font-bold mb-2">Languages</h3>
-              <p>Tamil / English</p>
-            </div>
-          </div>
         </div>
 
         {/* RIGHT SIDE */}
@@ -83,19 +73,21 @@ export default function Hero() {
           {/* LOADING */}
           {loading ? (
             <div className="bg-white rounded-2xl h-72 flex items-center justify-center">
-              <p className="text-gray-500 font-semibold">Loading...</p>
+              <p className="text-gray-500 font-semibold">
+                Loading...
+              </p>
             </div>
-          ) : !videoId ? (
+          ) : !video.videoId ? (
             <div className="bg-white rounded-2xl h-72 flex items-center justify-center">
               <p className="text-gray-500 font-semibold">
-                No Videos Available
+                No Video Available
               </p>
             </div>
           ) : (
             <iframe
               className="w-full h-72 rounded-2xl"
-              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0`}
-              title={title || "YouTube Video"}
+              src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&rel=0`}
+              title={video.title || "YouTube Video"}
               allow="autoplay; encrypted-media"
               allowFullScreen
             />
@@ -104,7 +96,7 @@ export default function Hero() {
           {/* STATUS BAR */}
           <div className="flex justify-between items-center mt-4">
             <span className="font-bold text-lg">
-              {live ? "🔴 Live Now" : "Latest Sermon"}
+              {video.videoId ? "🔴 Latest Sermon" : "No Video"}
             </span>
 
             <a
