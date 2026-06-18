@@ -15,52 +15,63 @@ export default function Login() {
 
   /* ================= LOGIN ================= */
   const handleLogin = async () => {
-  if (!email || !password) {
-    alert("Please enter email and password");
-    return;
-  }
+    if (loading) return;
 
-  try {
-    setLoading(true);
+    const cleanEmail = email.trim();
 
-    const res = await API.post("/auth/login", {
-      email: email.trim(),
-      password,
-    });
-
-    console.log("LOGIN RESPONSE:", res.data);
-
-    // Save JWT token
-    if (res.data?.token) {
-      localStorage.setItem("token", res.data.token);
+    if (!cleanEmail || !password) {
+      alert("Please enter email and password");
+      return;
     }
 
-    // Save user object
-    if (res.data?.user) {
-      localStorage.setItem(
-        "user",
-        JSON.stringify(res.data.user)
+    try {
+      setLoading(true);
+
+      const res = await API.post("/auth/login", {
+        email: cleanEmail,
+        password,
+      });
+
+      console.log("FULL RESPONSE", res.data);
+
+      const token = res?.data?.token;
+      const user = res?.data?.user;
+
+      if (!token) {
+        alert("Login failed: Invalid response from server");
+        return;
+      }
+
+      // ✅ IMPORTANT: match AdminLayout (localStorage)
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user || {}));
+
+      // redirect
+      navigate("/admin/dashboard", { replace: true });
+
+    } catch (err) {
+      console.log("LOGIN ERROR", err);
+
+      alert(
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Login failed"
       );
+    } finally {
+      setLoading(false);
     }
+  };
 
-    navigate("/admin", { replace: true });
-
-  } catch (err) {
-    console.error("FULL LOGIN ERROR:", err);
-
-    alert(
-      err.response?.data?.message ||
-      err.response?.data?.error ||
-      "Login failed"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  /* ENTER KEY SUPPORT */
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleLogin();
+    }
+  };
 
   return (
     <div style={styles.container}>
-      <div style={styles.card}>
+      <div style={styles.card} onKeyDown={handleKeyDown}>
 
         <h2 style={styles.h2}>MTC Padikuppam</h2>
         <h4 style={styles.h4}>Admin Login</h4>
@@ -71,6 +82,7 @@ export default function Login() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          autoComplete="username"
         />
 
         {/* PASSWORD */}
@@ -81,6 +93,7 @@ export default function Login() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
           />
 
           <button
@@ -95,12 +108,12 @@ export default function Login() {
         {/* LOGIN BUTTON */}
         <button
           onClick={handleLogin}
+          disabled={loading}
           style={{
             ...styles.loginBtn,
             opacity: loading ? 0.7 : 1,
             cursor: loading ? "not-allowed" : "pointer",
           }}
-          disabled={loading}
         >
           {loading ? "Logging in..." : "Login"}
         </button>

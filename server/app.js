@@ -10,7 +10,8 @@ import adminRoutes from "./routes/adminAuth.routes.js";
 import pastorRoutes from "./routes/pastor.routes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
-import eventRoutes from "./routes/eventRoutes.js"; // already correct
+import eventRoutes from "./routes/eventRoutes.js";
+import youtubeRoutes from "./routes/youtubeRoutes.js";   // ✅ ADD THIS
 
 dotenv.config();
 connectDB();
@@ -38,8 +39,11 @@ app.use("/api/upload", uploadRoutes);
 /* GALLERY */
 app.use("/api/gallery", galleryRoutes);
 
-/* EVENTS ✅ ADD THIS */
+/* EVENTS */
 app.use("/api/events", eventRoutes);
+
+/* YOUTUBE ✅ FIXED */
+app.use("/api/youtube", youtubeRoutes);
 
 /* =========================
    EXPORT

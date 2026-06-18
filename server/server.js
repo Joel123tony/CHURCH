@@ -3,6 +3,10 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import morgan from "morgan";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+
 import { connectDB } from "./config/db.js";
 
 /* ROUTES */
@@ -13,53 +17,67 @@ import adminRoutes from "./routes/adminRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import prayerRequestRoutes from "./routes/prayerRequest.routes.js";
-import youtubeRoutes from "./routes/youtube.routes.js";
+import youtubeRoutes from "./routes/youtubeRoutes.js";
 
 const app = express();
 
-/* TRUST PROXY */
+/* =========================
+   TRUST PROXY (Render/VPS safe)
+========================= */
 app.set("trust proxy", 1);
 
-/* CORS */
+/* =========================
+   SECURITY HEADERS
+========================= */
+app.use(helmet());
+
+/* =========================
+   REQUEST LOGGING
+========================= */
+app.use(morgan("dev"));
+
+/* =========================
+   RATE LIMIT (PROTECTION)
+   prevents API abuse + YouTube quota burn
+========================= */
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120, // adjust later if needed
+});
+app.use(limiter);
+
+/* =========================
+   CORS (SAFE DEFAULT)
+========================= */
 app.use(
   cors({
     origin: "*",
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-/* PRE-FLIGHT */
 app.options("*", cors());
 
-/* BODY */
+/* =========================
+   BODY PARSING
+========================= */
 app.use(express.json({ limit: "50mb" }));
-app.use(
-  express.urlencoded({
-    extended: true,
-    limit: "50mb",
-  })
-);
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-/* HEALTH */
+/* =========================
+   HEALTH CHECK
+========================= */
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "🚀 API running",
+    message: "🚀 API running successfully",
   });
 });
 
-/* ROUTES */
+/* =========================
+   ROUTES
+========================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/pastors", pastorRoutes);
@@ -67,11 +85,11 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/prayer-requests", prayerRequestRoutes);
-
-/* YOUTUBE */
 app.use("/api/youtube", youtubeRoutes);
 
-/* 404 */
+/* =========================
+   404 HANDLER
+========================= */
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -80,9 +98,11 @@ app.use((req, res) => {
   });
 });
 
-/* ERROR HANDLER */
+/* =========================
+   GLOBAL ERROR HANDLER
+========================= */
 app.use((err, req, res, next) => {
-  console.error("SERVER ERROR:", err);
+  console.error("🔥 SERVER ERROR:", err);
 
   res.status(500).json({
     success: false,
@@ -90,7 +110,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-/* START */
+/* =========================
+   START SERVER
+========================= */
 const startServer = async () => {
   try {
     await connectDB();
@@ -98,15 +120,16 @@ const startServer = async () => {
     const PORT = process.env.PORT || 5000;
 
     app.listen(PORT, () => {
-      console.log(
-        `🚀 Server running on port ${PORT}`
-      );
-      console.log(
-        "✅ YouTube Route: /api/youtube/latest"
-      );
+      console.log("==================================");
+      console.log("🚀 Server started successfully");
+      console.log(`📡 Port: ${PORT}`);
+      console.log("📍 API Base: /api");
+      console.log("▶ YouTube: /api/youtube");
+      console.log("==================================");
     });
   } catch (err) {
-    console.error("DB ERROR:", err);
+    console.error("❌ DB CONNECTION FAILED:", err);
+    process.exit(1); // important: stop broken server
   }
 };
 

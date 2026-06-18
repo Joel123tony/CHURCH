@@ -17,19 +17,21 @@ export default function AdminLayout() {
     return () => clearInterval(timer);
   }, []);
 
-  /* AUTH CHECK */
+  /* AUTH CHECK (SAFE + CLEAN) */
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if (!token) {
-      navigate("/admin/login");
+    if (!token || token === "null" || token === "undefined") {
+      navigate("/admin/login", { replace: true });
       return;
     }
 
+    const storedUserRaw = localStorage.getItem("user");
+
     try {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
       setUser(storedUser || { name: "Administrator" });
-    } catch {
+    } catch (err) {
       setUser({ name: "Administrator" });
     }
   }, [navigate]);
@@ -41,7 +43,7 @@ export default function AdminLayout() {
   };
 
   const links = [
-    { to: "/admin", label: "Dashboard", end: true },
+    { to: "/admin/dashboard", label: "Dashboard", end: true }, // FIXED
     { to: "/admin/pastors", label: "Pastors" },
     { to: "/admin/events", label: "Events" },
     { to: "/admin/gallery", label: "Gallery" },

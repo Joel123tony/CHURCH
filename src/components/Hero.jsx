@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../api/axios";
 
 export default function Hero() {
   const [live, setLive] = useState(false);
@@ -7,18 +7,34 @@ export default function Hero() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let interval;
+
     const fetchYoutubeVideo = async () => {
       try {
-        const res = await axios.get(
-          "https://church-rp0n.onrender.com/api/youtube"
-        );
+        // ✅ FIXED: use SMART backend endpoint (NOT /latest)
+        const res = await API.get("/youtube");
 
-        setLive(res.data?.live || false);
-        setVideoId(res.data?.videoId || "");
+        const data = res?.data || {};
+
+        // SAFE parsing (handles all backend formats)
+        const id =
+          data.videoId ||
+          data.id ||
+          data.video ||
+          "";
+
+        const isLive =
+          data.live === true ||
+          data.isLive === true ||
+          false;
+
+        setVideoId(id);
+        setLive(isLive);
+
       } catch (err) {
         console.error("YouTube API Error:", err);
-        setLive(false);
         setVideoId("");
+        setLive(false);
       } finally {
         setLoading(false);
       }
@@ -26,7 +42,8 @@ export default function Hero() {
 
     fetchYoutubeVideo();
 
-    const interval = setInterval(fetchYoutubeVideo, 15000);
+    // ✅ safer interval (only runs if page stays open)
+    interval = setInterval(fetchYoutubeVideo, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -34,21 +51,20 @@ export default function Hero() {
   return (
     <section className="bg-primary text-white py-16">
       <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-10">
-        
-        {/* LEFT SIDE */}
+
+        {/* ================= LEFT SIDE ================= */}
         <div>
           <h1 className="text-4xl font-bold mb-6">
             MTC Padikuppam
           </h1>
 
-          <p className="leading-8">
+          <p className="leading-8 text-lg">
             Methodist Tamil Church serves the local community through worship,
-            prayer, biblical teaching, discipleship, fellowship, and outreach
-            ministries.
+            prayer, biblical teaching, discipleship, fellowship, and outreach ministries.
           </p>
 
           <div className="grid md:grid-cols-2 gap-4 mt-8">
-            <div className="bg-cream text-primary p-5 rounded-xl">
+            <div className="bg-cream text-primary p-5 rounded-xl shadow">
               <h3 className="font-bold mb-2">Address</h3>
               <p>
                 No. 1, Vandiamman Koil Street,
@@ -57,21 +73,20 @@ export default function Hero() {
               </p>
             </div>
 
-            <div className="bg-cream text-primary p-5 rounded-xl">
+            <div className="bg-cream text-primary p-5 rounded-xl shadow">
               <h3 className="font-bold mb-2">Languages</h3>
               <p>Tamil / English</p>
             </div>
           </div>
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* ================= RIGHT SIDE ================= */}
         <div className="bg-cream rounded-3xl p-4 text-primary shadow-lg">
-          
+
+          {/* LOADING */}
           {loading ? (
             <div className="bg-white rounded-2xl h-72 flex items-center justify-center">
-              <p className="text-gray-500 font-semibold">
-                Loading...
-              </p>
+              <p className="text-gray-500 font-semibold">Loading...</p>
             </div>
           ) : !videoId ? (
             <div className="bg-white rounded-2xl h-72 flex items-center justify-center">
@@ -89,6 +104,7 @@ export default function Hero() {
             />
           )}
 
+          {/* STATUS BAR */}
           <div className="flex justify-between items-center mt-4">
             <span className="font-bold text-lg">
               {live ? "🔴 Live Now" : "Latest Sermon"}
@@ -103,7 +119,9 @@ export default function Hero() {
               Watch on YouTube
             </a>
           </div>
+
         </div>
+
       </div>
     </section>
   );
