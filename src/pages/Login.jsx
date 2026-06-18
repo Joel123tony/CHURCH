@@ -47,7 +47,7 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(user || {}));
 
       // redirect
-      navigate("/admin/dashboard", { replace: true });
+     window.location.href = "/admin/dashboard";
 
     } catch (err) {
       console.log("LOGIN ERROR", err);

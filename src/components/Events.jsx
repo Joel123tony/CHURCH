@@ -15,16 +15,8 @@ export default function Events() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        setLoading(true);
-
         const res = await API.get("/events");
-        const data = res?.data?.data || [];
-
-        const sorted = [...data].sort(
-          (a, b) => new Date(a.date) - new Date(b.date)
-        );
-
-        setEvents(sorted);
+        setEvents(res?.data?.data || []);
       } catch (err) {
         console.error("Events fetch error:", err);
         setEvents([]);
@@ -38,130 +30,229 @@ export default function Events() {
 
   const now = new Date();
 
-  const latestEvent = events
-    .filter((e) => new Date(e.date) <= now)
-    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  const latestEvent =
+    events
+      .filter((e) => new Date(e.date) <= now)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
 
   const upcomingEvents = events.filter(
     (e) => new Date(e.date) > now
   );
 
-  const EventCard = ({ children, glow = false }) => (
-    <div
-      className={`p-5 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/40 shadow-md
-      transform transition duration-300 hover:scale-[1.03] hover:-translate-y-1 hover:shadow-xl
-      ${glow ? "ring-2 ring-[#5b1220]/30" : ""}`}
-    >
-      {children}
-    </div>
-  );
-
   if (loading) {
     return (
-      <section className="bg-primary py-16 text-white">
-        <div className="max-w-7xl mx-auto px-6">
-          Loading events...
-        </div>
+      <section
+        id="events"
+        className="bg-primary py-20 text-center text-white"
+      >
+        Loading Events...
       </section>
     );
   }
 
- return (
-  <section className="bg-primary py-16">
-    <div className="max-w-6xl mx-auto px-6">
+  return (
+    <section
+      id="events"
+      className="relative bg-primary py-20 lg:py-28 overflow-hidden"
+    >
+      {/* Background Effects */}
+      <div className="absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
 
-      {/* TITLE */}
-    <h2 className="text-white text-3xl font-bold">
-      Events
+      <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+
+        {/* HEADER */}
+      <div className="flex flex-col md:flex-row gap-3 justify-between items-center mb-6">
+              <h2 className="text-white text-3xl font-bold">
+                Events
               </h2>
-      <div className="grid md:grid-cols-2 gap-10">
-
-        {/* ================= LATEST ================= */}
-        <div>
-          <h3 className="text-xl font-bold mb-5 text-white flex items-center gap-2">
-            <FaFire className="text-orange-400" />
-            Latest Event
-          </h3>
-
-          {latestEvent ? (
-            <div className="bg-white rounded-3xl p-6 shadow-xl border border-white/30 flex flex-col gap-3">
-
-              <p className="text-xl font-bold text-gray-900">
-                {latestEvent.title}
-              </p>
-
-              <div className="text-gray-600 flex flex-col gap-2 text-sm">
-
-                <p className="flex items-center gap-2">
-                  <FaCalendarAlt />
-                  {new Date(latestEvent.date).toDateString()}
-                </p>
-
-                <p className="flex items-center gap-2">
-                  <FaClock />
-                  {latestEvent.time || "TBA"}
-                </p>
-
-                <p className="flex items-center gap-2">
-                  <FaMapMarkerAlt />
-                  {latestEvent.venue}
-                </p>
-
-              </div>
             </div>
-          ) : (
-            <p className="text-white/70">No latest event</p>
-          )}
-        </div>
+        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10">
 
-        {/* ================= UPCOMING ================= */}
-        <div>
-          <h3 className="text-xl font-bold mb-5 text-white flex items-center gap-2">
-            <FaCalendarAlt className="text-blue-300" />
-            Upcoming Events
-          </h3>
+          {/* FEATURED EVENT */}
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <FaFire className="text-orange-400 text-2xl" />
 
-          <div className="flex flex-col gap-5 max-h-[500px] overflow-y-auto pr-2">
+              <h3 className="text-2xl font-bold text-white">
+                Featured Event
+              </h3>
+            </div>
 
-            {upcomingEvents.length > 0 ? (
-              upcomingEvents.map((e) => (
-                <div
-                  key={e._id}
-className="bg-white rounded-3xl p-6 shadow-lg border border-white/30 flex flex-col gap-3 transition-transform duration-200 hover:shadow-xl hover:-translate-y-1"                >
-
-                  <p className="text-lg font-bold text-gray-900">
-                    {e.title}
-                  </p>
-
-                  <div className="text-sm text-gray-600 flex flex-col gap-2">
-
-                    <p className="flex items-center gap-2">
-                      <FaCalendarAlt />
-                      {new Date(e.date).toDateString()}
-                    </p>
-
-                    <p className="flex items-center gap-2">
-                      <FaClock />
-                      {e.time || "TBA"}
-                    </p>
-
-                    <p className="flex items-center gap-2">
-                      <FaMapMarkerAlt />
-                      {e.venue}
-                    </p>
-
-                  </div>
+            {latestEvent ? (
+              <div
+                className="
+                  bg-gradient-to-br
+                  from-white
+                  to-[#f8f5f0]
+                  rounded-[32px]
+                  p-8
+                  shadow-2xl
+                  border
+                  border-white/50
+                  transition-all
+                  duration-300
+                  hover:-translate-y-2
+                "
+              >
+                <div className="inline-flex px-4 py-2 rounded-full bg-primary text-white text-sm font-medium mb-6">
+                  Latest Event
                 </div>
-              ))
+
+                <h3 className="text-3xl font-bold text-primary mb-8">
+                  {latestEvent.title}
+                </h3>
+
+                <div className="space-y-5">
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <FaCalendarAlt className="text-primary" />
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">
+                        Date
+                      </p>
+
+                      <p className="font-medium">
+                        {new Date(
+                          latestEvent.date
+                        ).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <FaClock className="text-primary" />
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">
+                        Time
+                      </p>
+
+                      <p className="font-medium">
+                        {latestEvent.time || "TBA"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <FaMapMarkerAlt className="text-primary" />
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase">
+                        Venue
+                      </p>
+
+                      <p className="font-medium">
+                        {latestEvent.venue}
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
             ) : (
-              <p className="text-white/70">No upcoming events</p>
+              <div className="bg-white/10 backdrop-blur rounded-3xl p-8 text-white">
+                No latest event available.
+              </div>
             )}
+          </div>
+
+          {/* UPCOMING EVENTS */}
+          <div>
+
+            <div className="flex items-center justify-between mb-6">
+
+              <div className="flex items-center gap-3">
+                <FaCalendarAlt className="text-cream text-2xl" />
+
+                <h3 className="text-2xl font-bold text-white">
+                  Upcoming Events
+                </h3>
+              </div>
+
+              <span className="px-3 py-1 rounded-full bg-white/10 text-white text-sm">
+                {upcomingEvents.length}
+              </span>
+
+            </div>
+
+            <div className="space-y-5 max-h-[650px] overflow-y-auto pr-2">
+
+              {upcomingEvents.length > 0 ? (
+                upcomingEvents.map((event) => (
+                  <div
+                    key={event._id}
+                    className="
+                      relative
+                      bg-white/10
+                      backdrop-blur-xl
+                      border
+                      border-white/20
+                      rounded-3xl
+                      p-6
+                      hover:bg-white/15
+                      transition-all
+                      duration-300
+                    "
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-cream rounded-l-3xl" />
+
+                    <h4 className="text-xl font-semibold text-white mb-4">
+                      {event.title}
+                    </h4>
+
+                    <div className="space-y-3 text-white/80 text-sm">
+
+                      <div className="flex items-center gap-3">
+                        <FaCalendarAlt />
+
+                        <span>
+                          {new Date(
+                            event.date
+                          ).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <FaClock />
+                        <span>{event.time || "TBA"}</span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <FaMapMarkerAlt />
+                        <span>{event.venue}</span>
+                      </div>
+
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-white/10 backdrop-blur rounded-3xl p-8 text-white">
+                  No upcoming events available.
+                </div>
+              )}
+
+            </div>
 
           </div>
-        </div>
 
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
 }

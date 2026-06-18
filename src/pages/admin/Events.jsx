@@ -6,30 +6,20 @@ export default function Events() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [venue, setVenue] = useState(
-    "Methodist Tamil church Padikuppam"
-  );
+  const [venue, setVenue] = useState("Methodist Tamil church Padikuppam");
+  const [customVenue, setCustomVenue] = useState("");
 
   const [editId, setEditId] = useState(null);
-
-  /* FETCH */
-  const fetchEvents = async () => {
-    const res = await API.get("/events");
-    setEvents(res.data.data);
-  };
-
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   /* TOAST */
-  const toast = (msg) => {
+  const toast = (msg, color = "green") => {
     const div = document.createElement("div");
     div.innerText = msg;
     div.style.position = "fixed";
     div.style.top = "20px";
     div.style.right = "20px";
-    div.style.background = "green";
+    div.style.background = color;
     div.style.color = "white";
     div.style.padding = "10px 15px";
     div.style.borderRadius = "8px";
@@ -39,51 +29,96 @@ export default function Events() {
     setTimeout(() => div.remove(), 3000);
   };
 
-  /* SAVE */
+  /* FETCH */
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get("/events");
+      setEvents(res.data?.data || []);
+    } catch (err) {
+      console.error("Fetch events error:", err);
+      toast("Failed to load events", "red");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  /* SUBMIT */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (editId) {
-      await API.put(`/events/${editId}`, {
-        title,
-        date,
-        time,
-        venue,
-      });
-      toast("Event updated");
-    } else {
-      await API.post("/events", {
-        title,
-        date,
-        time,
-        venue,
-      });
-      toast("Event created");
+    const finalVenue =
+      venue === "Custom" ? customVenue : venue;
+
+    if (!title || !date || !time || !finalVenue) {
+      toast("Please fill all fields", "red");
+      return;
     }
 
-    setTitle("");
-    setDate("");
-    setTime("");
-    setVenue("Methodist Tamil church Padikuppam");
-    setEditId(null);
+    try {
+      if (editId) {
+        await API.put(`/events/${editId}`, {
+          title,
+          date,
+          time,
+          venue: finalVenue,
+        });
+        toast("Event updated");
+      } else {
+        await API.post("/events", {
+          title,
+          date,
+          time,
+          venue: finalVenue,
+        });
+        toast("Event created");
+      }
 
-    fetchEvents();
+      setTitle("");
+      setDate("");
+      setTime("");
+      setVenue("Methodist Tamil church Padikuppam");
+      setCustomVenue("");
+      setEditId(null);
+
+      fetchEvents();
+    } catch (err) {
+      console.error("Save event error:", err);
+      toast("Server error while saving event", "red");
+    }
   };
 
   /* DELETE */
   const handleDelete = async (id) => {
-    await API.delete(`/events/${id}`);
-    toast("Event deleted");
-    fetchEvents();
+    try {
+      await API.delete(`/events/${id}`);
+      toast("Event deleted");
+      fetchEvents();
+    } catch (err) {
+      console.error(err);
+      toast("Delete failed", "red");
+    }
   };
 
   /* EDIT */
-  const handleEdit = (e) => {
-    setEditId(e._id);
-    setTitle(e.title);
-    setDate(e.date?.split("T")[0]);
-    setTime(e.time);
-    setVenue(e.venue);
+  const handleEdit = (eventItem) => {
+    setEditId(eventItem._id);
+    setTitle(eventItem.title);
+    setDate(eventItem.date?.split("T")[0] || "");
+    setTime(eventItem.time || "");
+
+    const knownVenue = "Methodist Tamil church Padikuppam";
+    if (eventItem.venue === knownVenue) {
+      setVenue(knownVenue);
+      setCustomVenue("");
+    } else {
+      setVenue("Custom");
+      setCustomVenue(eventItem.venue);
+    }
   };
 
   return (
@@ -124,9 +159,20 @@ export default function Events() {
           onChange={(e) => setVenue(e.target.value)}
           className="border p-3 w-full rounded-xl"
         >
-          <option>Methodist Tamil church Padikuppam</option>
-          <option>Custom</option>
+          <option value="Methodist Tamil church Padikuppam">
+            Methodist Tamil church Padikuppam
+          </option>
+          <option value="Custom">Custom</option>
         </select>
+
+        {venue === "Custom" && (
+          <input
+            value={customVenue}
+            onChange={(e) => setCustomVenue(e.target.value)}
+            placeholder="Enter custom venue"
+            className="border p-3 w-full rounded-xl"
+          />
+        )}
 
         <button className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-xl font-medium">
           {editId ? "Update Event" : "Create Event"}
@@ -134,45 +180,50 @@ export default function Events() {
       </form>
 
       {/* LIST */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {events.map((e) => (
-          <div
-            key={e._id}
-            className="bg-white p-4 rounded-2xl shadow flex flex-col gap-2"
-          >
-            <h2 className="font-bold text-lg">{e.title}</h2>
+      {loading ? (
+        <p className="text-gray-500">Loading events...</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {events.map((eventItem) => (
+            <div
+              key={eventItem._id}
+              className="bg-white p-4 rounded-2xl shadow flex flex-col gap-2"
+            >
+              <h2 className="font-bold text-lg">
+                {eventItem.title}
+              </h2>
 
-            <p className="text-sm text-gray-600">
-              📅 {new Date(e.date).toDateString()}
-            </p>
+              <p className="text-sm text-gray-600">
+                📅 {new Date(eventItem.date).toDateString()}
+              </p>
 
-            <p className="text-sm text-gray-600">
-              ⏰ {e.time}
-            </p>
+              <p className="text-sm text-gray-600">
+                ⏰ {eventItem.time}
+              </p>
 
-            <p className="text-sm text-gray-500">
-              📍 {e.venue}
-            </p>
+              <p className="text-sm text-gray-500">
+                📍 {eventItem.venue}
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-2 mt-3">
-              <button
-                onClick={() => handleEdit(e)}
-                className="w-full sm:w-auto bg-yellow-500 px-4 py-2 rounded-xl text-white"
-              >
-                Edit
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                <button
+                  onClick={() => handleEdit(eventItem)}
+                  className="w-full sm:w-auto bg-yellow-500 px-4 py-2 rounded-xl text-white"
+                >
+                  Edit
+                </button>
 
-              <button
-                onClick={() => handleDelete(e._id)}
-                className="w-full sm:w-auto bg-red-500 px-4 py-2 rounded-xl text-white"
-              >
-                Delete
-              </button>
+                <button
+                  onClick={() => handleDelete(eventItem._id)}
+                  className="w-full sm:w-auto bg-red-500 px-4 py-2 rounded-xl text-white"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
+          ))}
+        </div>
+      )}
     </div>
   );
 }
