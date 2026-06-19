@@ -13,12 +13,13 @@ export async function connectDB() {
     });
 
     console.log("✅ MongoDB Connected:", conn.connection.host);
+
+    return conn;
   } catch (err) {
     console.error("❌ MongoDB connection failed:");
     console.error(err.message);
 
-    // IMPORTANT: do NOT crash immediately in dev
-    // so frontend doesn't freeze completely
-    return null;
+    // 🔥 CRITICAL FIX: STOP SERVER START IF DB FAILS
+    process.exit(1);
   }
 }

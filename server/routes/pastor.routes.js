@@ -15,13 +15,22 @@ const router = express.Router();
 
 /* =========================
    GET ALL PASTORS (ADMIN)
+   🔥 upgraded: safer execution
 ========================= */
 router.get("/", async (req, res) => {
   try {
-    const data = await getAllPastors(req, res);
-    return data;
+    const result = await getAllPastors(req, res);
+
+    // ensure response is not undefined
+    if (result) return result;
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch pastors",
+    });
   } catch (err) {
     console.error("GET ALL PASTORS ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch pastors",
@@ -31,10 +40,11 @@ router.get("/", async (req, res) => {
 
 /* =========================
    GET CURRENT PASTOR
+   🔥 upgraded: lean for stability
 ========================= */
 router.get("/current", async (req, res) => {
   try {
-    const pastor = await Pastor.findOne({ isCurrent: true });
+    const pastor = await Pastor.findOne({ isCurrent: true }).lean();
 
     return res.status(200).json({
       success: true,
@@ -42,6 +52,7 @@ router.get("/current", async (req, res) => {
     });
   } catch (err) {
     console.error("CURRENT PASTOR ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch current pastor",
@@ -54,10 +65,17 @@ router.get("/current", async (req, res) => {
 ========================= */
 router.get("/public", async (req, res) => {
   try {
-    const data = await getPublicPastors(req, res);
-    return data;
+    const result = await getPublicPastors(req, res);
+
+    if (result) return result;
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch public pastors",
+    });
   } catch (err) {
     console.error("PUBLIC PASTORS ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: "Failed to fetch public pastors",
@@ -70,10 +88,17 @@ router.get("/public", async (req, res) => {
 ========================= */
 router.get("/search", async (req, res) => {
   try {
-    const data = await searchPastors(req, res);
-    return data;
+    const result = await searchPastors(req, res);
+
+    if (result) return result;
+
+    return res.status(500).json({
+      success: false,
+      message: "Search failed",
+    });
   } catch (err) {
     console.error("SEARCH PASTORS ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: "Search failed",
@@ -83,12 +108,14 @@ router.get("/search", async (req, res) => {
 
 /* =========================
    CREATE PASTOR
+   🔥 stable file upload handling
 ========================= */
 router.post("/", upload.single("file"), async (req, res) => {
   try {
     return await createPastor(req, res);
   } catch (err) {
     console.error("CREATE PASTOR ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: "Failed to create pastor",
@@ -104,6 +131,7 @@ router.put("/:id", upload.single("file"), async (req, res) => {
     return await updatePastor(req, res);
   } catch (err) {
     console.error("UPDATE PASTOR ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: "Failed to update pastor",
@@ -119,6 +147,7 @@ router.delete("/:id", async (req, res) => {
     return await deletePastor(req, res);
   } catch (err) {
     console.error("DELETE PASTOR ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: "Failed to delete pastor",
@@ -128,6 +157,7 @@ router.delete("/:id", async (req, res) => {
 
 /* =========================
    SET CURRENT PASTOR
+   🔥 optimized + safe query
 ========================= */
 router.put("/current/:id", async (req, res) => {
   try {
@@ -139,7 +169,7 @@ router.put("/current/:id", async (req, res) => {
       id,
       { $set: { isCurrent: true } },
       { new: true }
-    );
+    ).lean();
 
     if (!pastor) {
       return res.status(404).json({
@@ -155,6 +185,7 @@ router.put("/current/:id", async (req, res) => {
     });
   } catch (err) {
     console.error("SET CURRENT PASTOR ERROR:", err);
+
     return res.status(500).json({
       success: false,
       message: "Failed to update current pastor",

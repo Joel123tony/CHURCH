@@ -37,7 +37,7 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 /* =========================
-   RATE LIMIT (GLOBAL PROTECTION)
+   RATE LIMIT
 ========================= */
 app.use(
   rateLimit({
@@ -47,8 +47,7 @@ app.use(
 );
 
 /* =========================
-   CORS — GOD MODE FIX
-   (SAFE FOR LOCAL + PRODUCTION)
+   CORS
 ========================= */
 const allowedOrigins = [
   "http://localhost:5173",
@@ -58,14 +57,9 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow tools like Postman / server-to-server
       if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(null, true); // 🔥 GOD MODE: fail-open instead of fail-block
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(null, true);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -73,9 +67,6 @@ app.use(
   })
 );
 
-/* =========================
-   PRE-FLIGHT HANDLING (IMPORTANT FIX)
-========================= */
 app.options("*", cors());
 
 /* =========================
@@ -85,13 +76,33 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 /* =========================
-   HEALTH CHECK
+   DB READY FLAG (🔥 NEW FIX)
+========================= */
+let dbReady = false;
+
+/* =========================
+   HEALTH CHECK (UPDATED)
 ========================= */
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "🚀 API running in GOD MODE",
+    message: "🚀 API running",
+    db: dbReady ? "connected" : "not-ready",
   });
+});
+
+/* =========================
+   DB GUARD MIDDLEWARE (🔥 NEW FIX)
+   prevents Pastor 500 crash spam
+========================= */
+app.use((req, res, next) => {
+  if (!dbReady) {
+    return res.status(503).json({
+      success: false,
+      message: "Database not ready yet. Try again in a few seconds.",
+    });
+  }
+  next();
 });
 
 /* =========================
@@ -107,7 +118,7 @@ app.use("/api/prayer-requests", prayerRequestRoutes);
 app.use("/api/youtube", youtubeRoutes);
 
 /* =========================
-   404 HANDLER (CLEAN DEBUG)
+   404 HANDLER
 ========================= */
 app.use((req, res) => {
   res.status(404).json({
@@ -118,14 +129,14 @@ app.use((req, res) => {
 });
 
 /* =========================
-   GLOBAL ERROR HANDLER (SAFE MODE)
+   GLOBAL ERROR HANDLER (IMPROVED DEBUG)
 ========================= */
 app.use((err, req, res, next) => {
   console.error("🔥 SERVER ERROR:", err);
 
   res.status(500).json({
     success: false,
-    message: "Internal Server Error",
+    message: err.message || "Internal Server Error",
   });
 });
 
@@ -136,18 +147,20 @@ const startServer = async () => {
   try {
     await connectDB();
 
+    dbReady = true; // 🔥 IMPORTANT FIX
+
     const PORT = process.env.PORT || 5000;
 
     app.listen(PORT, () => {
       console.log("==================================");
-      console.log("🚀 SERVER RUNNING IN GOD MODE");
+      console.log("🚀 SERVER RUNNING");
       console.log(`📡 Port: ${PORT}`);
       console.log("📍 API Base: /api");
-      console.log("▶ YouTube: /api/youtube");
       console.log("==================================");
     });
   } catch (err) {
     console.error("❌ DB CONNECTION FAILED:", err);
+    dbReady = false;
     process.exit(1);
   }
 };
