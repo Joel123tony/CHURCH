@@ -1,7 +1,13 @@
 import axios from "axios";
 
+const baseURL = import.meta.env.VITE_API_BASE_URL
+  ? import.meta.env.VITE_API_BASE_URL
+  : import.meta.env.DEV
+    ? "http://127.0.0.1:5000/api"
+    : "https://church-rp0n.onrender.com/api";
+
 const API = axios.create({
-  baseURL: "https://church-rp0n.onrender.com/api",
+  baseURL,
 });
 
 /* TOKEN INTERCEPTOR */

@@ -38,16 +38,14 @@ export default function Navbar() {
   }, []);
 
   const linkClass = (id) =>
-    `transition ${
-      active === id
-        ? "text-secondary font-bold"
-        : "text-primary hover:text-secondary"
+    `transition-colors duration-300 ${
+      active === id ? "text-cream font-bold" : "text-cream/80 hover:text-cream"
     }`;
 
   return (
-    <nav className="sticky top-0 z-50 bg-light border-b shadow-sm">
+    <nav className="sticky top-0 z-50 border-b border-white/10 bg-primary text-cream shadow-lg transition-colors duration-500 ease-out">
       <div className="container-custom">
-        <div className="h-20 flex items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/admin">
               <img
@@ -57,13 +55,13 @@ export default function Navbar() {
               />
             </Link>
             <div>
-              <h1 className="text-primary font-bold">Methodist Tamil Church</h1>
-              <p className="text-xs text-gray-600">Padikuppam</p>
+              <h1 className="font-bold text-cream">Methodist Tamil Church</h1>
+              <p className="text-xs text-cream/80">Padikuppam</p>
             </div>
           </div>
 
           <div className="flex items-center gap-8">
-            <ul className="hidden lg:flex gap-8">
+            <ul className="hidden gap-8 lg:flex">
               {links.map((link) => (
                 <li key={link.id}>
                   <a href={link.href} className={linkClass(link.id)}>
@@ -73,14 +71,14 @@ export default function Navbar() {
               ))}
             </ul>
 
-            <div className="hidden lg:flex items-center border border-primary rounded-full overflow-hidden">
+            <div className="hidden items-center overflow-hidden rounded-full border border-white/20 lg:flex">
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
-                className={`px-4 py-2 text-sm transition ${
+                className={`px-4 py-2 text-sm transition-colors duration-300 ${
                   language === "en"
-                    ? "bg-primary text-white"
-                    : "text-primary hover:bg-gray-100"
+                    ? "bg-cream text-primary"
+                    : "text-cream hover:bg-white/10"
                 }`}
               >
                 EN
@@ -88,10 +86,10 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setLanguage("ta")}
-                className={`px-4 py-2 text-sm transition ${
+                className={`px-4 py-2 text-sm transition-colors duration-300 ${
                   language === "ta"
-                    ? "bg-primary text-white"
-                    : "text-primary hover:bg-gray-100"
+                    ? "bg-cream text-primary"
+                    : "text-cream hover:bg-white/10"
                 }`}
               >
                 தமிழ்
@@ -101,37 +99,35 @@ export default function Navbar() {
 
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="lg:hidden text-2xl"
+            className="text-2xl text-cream transition-transform duration-300 hover:scale-110 lg:hidden"
           >
             {menuOpen ? "✕" : "☰"}
           </button>
         </div>
 
         {menuOpen && (
-          <div className="lg:hidden py-4 border-t">
+          <div className="border-t border-white/10 py-4 lg:hidden">
             {links.map((link) => (
               <a
                 key={link.id}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className={`block py-3 ${
-                  active === link.id
-                    ? "text-secondary font-bold"
-                    : "text-primary"
+                className={`block py-3 transition-colors duration-300 ${
+                  active === link.id ? "font-bold text-cream" : "text-cream/80"
                 }`}
               >
                 {t(link.key)}
               </a>
             ))}
 
-            <div className="flex mt-4 border border-primary rounded-full overflow-hidden w-fit">
+            <div className="mt-4 flex w-fit overflow-hidden rounded-full border border-white/20">
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
-                className={`px-4 py-2 text-sm transition ${
+                className={`px-4 py-2 text-sm transition-colors duration-300 ${
                   language === "en"
-                    ? "bg-primary text-white"
-                    : "text-primary hover:bg-gray-100"
+                    ? "bg-cream text-primary"
+                    : "text-cream hover:bg-white/10"
                 }`}
               >
                 EN
@@ -139,10 +135,10 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setLanguage("ta")}
-                className={`px-4 py-2 text-sm transition ${
+                className={`px-4 py-2 text-sm transition-colors duration-300 ${
                   language === "ta"
-                    ? "bg-primary text-white"
-                    : "text-primary hover:bg-gray-100"
+                    ? "bg-cream text-primary"
+                    : "text-cream hover:bg-white/10"
                 }`}
               >
                 தமிழ்

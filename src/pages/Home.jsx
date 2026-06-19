@@ -22,7 +22,7 @@ export default function Home() {
       <Navbar />
 
       <main>
-        <h1 className="text-2xl font-bold text-center py-10 text-[#5b1320]">
+        <h1 className="bg-[#F4EFE7] text-2xl font-bold text-center py-10 text-[#5b1320]">
           {t("page.title")}
         </h1>
 

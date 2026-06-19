@@ -1,5 +1,3 @@
-import { transliterate } from "transliteration";
-
 const TAMIL_RE = /[\u0B80-\u0BFF]/;
 
 const EXACT_EN_PRAYER_BLOCK =
@@ -66,12 +64,23 @@ const TA_NAME_TO_EN = [
   ["ஸ்டீபன்", "Stephen"],
 ];
 
-const normalizeText = (text = "") => String(text).replace(/\s+/g, " ").trim();
-const isTamil = (text = "") => TAMIL_RE.test(text);
 const canonicalize = (text = "") =>
-  normalizeText(text)
+  String(text)
+    .replace(/\s+/g, " ")
+    .trim()
     .toLowerCase()
     .replace(/[^\w\u0B80-\u0BFF]+/g, "");
+
+const isTamil = (text = "") => TAMIL_RE.test(text);
+
+const decodeHtmlEntities = (text = "") => {
+  if (typeof document === "undefined") return text;
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = text;
+  return textarea.value;
+};
+
+const normalizeText = (text = "") => String(text).replace(/\s+/g, " ").trim();
 
 const applyPhraseMap = (text, map) => {
   const sorted = [...map].sort((a, b) => b[0].length - a[0].length);
@@ -85,36 +94,8 @@ const applyPhraseMap = (text, map) => {
   return output;
 };
 
-function cleanName(name) {
-  if (!name) return "";
-
-  const map = {
-    joe: "ஜோ",
-    john: "ஜான்",
-    paul: "பால்",
-    joseph: "ஜோசப்",
-    david: "டேவிட்",
-    michael: "மைக்கேல்",
-  };
-
-  return name
-    .toLowerCase()
-    .split(" ")
-    .map((n) => map[n] || transliterate(n))
-    .join(" ");
-}
-
-function cleanPrayerText(text) {
-  if (!text) return "";
-
-  return String(text)
-    .replace(/\s+/g, " ")
-    .replace(/^\s*request\s*:\s*/i, "")
-    .trim();
-}
-
-function translatePrayerText(text, targetLanguage) {
-  const normalized = cleanPrayerText(text);
+const localTranslate = (text, targetLanguage) => {
+  const normalized = normalizeText(text);
   if (!normalized) return "";
 
   const canonical = canonicalize(normalized);
@@ -133,32 +114,51 @@ function translatePrayerText(text, targetLanguage) {
   }
 
   return normalized;
-}
+};
 
-export async function cleanPrayerEngine(requests) {
-  const result = [];
+export async function translatePrayerText(text, targetLanguage) {
+  const normalized = normalizeText(text);
+  if (!normalized) return "";
 
-  for (const r of requests) {
-    const name = normalizeText(r?.name);
-    const request = normalizeText(r?.request);
+  const localResult = localTranslate(normalized, targetLanguage);
+  if (localResult && localResult !== normalized) return localResult;
 
-    const sourceIsTamil = isTamil(name) || isTamil(request);
-
-    const nameEN = sourceIsTamil
-      ? TA_NAME_TO_EN.find(([from]) => normalizeText(name) === from)?.[1] || transliterate(name)
-      : name;
-
-    const nameTA = sourceIsTamil
-      ? name
-      : EN_NAME_TO_TA.find(([from]) => name.toLowerCase() === from)?.[1] || cleanName(name);
-
-    result.push({
-      nameEN: nameEN || name,
-      nameTA: nameTA || name,
-      requestEN: translatePrayerText(request, "en") || request,
-      requestTA: translatePrayerText(request, "ta") || request,
-    });
+  const lowered = normalized.toLowerCase();
+  if (targetLanguage === "ta") {
+    const match = EN_NAME_TO_TA.find(([from]) => lowered === from);
+    if (match) return match[1];
   }
 
-  return result;
+  if (targetLanguage === "en") {
+    const match = TA_NAME_TO_EN.find(([from]) => normalized === from);
+    if (match) return match[1];
+  }
+
+  return normalized;
+}
+
+export async function translatePrayerItems(items = [], mode = "en") {
+  const targetModes =
+    mode === "both" ? ["en", "ta"] : mode === "tamil" ? ["ta"] : ["en"];
+
+  return Promise.all(
+    items.map(async (item) => {
+      const name = normalizeText(item?.name);
+      const request = normalizeText(item?.request);
+
+      const [requestEN, requestTA, nameEN, nameTA] = await Promise.all([
+        targetModes.includes("en") ? translatePrayerText(request, "en") : Promise.resolve(request),
+        targetModes.includes("ta") ? translatePrayerText(request, "ta") : Promise.resolve(request),
+        targetModes.includes("en") ? translatePrayerText(name, "en") : Promise.resolve(name),
+        targetModes.includes("ta") ? translatePrayerText(name, "ta") : Promise.resolve(name),
+      ]);
+
+      return {
+        nameEN: nameEN || name,
+        nameTA: nameTA || name,
+        requestEN: requestEN || request,
+        requestTA: requestTA || request,
+      };
+    })
+  );
 }

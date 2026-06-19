@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
 
-export default function MediaCard({ item, onDelete, onEdit }) {
+function MediaCard({ item, onDelete, onEdit }) {
   const videoRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -53,13 +54,13 @@ export default function MediaCard({ item, onDelete, onEdit }) {
 
   return (
     <>
-      <div className="group border rounded-2xl overflow-hidden shadow bg-white transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-2xl">
-        <div className={`relative bg-black overflow-hidden ${mediaFrameClass}`}>
+      <div className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg">
+        <div className={`relative overflow-hidden bg-black ${mediaFrameClass}`}>
           {isVideo ? (
             <video
               ref={videoRef}
               src={item.url}
-              className="h-full w-full object-cover cursor-pointer transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+              className="h-full w-full cursor-pointer object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
               muted
               preload="metadata"
               onMouseEnter={handleMouseEnter}
@@ -67,14 +68,17 @@ export default function MediaCard({ item, onDelete, onEdit }) {
               onClick={() => setOpen(true)}
               onLoadedMetadata={(e) => {
                 setLoading(false);
-                updateShape(e.currentTarget.videoWidth, e.currentTarget.videoHeight);
+                updateShape(
+                  e.currentTarget.videoWidth,
+                  e.currentTarget.videoHeight
+                );
               }}
             />
           ) : (
             <img
               src={item.url}
               alt={item.title}
-              className="h-full w-full object-cover cursor-pointer transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+              className="h-full w-full cursor-pointer object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
               onClick={() => setOpen(true)}
               onLoad={(e) => {
                 setLoading(false);
@@ -93,33 +97,35 @@ export default function MediaCard({ item, onDelete, onEdit }) {
           )}
 
           {isVideo && (
-            <div className="absolute top-3 right-3 bg-black/70 text-white px-2.5 py-1.5 text-xs rounded-full backdrop-blur-sm">
+            <div className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1.5 text-xs text-white backdrop-blur-sm">
               ▶ Video
             </div>
           )}
         </div>
 
         <div className="p-4">
-          <h3 className="font-semibold truncate">{item.title}</h3>
+          <h3 className="truncate font-semibold text-slate-900">{item.title}</h3>
 
           {item.date && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="mt-1 text-xs text-gray-500">
               {new Date(item.date).toLocaleDateString()}
             </p>
           )}
 
-          <div className="flex gap-2 mt-3">
+          <div className="mt-3 flex gap-2">
             <button
               onClick={() => onEdit(item)}
-              className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition"
+              className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-1.5 text-sm text-white transition hover:bg-amber-600"
             >
+              <FaEdit />
               Edit
             </button>
 
             <button
               onClick={() => onDelete(item._id)}
-              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition"
+              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white transition hover:bg-red-700"
             >
+              <FaTrashAlt />
               Delete
             </button>
           </div>
@@ -128,16 +134,16 @@ export default function MediaCard({ item, onDelete, onEdit }) {
 
       {open && (
         <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setOpen(false)}
         >
           <div
-            className="relative max-w-5xl w-full"
+            className="relative w-full max-w-5xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setOpen(false)}
-              className="absolute top-2 right-2 bg-white text-black px-3 py-1 rounded-full shadow"
+              className="absolute right-2 top-2 rounded-full bg-white px-3 py-1 text-black shadow"
             >
               ×
             </button>
@@ -153,7 +159,7 @@ export default function MediaCard({ item, onDelete, onEdit }) {
               <img
                 src={item.url}
                 alt={item.title}
-                className="w-full max-h-[80vh] object-contain rounded bg-black"
+                className="w-full max-h-[80vh] rounded bg-black object-contain"
               />
             )}
           </div>
@@ -162,3 +168,5 @@ export default function MediaCard({ item, onDelete, onEdit }) {
     </>
   );
 }
+
+export default memo(MediaCard);

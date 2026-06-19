@@ -1,4 +1,4 @@
-import translate from "@vitalets/google-translate-api";
+import { translate } from "@vitalets/google-translate-api";
 
 // 🔥 translate helper
 async function toLang(text, lang) {

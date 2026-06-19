@@ -3,6 +3,79 @@ import { cleanPrayerEngine } from "../utils/prayerCleaner.js";
 
 const router = express.Router();
 
+const buildHeader = (mode) => {
+  if (mode === "ta") {
+    return [
+      "*METHODIST TAMIL CHURCH*",
+      "*PRAYER REQUESTS*",
+      "",
+      "தயவுசெய்து கீழே உள்ள வேண்டுதல்களை ஜெபத்தில் நினைவில் கொள்ளுங்கள்.",
+      "",
+    ].join("\n");
+  }
+
+  if (mode === "en-ta") {
+    return [
+      "*METHODIST TAMIL CHURCH*",
+      "*PRAYER REQUESTS / ஜெப விண்ணப்பங்கள்*",
+      "",
+      "Please uphold the following requests in prayer.",
+      "",
+    ].join("\n");
+  }
+
+  return [
+    "*METHODIST TAMIL CHURCH*",
+    "*PRAYER REQUESTS*",
+    "",
+    "Please uphold the following requests in prayer.",
+    "",
+  ].join("\n");
+};
+
+const buildMessage = (cleaned, mode) => {
+  const header = buildHeader(mode);
+
+  if (!Array.isArray(cleaned) || !cleaned.length) return header.trim();
+
+  if (mode === "ta") {
+    return [
+      header,
+      ...cleaned.map(
+        (item, index) =>
+          `${index + 1}. பெயர்: ${item.nameTA || item.nameEN || "-"}\nகோரிக்கை: ${item.requestTA || item.requestEN || "-"}`
+      ),
+    ].join("\n\n");
+  }
+
+  if (mode === "en-ta") {
+    return [
+      header,
+      ...cleaned.map((item, index) => {
+        const enBlock = [
+          `${index + 1}. Name: ${item.nameEN || item.nameTA || "-"}`,
+          `Request: ${item.requestEN || item.requestTA || "-"}`,
+        ].join("\n");
+
+        const taBlock = [
+          `${index + 1}. பெயர்: ${item.nameTA || item.nameEN || "-"}`,
+          `கோரிக்கை: ${item.requestTA || item.requestEN || "-"}`,
+        ].join("\n");
+
+        return `${enBlock}\n\n${taBlock}`;
+      }),
+    ].join("\n\n----------------------------------------\n\n");
+  }
+
+  return [
+    header,
+    ...cleaned.map(
+      (item, index) =>
+        `${index + 1}. Name: ${item.nameEN || item.nameTA || "-"}\nRequest: ${item.requestEN || item.requestTA || "-"}`
+    ),
+  ].join("\n\n");
+};
+
 router.post("/format", async (req, res) => {
   try {
     const { requests, mode = "en-ta" } = req.body;
@@ -15,65 +88,7 @@ router.post("/format", async (req, res) => {
     }
 
     const cleaned = await cleanPrayerEngine(requests);
-
-    let output = "";
-
-    // =========================
-    // 🌐 ENGLISH ONLY
-    // =========================
-    if (mode === "en") {
-      output += `*METHODIST TAMIL CHURCH*\n*PRAYER REQUESTS*\n\n`;
-
-      cleaned.forEach((r, i) => {
-        output += `${i + 1}. Name: ${r.nameEN}\n`;
-        output += `Request: ${r.requestEN}\n\n`;
-      });
-    }
-
-    // =========================
-    // 🇮🇳 TAMIL ONLY
-    // =========================
-    if (mode === "ta") {
-      output += `*மெதடிஸ்ட் தமிழ் திருச்சபை*\n*ஜெப விண்ணப்பங்கள்*\n\n`;
-
-      cleaned.forEach((r, i) => {
-        output += `${i + 1}. பெயர்: ${r.nameTA}\n`;
-        output += `கோரிக்கை: ${r.requestTA}\n\n`;
-      });
-    }
-
-    // =========================
-    // 🌐 EN + TA
-    // =========================
-    if (mode === "en-ta") {
-      output += `*METHODIST TAMIL CHURCH*\n*PRAYER REQUESTS / ஜெப விண்ணப்பங்கள்*\n\n`;
-
-      cleaned.forEach((r, i) => {
-        output += `${i + 1}. ${r.nameTA}\n\n`;
-        output += `${r.requestTA}\n`;
-        output += `${r.requestEN}\n\n`;
-        output += `--------------------------\n\n`;
-      });
-    }
-
-    // =========================
-    // 🔢 MULTI MODE
-    // =========================
-    if (mode === "multi") {
-      output += `*METHODIST TAMIL CHURCH*\n*PRAYER REQUESTS*\n\n`;
-
-      cleaned.forEach((r, i) => {
-        output += `${i + 1}\tName\n\tRequest\n\n`;
-      });
-
-      output += `------------------------------------\n\n`;
-
-      output += `*ஜெப விண்ணப்பங்கள்*\n\n`;
-
-      cleaned.forEach((r, i) => {
-        output += `${i + 1}\tபெயர்\n\tகோரிக்கை\n\n`;
-      });
-    }
+    const output = buildMessage(cleaned, mode);
 
     res.json({
       success: true,

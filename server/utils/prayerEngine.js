@@ -1,6 +1,6 @@
 import { transliterate } from "transliteration";
 import { franc } from "franc";
-import translate from "@vitalets/google-translate-api";
+import { translate } from "@vitalets/google-translate-api";
 
 // 🧠 CHURCH NAME ENGINE (SMART)
 function smartName(name) {

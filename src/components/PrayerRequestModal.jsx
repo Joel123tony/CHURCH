@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function PrayerRequestModal({ isOpen, onClose }) {
@@ -18,7 +18,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
     try {
       setLoading(true);
 
-      await axios.post("https://church-rp0n.onrender.com/api/prayer/format", {
+      await API.post("/prayer/format", {
         requests: [{ name, request, phone }],
         mode: "en-ta",
       });

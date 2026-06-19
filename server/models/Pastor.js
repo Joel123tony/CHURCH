@@ -21,8 +21,14 @@ const pastorSchema = new mongoose.Schema(
     },
 
     image: {
-      url: { type: String, default: "" },
-      public_id: { type: String, default: "" },
+      url: {
+        type: String,
+        default: "",
+      },
+      public_id: {
+        type: String,
+        default: "",
+      },
     },
 
     joinedYear: {
@@ -35,10 +41,10 @@ const pastorSchema = new mongoose.Schema(
       default: null,
     },
 
+    // ✅ FIXED
     education: {
-      type: String,
-      default: "",
-      trim: true,
+      type: [String],
+      default: [],
     },
 
     church: {
@@ -65,7 +71,6 @@ const pastorSchema = new mongoose.Schema(
       default: false,
     },
 
-    // 🔥 SAFE FIELDS (prevents old DB crashes)
     active: {
       type: Boolean,
       default: true,
@@ -88,7 +93,7 @@ const pastorSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    strict: false, // 🔥 CRITICAL FIX (prevents Render crashes)
+    strict: false,
   }
 );
 

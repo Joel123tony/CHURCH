@@ -1,5 +1,17 @@
-import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  FaBars,
+  FaCalendarAlt,
+  FaClock,
+  FaHome,
+  FaPhotoVideo,
+  FaPrayingHands,
+  FaSignOutAlt,
+  FaTimes,
+  FaUserShield,
+  FaUsers,
+} from "react-icons/fa";
 
 export default function AdminLayout() {
   const [user, setUser] = useState(null);
@@ -7,8 +19,8 @@ export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
-  /* LIVE CLOCK */
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -17,7 +29,18 @@ export default function AdminLayout() {
     return () => clearInterval(timer);
   }, []);
 
-  /* AUTH CHECK (SAFE + CLEAN) */
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -31,7 +54,7 @@ export default function AdminLayout() {
     try {
       const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
       setUser(storedUser || { name: "Administrator" });
-    } catch (err) {
+    } catch {
       setUser({ name: "Administrator" });
     }
   }, [navigate]);
@@ -42,119 +65,163 @@ export default function AdminLayout() {
     navigate("/admin/login", { replace: true });
   };
 
-  const links = [
-    { to: "/admin/dashboard", label: "Dashboard", end: true }, // FIXED
-    { to: "/admin/pastors", label: "Pastors" },
-    { to: "/admin/events", label: "Events" },
-    { to: "/admin/gallery", label: "Gallery" },
-    { to: "/admin/prayer-requests", label: "Prayer Requests" },
-  ];
+  const links = useMemo(
+    () => [
+      { to: "/admin/dashboard", label: "Dashboard", end: true, icon: FaHome },
+      { to: "/admin/pastors", label: "Pastors", icon: FaUsers },
+      { to: "/admin/events", label: "Events", icon: FaCalendarAlt },
+      { to: "/admin/gallery", label: "Gallery", icon: FaPhotoVideo },
+      {
+        to: "/admin/prayer-requests",
+        label: "Prayer Requests",
+        icon: FaPrayingHands,
+      },
+    ],
+    []
+  );
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-
-      {/* OVERLAY */}
+    <div className="flex min-h-screen bg-[#f4efe7] text-slate-900">
       {menuOpen && (
         <div
           onClick={() => setMenuOpen(false)}
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] md:hidden"
         />
       )}
 
-      {/* SIDEBAR */}
       <aside
         className={`
-          fixed md:fixed top-0 left-0
-          h-full w-64 z-50
-          bg-[#54091b]
-          transform transition-transform duration-300
+          fixed left-0 top-0 z-50 flex h-full w-[82vw] max-w-[19rem] flex-col overflow-hidden
+          bg-gradient-to-b from-[#520a1a] via-[#5d1020] to-[#430816]
+          shadow-2xl shadow-black/25
+          transform transition-transform duration-300 ease-out
           ${menuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-          flex flex-col
         `}
       >
+        <div className="border-b border-white/10 p-5 sm:p-6">
+          <div className="rounded-3xl border border-white/10 bg-white/10 p-4 shadow-lg shadow-black/10">
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EFBF04]/15 text-[#EFBF04] ring-1 ring-[#EFBF04]/20">
+                <FaUserShield className="text-xl" />
+              </div>
 
-        {/* HEADER */}
-        <div className="p-5 border-b border-white/10">
-          <h1 className="text-2xl font-bold text-[#EFBF04]">
-            MTC Admin
-          </h1>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl font-extrabold tracking-tight text-[#EFBF04] sm:text-[1.75rem]">
+                  MTC Admin
+                </h1>
+                <p className="mt-1 truncate text-sm text-white/75">
+                  {user?.name || "Administrator"}
+                </p>
+              </div>
 
-          <p className="text-gray-300 text-sm mt-2">
-            {user?.name || "Administrator"}
-          </p>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 md:hidden"
+                aria-label="Close menu"
+              >
+                <FaTimes />
+              </button>
+            </div>
 
-          <div className="mt-3 text-xs text-gray-300">
-            <p>
-              {currentTime.toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3 text-white">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFBF04]/15 text-[#EFBF04]">
+                  <FaCalendarAlt />
+                </span>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">
+                    Date
+                  </p>
+                  <p className="text-sm font-semibold leading-5">
+                    {currentTime.toLocaleDateString("en-IN", {
+                      weekday: "short",
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
 
-            <p>
-              {currentTime.toLocaleTimeString("en-IN", {
-                hour: "numeric",
-                minute: "2-digit",
-                second: "2-digit",
-                hour12: true,
-              })}
-            </p>
+              <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3 text-white">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFBF04]/15 text-[#EFBF04]">
+                  <FaClock />
+                </span>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">
+                    Time
+                  </p>
+                  <p className="text-base font-semibold leading-5 sm:text-lg">
+                    {currentTime.toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* MENU */}
-        <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.end}
-              onClick={() => setMenuOpen(false)}
-              className={({ isActive }) =>
-                `px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
-                  isActive
-                    ? "text-white bg-[#ee0039]"
-                    : "text-gray-200 hover:text-white hover:bg-white/10"
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
+        <nav className="admin-scrollbar flex-1 overflow-y-auto p-4">
+          <div className="flex flex-col gap-2">
+            {links.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.end}
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  `group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? "bg-[#ee0039] text-white shadow-lg shadow-black/15"
+                      : "text-white/80 hover:bg-white/10 hover:text-white"
+                  }`
+                }
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#EFBF04] transition group-hover:bg-white/15">
+                  <link.icon />
+                </span>
+                <span>{link.label}</span>
+              </NavLink>
+            ))}
+          </div>
         </nav>
 
-        {/* LOGOUT */}
-        <div className="p-4 border-t border-white/10">
+        <div className="border-t border-white/10 p-4">
           <button
             onClick={logout}
-            className="w-full py-3 rounded-lg font-semibold text-white bg-[#ee0039] hover:bg-red-700 transition"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ee0039] py-3 font-semibold text-white transition hover:bg-red-700"
           >
+            <FaSignOutAlt />
             Logout
           </button>
         </div>
       </aside>
 
-      {/* MAIN */}
-      <div className="flex-1 md:ml-64 min-h-screen">
-
-        {/* TOP BAR */}
-        <div className="md:hidden flex items-center justify-between p-4 bg-white shadow">
+      <div
+        className={`min-h-screen flex-1 transition-[filter,transform] duration-300 md:ml-72 ${
+          menuOpen ? "pointer-events-none select-none blur-[1px] md:pointer-events-auto md:blur-0" : ""
+        }`}
+      >
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/70 bg-white/90 px-4 py-3 shadow-sm backdrop-blur md:hidden">
           <button
             onClick={() => setMenuOpen(true)}
-            className="text-2xl font-bold"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-lg font-bold text-[#54091b] transition hover:bg-slate-200"
+            aria-label="Open menu"
           >
-            ☰
+            <FaBars />
           </button>
 
-          <h1 className="font-bold text-[#54091b]">
-            MTC Admin
-          </h1>
+          <h1 className="font-bold text-[#54091b]">MTC Admin</h1>
         </div>
 
-        {/* CONTENT */}
-        <main className="p-4 sm:p-6 min-h-screen">
-          <Outlet />
+        <main className="min-h-screen p-4 sm:p-6">
+          <div key={location.pathname} className="animate-admin-page-enter">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

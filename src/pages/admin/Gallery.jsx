@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import API from "../../api/axios";
 import GalleryUpload from "./GalleryUpload";
 import MediaCard from "../../components/MediaCard";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Gallery() {
   const [media, setMedia] = useState([]);
@@ -44,9 +46,10 @@ export default function Gallery() {
     try {
       await API.delete(`/gallery/${id}`);
       setMedia((prev) => prev.filter((item) => item._id !== id));
+      toast.success("Media deleted successfully");
     } catch (err) {
       console.error(err);
-      alert("Delete failed");
+      toast.error(err?.response?.data?.message || "Delete failed");
     }
   };
 
@@ -61,8 +64,13 @@ export default function Gallery() {
           item._id === updated._id ? updated : item
         )
       );
+      toast.success(
+        updated?.clientPriority !== null
+          ? "Added to homepage gallery"
+          : "Removed from homepage gallery"
+      );
     } catch (err) {
-      alert(err?.response?.data?.message || "Update failed");
+      toast.error(err?.response?.data?.message || "Update failed");
     }
   };
 
@@ -96,9 +104,10 @@ export default function Gallery() {
       setEditItem(null);
       setTitle("");
       setEventDate("");
+      toast.success("Media updated successfully");
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || "Update failed");
+      toast.error(err?.response?.data?.message || "Update failed");
     }
   };
 
@@ -107,17 +116,53 @@ export default function Gallery() {
     item.title?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const { pinnedMedia, regularMedia } = useMemo(() => {
+    const pinned = [];
+    const regular = [];
+
+    filteredMedia.forEach((item) => {
+      if (item.clientPriority !== null && item.clientPriority !== undefined) {
+        pinned.push(item);
+      } else {
+        regular.push(item);
+      }
+    });
+
+    pinned.sort((a, b) => {
+      const aPriority = Number(a.clientPriority) || 0;
+      const bPriority = Number(b.clientPriority) || 0;
+      return aPriority - bPriority;
+    });
+
+    regular.sort((a, b) => {
+      const aDate = new Date(a.eventDate || a.createdAt || 0).getTime();
+      const bDate = new Date(b.eventDate || b.createdAt || 0).getTime();
+      return bDate - aDate;
+    });
+
+    return { pinnedMedia: pinned, regularMedia: regular };
+  }, [filteredMedia]);
+
   const galleryCount = media.filter(
     (item) => item.clientPriority !== null
   ).length;
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen space-y-6">
+      <ToastContainer
+        position="top-right"
+        autoClose={1800}
+        hideProgressBar
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="colored"
+      />
 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h1 className="text-2xl sm:text-3xl font-bold">
-          Gallery CMS
+          Gallery Management
         </h1>
 
         <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium w-fit">
@@ -152,39 +197,87 @@ export default function Gallery() {
       )}
 
       {/* GRID */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-        {filteredMedia.map((item) => (
-          <div key={item._id} className="relative flex flex-col">
+      {filteredMedia.length > 0 && (
+        <div className="space-y-6">
+          {pinnedMedia.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg sm:text-xl font-semibold text-slate-800">
+                  Homepage Gallery
+                </h2>
 
-            {/* BADGE */}
-            {item.clientPriority !== null && (
-              <div className="absolute z-20 top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
-                Gallery #{item.clientPriority}
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                  {pinnedMedia.length} pinned
+                </span>
               </div>
-            )}
 
-            <MediaCard
-              item={item}
-              onDelete={deleteMedia}
-              onEdit={openEdit}
-            />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+                {pinnedMedia.map((item, index) => (
+                  <div
+                    key={item._id}
+                    className="animate-admin-card-in relative flex flex-col"
+                    style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}
+                  >
+                    <div className="absolute z-20 top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
+                      Gallery #{item.clientPriority}
+                    </div>
 
-            {/* BUTTON */}
-            <button
-              onClick={() => toggleGallery(item._id)}
-              className={`mt-2 w-full py-2 rounded-lg text-white text-sm ${
-                item.clientPriority !== null
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-yellow-500 hover:bg-yellow-600"
-              }`}
-            >
-              {item.clientPriority !== null
-                ? "Remove From Gallery"
-                : "Show In Gallery"}
-            </button>
-          </div>
-        ))}
-      </div>
+                    <MediaCard
+                      item={item}
+                      onDelete={deleteMedia}
+                      onEdit={openEdit}
+                    />
+
+                    <button
+                      onClick={() => toggleGallery(item._id)}
+                      className="mt-2 w-full py-2 rounded-lg text-white text-sm transition-colors bg-red-600 hover:bg-red-700"
+                    >
+                      Remove From Gallery
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {regularMedia.length > 0 && (
+            <section className={`${pinnedMedia.length > 0 ? "border-t border-slate-200 pt-6" : ""} space-y-3`}>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg sm:text-xl font-semibold text-slate-800">
+                  Other Media
+                </h2>
+
+                <p className="text-xs sm:text-sm text-slate-500">
+                  Ordered by newest date
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+                {regularMedia.map((item, index) => (
+                  <div
+                    key={item._id}
+                    className="animate-admin-card-in relative flex flex-col"
+                    style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}
+                  >
+                    <MediaCard
+                      item={item}
+                      onDelete={deleteMedia}
+                      onEdit={openEdit}
+                    />
+
+                    <button
+                      onClick={() => toggleGallery(item._id)}
+                      className="mt-2 w-full py-2 rounded-lg text-white text-sm transition-colors bg-green-600 hover:bg-green-700"
+                    >
+                      Show In Gallery
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
 
       {/* EDIT MODAL */}
       {editItem && (
@@ -218,7 +311,7 @@ export default function Gallery() {
 
               <button
                 onClick={saveEdit}
-                className="px-4 py-2 rounded bg-blue-600 text-white"
+                className="px-4 py-2 rounded bg-green-600 text-white"
               >
                 Save
               </button>

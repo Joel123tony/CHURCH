@@ -1,5 +1,9 @@
 import express from "express";
 import upload from "../middleware/upload.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+import { validateBody } from "../middleware/validateBody.js";
+import { pastorCreateSchema, pastorUpdateSchema } from "../validators/pastorValidator.js";
+import { pastorErrorHandler } from "../middleware/pastorErrorHandler.js";
 import Pastor from "../models/Pastor.js";
 
 import {
@@ -12,16 +16,18 @@ import {
 } from "../controllers/pastorController.js";
 
 const router = express.Router();
+const ensureBodyObject = (req, res, next) => {
+  req.body = req.body || {};
+  next();
+};
 
 /* =========================
    GET ALL PASTORS (ADMIN)
-   🔥 upgraded: safer execution
 ========================= */
 router.get("/", async (req, res) => {
   try {
     const result = await getAllPastors(req, res);
 
-    // ensure response is not undefined
     if (result) return result;
 
     return res.status(500).json({
@@ -40,7 +46,6 @@ router.get("/", async (req, res) => {
 
 /* =========================
    GET CURRENT PASTOR
-   🔥 upgraded: lean for stability
 ========================= */
 router.get("/current", async (req, res) => {
   try {
@@ -108,36 +113,25 @@ router.get("/search", async (req, res) => {
 
 /* =========================
    CREATE PASTOR
-   🔥 stable file upload handling
 ========================= */
-router.post("/", upload.single("file"), async (req, res) => {
-  try {
-    return await createPastor(req, res);
-  } catch (err) {
-    console.error("CREATE PASTOR ERROR:", err);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to create pastor",
-    });
-  }
-});
+router.post(
+  "/",
+  upload.single("file"),
+  ensureBodyObject,
+  validateBody(pastorCreateSchema),
+  asyncHandler(createPastor)
+);
 
 /* =========================
    UPDATE PASTOR
 ========================= */
-router.put("/:id", upload.single("file"), async (req, res) => {
-  try {
-    return await updatePastor(req, res);
-  } catch (err) {
-    console.error("UPDATE PASTOR ERROR:", err);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to update pastor",
-    });
-  }
-});
+router.put(
+  "/:id",
+  upload.single("file"),
+  ensureBodyObject,
+  validateBody(pastorUpdateSchema),
+  asyncHandler(updatePastor)
+);
 
 /* =========================
    DELETE PASTOR
@@ -157,7 +151,6 @@ router.delete("/:id", async (req, res) => {
 
 /* =========================
    SET CURRENT PASTOR
-   🔥 optimized + safe query
 ========================= */
 router.put("/current/:id", async (req, res) => {
   try {
@@ -192,5 +185,7 @@ router.put("/current/:id", async (req, res) => {
     });
   }
 });
+
+router.use(pastorErrorHandler);
 
 export default router;

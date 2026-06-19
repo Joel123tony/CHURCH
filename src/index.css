@@ -17,8 +17,127 @@ body {
   background: #F4EFE7;
 }
 
+.admin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(239, 191, 4, 0.65) rgba(255, 255, 255, 0.08);
+}
+
+.admin-scrollbar::-webkit-scrollbar {
+  width: 9px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(239, 191, 4, 0.9), rgba(238, 0, 57, 0.9));
+  border-radius: 999px;
+  border: 2px solid rgba(71, 8, 22, 0.75);
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(239, 191, 4, 1), rgba(238, 0, 57, 1));
+}
+
 .container-custom {
   max-width: 1400px;
   margin: auto;
   padding: 0 24px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+@keyframes adminPageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-admin-page-enter {
+  animation: adminPageEnter 280ms ease-out both;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes eventCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-event-card-in {
+  animation: eventCardIn 420ms ease-out both;
+  will-change: transform, opacity;
+}
+
+@keyframes adminCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-admin-card-in {
+  animation: adminCardIn 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes prayerCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+    filter: blur(1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-prayer-card-in {
+  animation: prayerCardIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+.animate-admin-page-enter,
+.animate-fade-in-up,
+.animate-admin-card-in,
+.animate-event-card-in,
+.animate-prayer-card-in {
+    animation: none !important;
+  }
 }
