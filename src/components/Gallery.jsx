@@ -2,6 +2,100 @@ import { useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
+function GalleryTile({ item, onClick, compact = false }) {
+  const isVideo = item.mediaType === "video";
+  const [shape, setShape] = useState("landscape");
+  const [loading, setLoading] = useState(true);
+
+  const frameClass =
+    shape === "portrait"
+      ? compact
+        ? "aspect-[4/5]"
+        : "aspect-[4/5]"
+      : shape === "square"
+        ? "aspect-square"
+        : compact
+          ? "aspect-[16/10]"
+          : "aspect-[16/10]";
+
+  const resolveShape = (width, height) => {
+    if (!width || !height) return;
+
+    const diff = Math.abs(width - height);
+    const threshold = Math.max(width, height) * 0.12;
+
+    if (diff <= threshold) {
+      setShape("square");
+      return;
+    }
+
+    setShape(width < height ? "portrait" : "landscape");
+  };
+
+  return (
+    <div
+      className={`group bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-2xl ${
+        compact ? "" : ""
+      }`}
+    >
+      <div className={`relative bg-black overflow-hidden ${frameClass}`}>
+        {isVideo ? (
+          <video
+            src={item.url}
+            controls={!compact}
+            muted={compact}
+            preload="metadata"
+            className="h-full w-full object-cover cursor-pointer transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+            onClick={onClick}
+            onLoadedMetadata={(e) => {
+              setLoading(false);
+              resolveShape(e.currentTarget.videoWidth, e.currentTarget.videoHeight);
+            }}
+          />
+        ) : (
+          <img
+            src={item.url}
+            alt={item.title}
+            className="h-full w-full object-cover cursor-pointer transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+            onClick={onClick}
+            onLoad={(e) => {
+              setLoading(false);
+              resolveShape(
+                e.currentTarget.naturalWidth,
+                e.currentTarget.naturalHeight
+              );
+            }}
+          />
+        )}
+
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200/90 animate-pulse">
+            <span className="text-xs text-gray-500">Loading...</span>
+          </div>
+        )}
+
+        {isVideo && !compact && (
+          <div className="absolute top-3 right-3 bg-black/70 text-white px-2.5 py-1.5 text-xs rounded-full backdrop-blur-sm">
+            ▶ Video
+          </div>
+        )}
+      </div>
+
+      <div className={`p-4 ${compact ? "p-3" : "p-4"}`}>
+        <h3 className={`font-semibold ${compact ? "truncate" : "truncate"}`}>
+          {item.title}
+        </h3>
+
+        {!compact && item.createdAt && (
+          <p className="text-sm text-gray-500 mt-1">
+            {new Date(item.createdAt).toLocaleDateString()}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Gallery() {
   const { t } = useLanguage();
   const [featuredMedia, setFeaturedMedia] = useState([]);
@@ -48,7 +142,7 @@ export default function Gallery() {
 
             <button
               onClick={() => setOpenModal(true)}
-              className="bg-[#54091b] text-white px-5 py-2 rounded-lg"
+              className="bg-[#54091b] text-white px-5 py-2 rounded-lg transition hover:opacity-90"
             >
               {t("gallery.allMedia")}
             </button>
@@ -63,29 +157,11 @@ export default function Gallery() {
           ) : (
             <div className="grid md:grid-cols-4 gap-5">
               {featuredMedia.map((item) => (
-                <div
+                <GalleryTile
                   key={item._id}
-                  className="bg-white rounded-xl overflow-hidden shadow-lg"
-                >
-                  {item.mediaType === "video" ? (
-                    <video
-                      src={item.url}
-                      controls
-                      className="w-full h-72 object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={item.title}
-                      className="w-full h-72 object-cover cursor-pointer"
-                      onClick={() => setSelectedMedia(item)}
-                    />
-                  )}
-
-                  <div className="p-3">
-                    <h3 className="font-semibold">{item.title}</h3>
-                  </div>
-                </div>
+                  item={item}
+                  onClick={() => setSelectedMedia(item)}
+                />
               ))}
             </div>
           )}
@@ -109,7 +185,7 @@ export default function Gallery() {
 
                 <button
                   onClick={() => setOpenModal(false)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg"
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg transition hover:opacity-90"
                 >
                   {t("gallery.close")}
                 </button>
@@ -118,33 +194,12 @@ export default function Gallery() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-5">
               {filteredMedia.map((item) => (
-                <div
+                <GalleryTile
                   key={item._id}
-                  className="bg-white rounded-xl overflow-hidden shadow"
-                >
-                  {item.mediaType === "video" ? (
-                    <video
-                      src={item.url}
-                      controls
-                      className="w-full h-60 object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={item.title}
-                      className="w-full h-60 object-cover cursor-pointer"
-                      onClick={() => setSelectedMedia(item)}
-                    />
-                  )}
-
-                  <div className="p-3">
-                    <h3 className="font-semibold">{item.title}</h3>
-
-                    <p className="text-sm text-gray-500">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
+                  item={item}
+                  compact
+                  onClick={() => setSelectedMedia(item)}
+                />
               ))}
             </div>
           </div>
@@ -162,7 +217,7 @@ export default function Gallery() {
           >
             <button
               onClick={() => setSelectedMedia(null)}
-              className="absolute top-3 right-3 bg-white text-black px-3 py-1 rounded z-20"
+              className="absolute top-3 right-3 bg-white text-black px-3 py-1 rounded-full shadow"
             >
               {t("gallery.closeViewer")}
             </button>
@@ -172,13 +227,13 @@ export default function Gallery() {
                 src={selectedMedia.url}
                 controls
                 autoPlay
-                className="w-full max-h-[85vh]"
+                className="w-full max-h-[85vh] object-contain rounded bg-black"
               />
             ) : (
               <img
                 src={selectedMedia.url}
                 alt={selectedMedia.title}
-                className="w-full max-h-[85vh] object-contain"
+                className="w-full max-h-[85vh] object-contain rounded bg-black"
               />
             )}
           </div>
