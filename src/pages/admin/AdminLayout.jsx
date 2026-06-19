@@ -124,16 +124,16 @@ export default function AdminLayout() {
               </button>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3 text-white">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFBF04]/15 text-[#EFBF04]">
-                  <FaCalendarAlt />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="flex min-h-[5.5rem] items-center gap-3 rounded-2xl bg-black/10 px-3 py-3 text-white sm:px-4">
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-[#EFBF04]/15 text-[#EFBF04] sm:h-12 sm:w-12">
+                  <FaCalendarAlt className="text-base sm:text-lg" />
                 </span>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-white/55">
                     Date
                   </p>
-                  <p className="text-sm font-semibold leading-5">
+                  <p className="mt-1 text-sm font-semibold leading-5 sm:text-[15px]">
                     {currentTime.toLocaleDateString("en-IN", {
                       weekday: "short",
                       day: "2-digit",
@@ -144,15 +144,15 @@ export default function AdminLayout() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3 text-white">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFBF04]/15 text-[#EFBF04]">
-                  <FaClock />
+              <div className="flex min-h-[5.5rem] items-center gap-3 rounded-2xl bg-black/10 px-3 py-3 text-white sm:px-4">
+                <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-[#EFBF04]/15 text-[#EFBF04] sm:h-12 sm:w-12">
+                  <FaClock className="text-base sm:text-lg" />
                 </span>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-white/55">
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-white/55">
                     Time
                   </p>
-                  <p className="text-base font-semibold leading-5 sm:text-lg">
+                  <p className="mt-1 text-base font-semibold leading-5 sm:text-[1.1rem]">
                     {currentTime.toLocaleTimeString("en-IN", {
                       hour: "2-digit",
                       minute: "2-digit",
