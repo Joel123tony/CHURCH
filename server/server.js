@@ -16,6 +16,7 @@ import pastorRoutes from "./routes/pastor.routes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
+import prayerRoutes from "./routes/prayer.js";
 import prayerRequestRoutes from "./routes/prayerRequest.routes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
 
@@ -114,6 +115,7 @@ app.use("/api/pastors", pastorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/prayer", prayerRoutes);
 app.use("/api/prayer-requests", prayerRequestRoutes);
 app.use("/api/youtube", youtubeRoutes);
 
@@ -132,7 +134,34 @@ app.use((req, res) => {
    GLOBAL ERROR HANDLER (IMPROVED DEBUG)
 ========================= */
 app.use((err, req, res, next) => {
-  console.error("🔥 SERVER ERROR:", err);
+  const isPastorRoute = req.originalUrl?.startsWith("/api/pastors");
+  const isValidationLike =
+    err?.name === "ValidationError" ||
+    err?.name === "CastError" ||
+    err?.name === "ZodError" ||
+    err?.isJoi ||
+    err?.name === "MulterError" ||
+    err?.name === "SyntaxError" ||
+    err?.code === "LIMIT_FILE_SIZE" ||
+    /Only images|No file uploaded|Invalid pastor payload/i.test(
+      err?.message || ""
+    );
+
+  if (err?.stack) {
+    console.error("🔥 SERVER ERROR STACK:", err.stack);
+  } else {
+    console.error("🔥 SERVER ERROR:", err);
+  }
+
+  if (isPastorRoute && isValidationLike) {
+    return res.status(400).json({
+      success: false,
+      message:
+        err?.code === "LIMIT_FILE_SIZE"
+          ? "Uploaded file is too large"
+          : err?.message || "Invalid pastor payload",
+    });
+  }
 
   res.status(500).json({
     success: false,

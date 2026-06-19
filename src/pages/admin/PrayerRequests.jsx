@@ -2,23 +2,6 @@ import { useEffect, useState } from "react";
 import API from "../../api/axios";
 import { FaWhatsapp, FaCopy } from "react-icons/fa";
 
-const SHARE_TEMPLATES = {
-  english: {
-    title: "METHODIST TAMIL CHURCH",
-    heading: "PRAYER REQUESTS",
-    intro: "Please uphold the following requests in prayer.",
-    itemLabel: "Request",
-    separator: "\n\n━━━━━━━━━━━━━━\n\n",
-  },
-  tamil: {
-    title: "மெதடிஸ்ட் தமிழ் திருச்சபை",
-    heading: "ஜெப விண்ணப்பங்கள்",
-    intro: "பின்வரும் விண்ணப்பங்களுக்காக ஜெபிக்கவும்.",
-    itemLabel: "விண்ணப்பம்",
-    separator: "\n\n━━━━━━━━━━━━━━\n\n",
-  },
-};
-
 const SHARE_LANGUAGE_OPTIONS = [
   { value: "english", label: "English" },
   { value: "tamil", label: "Tamil" },
@@ -82,42 +65,83 @@ export default function PrayerRequests() {
     setSelectedRequests([]);
   };
 
-  const buildPrayerMessageByLanguage = (targetLanguage) => {
-    const template = SHARE_TEMPLATES[targetLanguage];
-
-    if (!template) return "";
-
+  const buildLocalPrayerMessage = () => {
     const selectedItems = requests.filter((r) => selectedRequests.includes(r._id));
     if (!selectedItems.length) return "";
 
-    const body = selectedItems
-      .map(
-        (item, index) =>
-          `${index + 1}. ${item.name}\n${template.itemLabel}: ${item.request}`
-      )
-      .join(template.separator);
+    const englishHeader =
+      "*METHODIST TAMIL CHURCH*\n*PRAYER REQUESTS*\n\nPlease uphold the following requests in prayer.\n\n";
+    const tamilHeader =
+      "*மெதடிஸ்ட் தமிழ் திருச்சபை*\n*ஜெப விண்ணப்பங்கள்*\n\nபின்வரும் விண்ணப்பங்களுக்காக ஜெபிக்கவும்.\n\n";
 
-    return `*${template.title}*\n*${template.heading}*\n\n${template.intro}\n\n${body}`;
-  };
+    const englishBody = selectedItems
+      .map((item, index) => `${index + 1}. ${item.name}\nRequest: ${item.request}`)
+      .join("\n\n━━━━━━━━━━━━━━\n\n");
 
-  const buildPrayerMessage = () => {
-    if (language === "both") {
-      const englishMessage = buildPrayerMessageByLanguage("english");
-      const tamilMessage = buildPrayerMessageByLanguage("tamil");
+    const tamilBody = selectedItems
+      .map((item, index) => `${index + 1}. ${item.name}\nவிண்ணப்பம்: ${item.request}`)
+      .join("\n\n━━━━━━━━━━━━━━\n\n");
 
-      if (!englishMessage && !tamilMessage) return "";
-      if (!englishMessage) return tamilMessage;
-      if (!tamilMessage) return englishMessage;
-
-      return `${englishMessage}\n\n\n${tamilMessage}`;
+    if (language === "tamil") {
+      return `${tamilHeader}${tamilBody}`;
     }
 
-    return buildPrayerMessageByLanguage(language);
+    if (language === "both") {
+      return `${englishHeader}${englishBody}\n\n\n${tamilHeader}${tamilBody}`;
+    }
+
+    return `${englishHeader}${englishBody}`;
+  };
+
+  const fetchTranslatedPrayerMessage = async () => {
+    const selectedItems = requests.filter((r) => selectedRequests.includes(r._id));
+    const mode =
+      language === "both" ? "en-ta" : language === "tamil" ? "ta" : "en";
+
+    try {
+      const res = await API.post("/prayer/format", {
+        requests: selectedItems.map((item) => ({
+          name: item.name,
+          request: item.request,
+        })),
+        mode,
+      });
+
+      const data = Array.isArray(res?.data?.data) ? res.data.data : [];
+
+      if (!data.length) return buildLocalPrayerMessage();
+
+      const englishHeader =
+        "*METHODIST TAMIL CHURCH*\n*PRAYER REQUESTS*\n\nPlease uphold the following requests in prayer.\n\n";
+      const tamilHeader =
+        "*மெதடிஸ்ட் தமிழ் திருச்சபை*\n*ஜெப விண்ணப்பங்கள்*\n\nபின்வரும் விண்ணப்பங்களுக்காக ஜெபிக்கவும்.\n\n";
+
+      const englishBody = data
+        .map((item, index) => `${index + 1}. ${item.enName}\nRequest: ${item.enReq}`)
+        .join("\n\n━━━━━━━━━━━━━━\n\n");
+
+      const tamilBody = data
+        .map((item, index) => `${index + 1}. ${item.taName}\nவிண்ணப்பம்: ${item.taReq}`)
+        .join("\n\n━━━━━━━━━━━━━━\n\n");
+
+      if (language === "tamil") {
+        return `${tamilHeader}${tamilBody}`;
+      }
+
+      if (language === "both") {
+        return `${englishHeader}${englishBody}\n\n\n${tamilHeader}${tamilBody}`;
+      }
+
+      return `${englishHeader}${englishBody}`;
+    } catch (err) {
+      console.log("Prayer translation API failed, using local fallback:", err);
+      return buildLocalPrayerMessage();
+    }
   };
 
   const copyPrayerRequests = async () => {
     try {
-      const message = buildPrayerMessage();
+      const message = await fetchTranslatedPrayerMessage();
       await navigator.clipboard.writeText(message);
       alert("Prayer requests copied successfully");
     } catch (err) {
@@ -125,8 +149,8 @@ export default function PrayerRequests() {
     }
   };
 
-  const sharePrayerRequests = () => {
-    const message = buildPrayerMessage();
+  const sharePrayerRequests = async () => {
+    const message = await fetchTranslatedPrayerMessage();
     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   };
