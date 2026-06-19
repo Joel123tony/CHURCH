@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("home");
+  const { language, setLanguage, t } = useLanguage();
 
   const links = [
-    { name: "Home", href: "#home", id: "home" },
-    { name: "History", href: "#history", id: "history" },
-    { name: "Events", href: "#events", id: "events" },
-    { name: "Gallery", href: "#gallery", id: "gallery" },
-    { name: "Pastor", href: "#pastor", id: "pastor" },
-    { name: "Contact", href: "#contact", id: "contact" },
+    { key: "nav.home", href: "#home", id: "home" },
+    { key: "nav.history", href: "#history", id: "history" },
+    { key: "nav.events", href: "#events", id: "events" },
+    { key: "nav.gallery", href: "#gallery", id: "gallery" },
+    { key: "nav.pastor", href: "#pastor", id: "pastor" },
+    { key: "nav.contact", href: "#contact", id: "contact" },
   ];
 
   useEffect(() => {
-    const sections = links.map((l) =>
-      document.getElementById(l.id)
-    );
+    const sections = links.map((l) => document.getElementById(l.id));
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -48,52 +48,57 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-light border-b shadow-sm">
       <div className="container-custom">
         <div className="h-20 flex items-center justify-between">
-
-          {/* LOGO */}
           <div className="flex items-center gap-3">
-  <Link to="/admin">
-    <img
-      src="https://res.cloudinary.com/dhqc0n23k/image/upload/v1781002190/methodist_logo_syy6ca.png"
-      className="h-12 w-12"
-      alt="logo"
-    />
-  </Link>
+            <Link to="/admin">
+              <img
+                src="https://res.cloudinary.com/dhqc0n23k/image/upload/v1781002190/methodist_logo_syy6ca.png"
+                className="h-12 w-12"
+                alt="logo"
+              />
+            </Link>
             <div>
-              <h1 className="text-primary font-bold">
-                Methodist Tamil Church
-              </h1>
-              <p className="text-xs text-gray-600">
-                Padikuppam
-              </p>
+              <h1 className="text-primary font-bold">Methodist Tamil Church</h1>
+              <p className="text-xs text-gray-600">Padikuppam</p>
             </div>
           </div>
 
-          {/* DESKTOP MENU */}
           <div className="flex items-center gap-8">
-
             <ul className="hidden lg:flex gap-8">
               {links.map((link) => (
                 <li key={link.id}>
                   <a href={link.href} className={linkClass(link.id)}>
-                    {link.name}
+                    {t(link.key)}
                   </a>
                 </li>
               ))}
             </ul>
 
-            {/* 🌐 LANGUAGE TOGGLE (ADDED BACK) */}
             <div className="hidden lg:flex items-center border border-primary rounded-full overflow-hidden">
-              <button className="px-4 py-2 bg-primary text-white text-sm">
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                className={`px-4 py-2 text-sm transition ${
+                  language === "en"
+                    ? "bg-primary text-white"
+                    : "text-primary hover:bg-gray-100"
+                }`}
+              >
                 EN
               </button>
-              <button className="px-4 py-2 text-primary text-sm hover:bg-gray-100">
+              <button
+                type="button"
+                onClick={() => setLanguage("ta")}
+                className={`px-4 py-2 text-sm transition ${
+                  language === "ta"
+                    ? "bg-primary text-white"
+                    : "text-primary hover:bg-gray-100"
+                }`}
+              >
                 தமிழ்
               </button>
             </div>
-
           </div>
 
-          {/* MOBILE MENU BUTTON */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="lg:hidden text-2xl"
@@ -102,10 +107,8 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* MOBILE MENU */}
         {menuOpen && (
           <div className="lg:hidden py-4 border-t">
-
             {links.map((link) => (
               <a
                 key={link.id}
@@ -117,20 +120,34 @@ export default function Navbar() {
                     : "text-primary"
                 }`}
               >
-                {link.name}
+                {t(link.key)}
               </a>
             ))}
 
-            {/* MOBILE LANGUAGE TOGGLE */}
             <div className="flex mt-4 border border-primary rounded-full overflow-hidden w-fit">
-              <button className="px-4 py-2 bg-primary text-white text-sm">
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                className={`px-4 py-2 text-sm transition ${
+                  language === "en"
+                    ? "bg-primary text-white"
+                    : "text-primary hover:bg-gray-100"
+                }`}
+              >
                 EN
               </button>
-              <button className="px-4 py-2 text-primary text-sm">
+              <button
+                type="button"
+                onClick={() => setLanguage("ta")}
+                className={`px-4 py-2 text-sm transition ${
+                  language === "ta"
+                    ? "bg-primary text-white"
+                    : "text-primary hover:bg-gray-100"
+                }`}
+              >
                 தமிழ்
               </button>
             </div>
-
           </div>
         )}
       </div>

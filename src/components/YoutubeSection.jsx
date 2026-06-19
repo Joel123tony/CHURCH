@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function YoutubeSection() {
+  const { t } = useLanguage();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,10 +14,7 @@ export default function YoutubeSection() {
   const loadVideos = async () => {
     try {
       const res = await API.get("/youtube/latest");
-
       const data = Array.isArray(res.data) ? res.data : [];
-
-      // 🔥 FORCE: latest 4 only
       setVideos(data.slice(0, 4));
     } catch (err) {
       console.error("YouTube Error:", err);
@@ -28,26 +27,16 @@ export default function YoutubeSection() {
   return (
     <section className="py-16 bg-cream">
       <div className="max-w-7xl mx-auto px-6">
-
-        {/* HEADER */}
         <h2 className="text-3xl font-bold text-primary mb-10">
-          YouTube
+          {t("youtube.title")}
         </h2>
 
-        {/* LOADING */}
         {loading ? (
-          <div className="text-center text-primary">
-            Loading videos...
-          </div>
+          <div className="text-center text-primary">{t("youtube.loading")}</div>
         ) : videos.length === 0 ? (
-          <div className="text-center text-primary">
-            No videos found
-          </div>
+          <div className="text-center text-primary">{t("youtube.noVideos")}</div>
         ) : (
-
-          /* GRID */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
             {videos.map((video) => (
               <a
                 key={video.id}
@@ -56,11 +45,7 @@ export default function YoutubeSection() {
                 rel="noopener noreferrer"
                 className="group"
               >
-
-                {/* CARD */}
                 <div className="bg-primary rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300">
-
-                  {/* THUMBNAIL */}
                   <div className="relative overflow-hidden">
                     <img
                       src={video.thumbnail}
@@ -72,7 +57,6 @@ export default function YoutubeSection() {
                     />
                   </div>
 
-                  {/* CONTENT */}
                   <div className="p-4">
                     <h3 className="font-semibold text-cream line-clamp-2">
                       {video.title}
@@ -84,11 +68,9 @@ export default function YoutubeSection() {
                       </p>
                     )}
                   </div>
-
                 </div>
               </a>
             ))}
-
           </div>
         )}
       </div>

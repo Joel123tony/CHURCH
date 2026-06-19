@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { LanguageProvider } from "./context/LanguageContext";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -16,43 +17,45 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <LanguageProvider>
+      <BrowserRouter>
+        <Routes>
 
-        {/* ================= CLIENT ================= */}
-        <Route path="/" element={<Home />} />
-        <Route path="/gallery" element={<ClientGallery />} />
+          {/* ================= CLIENT ================= */}
+          <Route path="/" element={<Home />} />
+          <Route path="/gallery" element={<ClientGallery />} />
 
-        {/* ================= LOGIN ================= */}
-        <Route path="/admin/login" element={<Login />} />
+          {/* ================= LOGIN ================= */}
+          <Route path="/admin/login" element={<Login />} />
 
-        {/* ================= ADMIN (PROTECTED) ================= */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
+          {/* ================= ADMIN (PROTECTED) ================= */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
 
-          {/* Default admin page */}
-          <Route index element={<Dashboard />} />
+            {/* Default admin page */}
+            <Route index element={<Dashboard />} />
 
-          {/* FIXED SAFE ROUTES */}
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="pastors" element={<Pastors />} />
-          <Route path="events" element={<Events />} />
-          <Route path="gallery" element={<Gallery />} />
-          <Route path="messages" element={<Messages />} />
-          <Route path="prayer-requests" element={<PrayerRequests />} />
+            {/* FIXED SAFE ROUTES */}
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="pastors" element={<Pastors />} />
+            <Route path="events" element={<Events />} />
+            <Route path="gallery" element={<Gallery />} />
+            <Route path="messages" element={<Messages />} />
+            <Route path="prayer-requests" element={<PrayerRequests />} />
 
-        </Route>
+          </Route>
 
-        {/* ================= SAFETY FALLBACK ================= */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+          {/* ================= SAFETY FALLBACK ================= */}
+          <Route path="*" element={<Navigate to="/" replace />} />
 
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
