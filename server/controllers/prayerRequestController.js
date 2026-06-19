@@ -73,6 +73,39 @@ export const markAsPrayed = async (
     });
   }
 };
+
+/* DELETE MANY */
+export const deletePrayerRequests = async (
+  req,
+  res
+) => {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.filter(Boolean)
+      : [];
+
+    if (!ids.length) {
+      return res.status(400).json({
+        success: false,
+        message: "No prayer request ids provided",
+      });
+    }
+
+    const result = await PrayerRequest.deleteMany({
+      _id: { $in: ids },
+    });
+
+    res.json({
+      success: true,
+      deletedCount: result.deletedCount || 0,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 /* COUNTS */
 export const getPrayerCounts = async (
   req,

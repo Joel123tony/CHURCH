@@ -5,6 +5,7 @@ import {
   getPrayerRequests,
   markAsPrayed,
   getPrayerCounts,
+  deletePrayerRequests,
 } from "../controllers/prayerRequestController.js";
 
 const router = express.Router();
@@ -20,6 +21,7 @@ router.patch(
   "/:id/prayed",
   markAsPrayed
 );
+router.delete("/bulk", deletePrayerRequests);
 router.get(
   "/counts",
   getPrayerCounts

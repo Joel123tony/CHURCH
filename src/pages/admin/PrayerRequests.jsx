@@ -168,11 +168,25 @@ export default function PrayerRequests() {
   const clearSelection = () => {
     if (!selectedRequests.length) return;
 
-    const ok = window.confirm("Clear the selected prayer requests?");
+    const ok = window.confirm(
+      "Delete the selected prayer requests from the database?"
+    );
     if (!ok) return;
 
-    setSelectedRequests([]);
-    toast.info("Selection cleared");
+    API.delete("/prayer-requests/bulk", {
+      data: { ids: selectedRequests },
+    })
+      .then(() => {
+        toast.success("Selected prayer requests deleted");
+        setSelectedRequests([]);
+        fetchRequests();
+      })
+      .catch((err) => {
+        console.error("Delete prayer requests error:", err);
+        toast.error(
+          err?.response?.data?.message || "Unable to delete selected requests"
+        );
+      });
   };
 
   const markPrayed = async (id) => {
