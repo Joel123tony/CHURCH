@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -7,14 +7,17 @@ export default function Navbar() {
   const [active, setActive] = useState("home");
   const { language, setLanguage, t } = useLanguage();
 
-  const links = [
-    { key: "nav.home", href: "#home", id: "home" },
-    { key: "nav.history", href: "#history", id: "history" },
-    { key: "nav.events", href: "#events", id: "events" },
-    { key: "nav.gallery", href: "#gallery", id: "gallery" },
-    { key: "nav.pastor", href: "#pastor", id: "pastor" },
-    { key: "nav.contact", href: "#contact", id: "contact" },
-  ];
+  const links = useMemo(
+    () => [
+      { key: "nav.home", href: "#home", id: "home" },
+      { key: "nav.history", href: "#history", id: "history" },
+      { key: "nav.events", href: "#events", id: "events" },
+      { key: "nav.gallery", href: "#gallery", id: "gallery" },
+      { key: "nav.pastor", href: "#pastor", id: "pastor" },
+      { key: "nav.contact", href: "#contact", id: "contact" },
+    ],
+    []
+  );
 
   useEffect(() => {
     const sections = links.map((l) => document.getElementById(l.id));
@@ -35,7 +38,7 @@ export default function Navbar() {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [links]);
 
   const linkClass = (id) =>
     `transition-colors duration-300 ${

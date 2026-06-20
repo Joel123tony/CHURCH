@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { connectDB } from "./config/db.js";
 
 /* ROUTES */
@@ -13,7 +15,10 @@ import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";   // ✅ ADD THIS
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, ".env") });
 connectDB();
 
 const app = express();

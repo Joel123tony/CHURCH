@@ -15,7 +15,7 @@ const auth = (req, res, next) => {
     req.user = decoded; // IMPORTANT (use user not admin)
 
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: "Invalid token" });
   }
 };

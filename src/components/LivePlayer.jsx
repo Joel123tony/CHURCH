@@ -2,29 +2,41 @@ import { useEffect, useState } from "react";
 
 export default function LivePlayer() {
   const [videoId, setVideoId] = useState(null);
+  const [live, setLive] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     fetch("/api/youtube/live")
       .then((res) => res.json())
       .then((data) => {
-        if (data.live) {
-          setVideoId(data.videoId);
-        }
+        if (!mounted) return;
+        setLive(Boolean(data?.live));
+        setVideoId(data?.videoId || null);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setLive(false);
+        setVideoId(null);
       });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
     <div className="bg-cream rounded-3xl p-4">
       <div className="bg-white rounded-2xl h-72 overflow-hidden">
-    {live && videoId ? (
-  <iframe
-    className="w-full h-72 rounded-2xl"
-    src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
-    title="Live Stream"
-    allow="autoplay; encrypted-media"
-    allowFullScreen
-  />
-) : (
+        {live && videoId ? (
+          <iframe
+            className="h-72 w-full rounded-2xl"
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
+            title="Live Stream"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+          />
+        ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-500">
             No Live Stream Currently
           </div>

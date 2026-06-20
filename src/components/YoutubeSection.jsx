@@ -7,10 +7,6 @@ export default function YoutubeSection() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadVideos();
-  }, []);
-
   const loadVideos = async () => {
     try {
       const res = await API.get("/youtube/latest");
@@ -23,6 +19,10 @@ export default function YoutubeSection() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void loadVideos();
+  }, []);
 
   return (
     <section className="py-16 bg-cream">

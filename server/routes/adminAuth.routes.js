@@ -17,7 +17,7 @@ router.get("/dashboard", auth, async (req, res) => {
         users: 20,
       },
     });
-  } catch (err) {
+  } catch {
     res.status(500).json({
       success: false,
       error: "Server error",

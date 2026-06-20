@@ -161,10 +161,6 @@ export default function PrayerRequests() {
     );
   };
 
-  const selectAllRequests = () => {
-    setSelectedRequests(filteredRequests.map((r) => r._id));
-  };
-
   const clearSelection = () => {
     if (!selectedRequests.length) return;
 

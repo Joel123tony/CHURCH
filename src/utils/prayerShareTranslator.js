@@ -73,13 +73,6 @@ const canonicalize = (text = "") =>
 
 const isTamil = (text = "") => TAMIL_RE.test(text);
 
-const decodeHtmlEntities = (text = "") => {
-  if (typeof document === "undefined") return text;
-  const textarea = document.createElement("textarea");
-  textarea.innerHTML = text;
-  return textarea.value;
-};
-
 const normalizeText = (text = "") => String(text).replace(/\s+/g, " ").trim();
 
 const applyPhraseMap = (text, map) => {
@@ -119,6 +112,9 @@ const localTranslate = (text, targetLanguage) => {
 export async function translatePrayerText(text, targetLanguage) {
   const normalized = normalizeText(text);
   if (!normalized) return "";
+
+  if (isTamil(normalized) && targetLanguage === "ta") return normalized;
+  if (!isTamil(normalized) && targetLanguage === "en") return normalized;
 
   const localResult = localTranslate(normalized, targetLanguage);
   if (localResult && localResult !== normalized) return localResult;

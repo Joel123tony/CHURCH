@@ -1,5 +1,4 @@
 import { transliterate } from "transliteration";
-import { franc } from "franc";
 import { translate } from "@vitalets/google-translate-api";
 
 // 🧠 CHURCH NAME ENGINE (SMART)
@@ -22,14 +21,6 @@ function smartName(name) {
     .split(" ")
     .map(n => map[n] || transliterate(n))
     .join(" ");
-}
-
-// 🌍 DETECT LANGUAGE
-function detectLang(text) {
-  const lang = franc(text || "");
-  if (lang === "tam") return "ta";
-  if (lang === "eng") return "en";
-  return "auto";
 }
 
 // 🌐 TRANSLATION SAFE

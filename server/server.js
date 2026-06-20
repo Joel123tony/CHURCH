@@ -1,5 +1,11 @@
 import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 import express from "express";
 import cors from "cors";
@@ -133,7 +139,8 @@ app.use((req, res) => {
 /* =========================
    GLOBAL ERROR HANDLER (IMPROVED DEBUG)
 ========================= */
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
+  void _next;
   const isPastorRoute = req.originalUrl?.startsWith("/api/pastors");
   const isValidationLike =
     err?.name === "ValidationError" ||
