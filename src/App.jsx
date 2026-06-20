@@ -16,9 +16,28 @@ const Messages = lazy(() => import("./pages/admin/Messages"));
 const PrayerRequests = lazy(() => import("./pages/admin/PrayerRequests"));
 
 const PageLoader = () => (
-  <div className="flex min-h-screen items-center justify-center bg-[#f4efe7] px-4">
-    <div className="rounded-3xl border border-slate-100 bg-white px-6 py-4 shadow-lg">
-      <p className="text-sm font-semibold text-slate-700">Loading page...</p>
+  <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f4efe7] px-4">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(238,0,57,0.08),_transparent_40%),radial-gradient(circle_at_bottom,_rgba(239,191,4,0.12),_transparent_36%)]" />
+
+    <div className="relative flex flex-col items-center gap-4 text-center">
+      <div className="relative flex h-28 w-28 items-center justify-center rounded-[1.75rem] bg-white/75 shadow-2xl shadow-[#54091b]/15 backdrop-blur">
+        <div className="absolute inset-0 rounded-[1.75rem] bg-gradient-to-r from-[#EFBF04] via-[#ee0039] to-[#EFBF04] opacity-80 blur-xl animate-pulse" />
+
+        <div className="relative flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-[#54091b] via-[#7f1730] to-[#ee0039] shadow-lg animate-mtc-float">
+          <span className="animate-mtc-gradient bg-gradient-to-r from-[#EFBF04] via-[#ffe27a] to-[#ff7b9c] bg-clip-text text-5xl font-black tracking-[0.2em] text-transparent sm:text-6xl">
+            MTC
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold tracking-[0.45em] text-[#54091b]/70">
+          LOADING
+        </p>
+        <p className="mt-2 text-sm text-[#54091b]/60">
+          Preparing the church pages
+        </p>
+      </div>
     </div>
   </div>
 );

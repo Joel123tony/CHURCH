@@ -132,12 +132,45 @@ body {
   will-change: transform, opacity;
 }
 
+@keyframes mtcFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.02);
+  }
+}
+
+@keyframes mtcGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-mtc-float {
+  animation: mtcFloat 1.9s ease-in-out infinite;
+}
+
+.animate-mtc-gradient {
+  background-size: 200% 200%;
+  animation: mtcGradientShift 2.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
 .animate-admin-page-enter,
 .animate-fade-in-up,
 .animate-admin-card-in,
 .animate-event-card-in,
-.animate-prayer-card-in {
+.animate-prayer-card-in,
+.animate-mtc-float,
+.animate-mtc-gradient {
     animation: none !important;
   }
 }
