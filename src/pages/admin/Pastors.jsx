@@ -107,7 +107,7 @@ const normalizeEducationSelection = (education) => {
 
 export default function Pastors() {
   const [pastors, setPastors] = useState([]);
-  const [view, setView] = useState("current");
+const [view, setView] = useState("add");
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(defaultForm);
   const [editId, setEditId] = useState(null);
@@ -153,24 +153,17 @@ export default function Pastors() {
     };
   }, [preview]);
 
-  const sortedPastors = useMemo(() => {
-    const items = [...pastors];
+const sortedPastors = useMemo(() => {
+  return [...pastors].sort((a, b) => {
+    if (a?.isCurrent && !b?.isCurrent) return -1;
+    if (!a?.isCurrent && b?.isCurrent) return 1;
 
-    items.sort((a, b) => {
-      const aCurrent = a?.isCurrent ? 1 : 0;
-      const bCurrent = b?.isCurrent ? 1 : 0;
+    const aYear = Number(a?.joinedYear || 0);
+    const bYear = Number(b?.joinedYear || 0);
 
-      if (aCurrent !== bCurrent) return bCurrent - aCurrent;
-
-      const aYear = Number(a?.joinedYear) || 0;
-      const bYear = Number(b?.joinedYear) || 0;
-      if (aYear !== bYear) return bYear - aYear;
-
-      return String(a?.name || "").localeCompare(String(b?.name || ""));
-    });
-
-    return items;
-  }, [pastors]);
+    return bYear - aYear;
+  });
+}, [pastors]);
 
   const filteredPastors = useMemo(() => {
     const query = search.toLowerCase();
@@ -187,8 +180,7 @@ export default function Pastors() {
         church.includes(query) ||
         yearText.includes(query);
 
-      if (view === "current") return p?.isCurrent === true && matchesSearch;
-      if (view === "former") return p?.isCurrent !== true && matchesSearch;
+
       return matchesSearch;
     });
   }, [search, sortedPastors, view]);
@@ -359,6 +351,7 @@ export default function Pastors() {
       church: p?.church || "",
       email: p?.email || "",
       phone: p?.number ?? p?.phone ?? "",
+      
     });
 
     setEducations(nextEducations);
@@ -367,6 +360,7 @@ export default function Pastors() {
     setImageInfo(null);
     setPreview(p?.image?.url || null);
     toast.info("Editing pastor");
+    setView("add");
   };
 
   const handleDelete = async (id) => {
@@ -438,32 +432,39 @@ export default function Pastors() {
 
       <div className="mb-6 flex flex-wrap gap-3">
         <button
-          onClick={() => setView("current")}
-          className={`rounded-2xl px-4 py-2.5 font-semibold transition-colors ${
-            view === "current"
-              ? "bg-green-600 text-white shadow"
-              : "bg-white text-slate-700 hover:bg-slate-100"
-          }`}
+          onClick={() => setView("add")}
+       className={`rounded-2xl px-4 py-2.5 font-semibold transition-colors ${
+  view === "add"
+    ? "bg-green-600 text-white shadow"
+    : "bg-white text-slate-700 hover:bg-slate-100"
+}`}
         >
-          Current Pastors
+          Add Pastors
         </button>
 
         <button
-          onClick={() => setView("former")}
-          className={`rounded-2xl px-4 py-2.5 font-semibold transition-colors ${
-            view === "former"
-              ? "bg-slate-800 text-white shadow"
-              : "bg-white text-slate-700 hover:bg-slate-100"
-          }`}
+          onClick={() => setView("list")}
+         className={`rounded-2xl px-4 py-2.5 font-semibold transition-colors ${
+  view === "list"
+    ? "bg-slate-800 text-white shadow"
+    : "bg-white text-slate-700 hover:bg-slate-100"
+}`}
         >
           Pastor&apos;s List
         </button>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="mb-6 rounded-3xl border border-slate-100 bg-white p-4 shadow-lg sm:p-6"
-      >
+     <div
+  className={`overflow-hidden transition-all duration-500 ${
+    view === "add"
+      ? "max-h-[5000px] opacity-100 mb-6"
+      : "max-h-0 opacity-0 mb-0"
+  }`}
+>
+  <form
+    onSubmit={handleSubmit}
+    className="rounded-3xl border border-slate-100 bg-white p-4 shadow-lg sm:p-6"
+  >
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <input
             name="name"
@@ -707,11 +708,13 @@ export default function Pastors() {
           {editId ? "Update Pastor" : "Add Pastor"}
         </button>
       </form>
+       </div>
 
-      {loading ? (
-        <p className="text-center text-slate-500">Loading...</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+     {view === "list" && (
+  loading ? (
+    <p className="text-center text-slate-500">Loading...</p>
+  ) : (
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filteredPastors.map((p, index) => (
             <div
               key={p?._id}
@@ -793,8 +796,8 @@ export default function Pastors() {
             </div>
           ))}
         </div>
-      )}
-
+           )
+)}
       {selectedPastor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl">

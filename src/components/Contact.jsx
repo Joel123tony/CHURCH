@@ -44,8 +44,9 @@ export default function Contact() {
                 Mogappair East,
                 <br />
                 Chennai - 600107
+                
               </p>
-
+            
               <button
                 onClick={() =>
                   window.open("https://maps.app.goo.gl/Q8ZBoqhSdgZkzqy18", "_blank")

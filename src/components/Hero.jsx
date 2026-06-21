@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -11,8 +11,9 @@ export default function Hero() {
 
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef(null);
+  const retryRef = useRef(0);
 
-  const fetchYoutubeVideo = useCallback(async () => {
+  const fetchYoutubeVideo = async () => {
     try {
       const res = await API.get("/youtube");
       const data = res?.data || {};
@@ -21,25 +22,33 @@ export default function Hero() {
         videoId: data?.videoId || "",
         title: data?.title || "",
       });
+
+      retryRef.current = 0;
     } catch (err) {
       console.error("Hero API error:", err);
-      setVideo({ videoId: "", title: "" });
+      retryRef.current += 1;
+
+      if (retryRef.current < 3) {
+        setTimeout(fetchYoutubeVideo, 2000);
+      } else {
+        setVideo({ videoId: "", title: "" });
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    void fetchYoutubeVideo();
+    fetchYoutubeVideo();
 
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
-      void fetchYoutubeVideo();
+      fetchYoutubeVideo();
     }, 60000);
 
     return () => clearInterval(intervalRef.current);
-  }, [fetchYoutubeVideo]);
+  }, []);
 
   return (
     <section className="bg-primary py-16 text-white">

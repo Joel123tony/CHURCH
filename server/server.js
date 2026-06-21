@@ -139,8 +139,7 @@ app.use((req, res) => {
 /* =========================
    GLOBAL ERROR HANDLER (IMPROVED DEBUG)
 ========================= */
-app.use((err, req, res, _next) => {
-  void _next;
+app.use((err, req, res, next) => {
   const isPastorRoute = req.originalUrl?.startsWith("/api/pastors");
   const isValidationLike =
     err?.name === "ValidationError" ||

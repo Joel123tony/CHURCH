@@ -6,6 +6,11 @@ export const createPrayerRequest = async (
   res
 ) => {
   try {
+    console.log(
+      "PRAYER REQUEST RECEIVED:",
+      req.body
+    );
+
     const prayer = await PrayerRequest.create(
       req.body
     );
@@ -15,6 +20,11 @@ export const createPrayerRequest = async (
       data: prayer,
     });
   } catch (err) {
+    console.error(
+      "CREATE PRAYER ERROR:",
+      err
+    );
+
     res.status(500).json({
       success: false,
       message: err.message,
@@ -87,17 +97,20 @@ export const deletePrayerRequests = async (
     if (!ids.length) {
       return res.status(400).json({
         success: false,
-        message: "No prayer request ids provided",
+        message:
+          "No prayer request ids provided",
       });
     }
 
-    const result = await PrayerRequest.deleteMany({
-      _id: { $in: ids },
-    });
+    const result =
+      await PrayerRequest.deleteMany({
+        _id: { $in: ids },
+      });
 
     res.json({
       success: true,
-      deletedCount: result.deletedCount || 0,
+      deletedCount:
+        result.deletedCount || 0,
     });
   } catch (err) {
     res.status(500).json({
@@ -106,15 +119,17 @@ export const deletePrayerRequests = async (
     });
   }
 };
+
 /* COUNTS */
 export const getPrayerCounts = async (
   req,
   res
 ) => {
   try {
-    const pending = await PrayerRequest.countDocuments({
-      status: "pending",
-    });
+    const pending =
+      await PrayerRequest.countDocuments({
+        status: "pending",
+      });
 
     const completed =
       await PrayerRequest.countDocuments({

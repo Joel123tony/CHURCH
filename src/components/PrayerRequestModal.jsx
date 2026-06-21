@@ -18,10 +18,11 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
     try {
       setLoading(true);
 
-      await API.post("/prayer/format", {
-        requests: [{ name, request, phone }],
-        mode: "en-ta",
-      });
+    await API.post("/prayer-requests", {
+  name,
+  phone,
+  request,
+});
 
       setSuccess(true);
       setName("");
