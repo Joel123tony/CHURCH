@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import API from "../../api/axios";
 import GalleryUpload from "./GalleryUpload";
 import MediaCard from "../../components/MediaCard";
@@ -11,6 +11,7 @@ export default function Gallery() {
 
   const [search, setSearch] = useState("");
   const [editItem, setEditItem] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
 
   const [title, setTitle] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -34,27 +35,56 @@ export default function Gallery() {
   }, []);
 
   /* UPLOAD SUCCESS */
-  const handleUploadSuccess = (newItems) => {
+  const handleUploadSuccess = useCallback((newItems) => {
     setMedia((prev) => [...newItems, ...prev]);
-  };
+  }, []);
 
   /* DELETE */
-  const deleteMedia = async (id) => {
+  const deleteMedia = useCallback(async (id) => {
     const ok = window.confirm("Delete this media?");
     if (!ok) return;
 
     try {
       await API.delete(`/gallery/${id}`);
       setMedia((prev) => prev.filter((item) => item._id !== id));
+      setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
       toast.success("Media deleted successfully");
     } catch (err) {
       console.error(err);
       toast.error(err?.response?.data?.message || "Delete failed");
     }
-  };
+  }, []);
+
+  const bulkDeleteMedia = useCallback(async () => {
+    if (!selectedItems.length) {
+      toast.info("Select at least one media item");
+      return;
+    }
+
+    const ok = window.confirm(
+      `Delete ${selectedItems.length} selected media item(s)?`
+    );
+
+    if (!ok) return;
+
+    try {
+      await API.delete("/gallery/bulk", {
+        data: { ids: selectedItems },
+      });
+
+      setMedia((prev) =>
+        prev.filter((item) => !selectedItems.includes(item._id))
+      );
+      setSelectedItems([]);
+      toast.success("Selected media deleted successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Bulk delete failed");
+    }
+  }, [selectedItems]);
 
   /* TOGGLE GALLERY */
-  const toggleGallery = async (id) => {
+  const toggleGallery = useCallback(async (id) => {
     try {
       const res = await API.patch(`/gallery/toggle-client/${id}`);
       const updated = res?.data?.data;
@@ -72,10 +102,10 @@ export default function Gallery() {
     } catch (err) {
       toast.error(err?.response?.data?.message || "Update failed");
     }
-  };
+  }, []);
 
   /* EDIT OPEN */
-  const openEdit = (item) => {
+  const openEdit = useCallback((item) => {
     setEditItem(item);
     setTitle(item.title || "");
     setEventDate(
@@ -83,7 +113,15 @@ export default function Gallery() {
         ? new Date(item.eventDate).toISOString().split("T")[0]
         : ""
     );
-  };
+  }, []);
+
+  const toggleSelection = useCallback((id) => {
+    setSelectedItems((prev) =>
+      prev.includes(id)
+        ? prev.filter((itemId) => itemId !== id)
+        : [...prev, id]
+    );
+  }, []);
 
   /* SAVE EDIT */
   const saveEdit = async () => {
@@ -112,9 +150,50 @@ export default function Gallery() {
   };
 
   /* SEARCH */
-  const filteredMedia = media.filter((item) =>
-    item.title?.toLowerCase().includes(search.toLowerCase())
+  const filteredMedia = useMemo(
+    () =>
+      media.filter((item) =>
+        item.title?.toLowerCase().includes(search.toLowerCase())
+      ),
+    [media, search]
   );
+
+  const filteredIds = useMemo(
+    () => filteredMedia.map((item) => item._id),
+    [filteredMedia]
+  );
+
+  const selectedCount = selectedItems.length;
+  const selectedSet = useMemo(
+    () => new Set(selectedItems),
+    [selectedItems]
+  );
+
+  const allVisibleSelected = useMemo(() => {
+    if (!filteredIds.length) return false;
+    return filteredIds.every((id) => selectedSet.has(id));
+  }, [filteredIds, selectedSet]);
+
+  const visibleSelectedCount = useMemo(
+    () => filteredIds.filter((id) => selectedSet.has(id)).length,
+    [filteredIds, selectedSet]
+  );
+
+  const toggleSelectAllVisible = useCallback(() => {
+    if (!filteredIds.length) return;
+
+    setSelectedItems((prev) => {
+      if (allVisibleSelected) {
+        return prev.filter((id) => !filteredIds.includes(id));
+      }
+
+      return Array.from(new Set([...prev, ...filteredIds]));
+    });
+  }, [allVisibleSelected, filteredIds]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedItems([]);
+  }, []);
 
   const { pinnedMedia, regularMedia } = useMemo(() => {
     const pinned = [];
@@ -143,9 +222,10 @@ export default function Gallery() {
     return { pinnedMedia: pinned, regularMedia: regular };
   }, [filteredMedia]);
 
-  const galleryCount = media.filter(
-    (item) => item.clientPriority !== null
-  ).length;
+  const galleryCount = useMemo(
+    () => media.filter((item) => item.clientPriority !== null).length,
+    [media]
+  );
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen space-y-6">
@@ -183,6 +263,50 @@ export default function Gallery() {
         onChange={(e) => setSearch(e.target.value)}
         className="w-full border rounded-xl p-3"
       />
+
+      {filteredMedia.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm font-medium text-slate-600">
+            {selectedCount > 0 ? (
+              <>
+                {selectedCount} selected
+                {visibleSelectedCount > 0
+                  ? ` (${visibleSelectedCount} visible)`
+                  : ""}
+              </>
+            ) : (
+              "No items selected"
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={toggleSelectAllVisible}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              {allVisibleSelected ? "Unselect All" : "Select All"}
+            </button>
+
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="rounded-lg bg-slate-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600"
+            >
+              Clear Selection
+            </button>
+
+            <button
+              type="button"
+              onClick={bulkDeleteMedia}
+              disabled={!selectedCount}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Delete Selected
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* LOADING */}
       {loading && (
@@ -226,6 +350,8 @@ export default function Gallery() {
                       item={item}
                       onDelete={deleteMedia}
                       onEdit={openEdit}
+                      selected={selectedSet.has(item._id)}
+                      onSelectToggle={toggleSelection}
                     />
 
                     <button
@@ -263,6 +389,8 @@ export default function Gallery() {
                       item={item}
                       onDelete={deleteMedia}
                       onEdit={openEdit}
+                      selected={selectedSet.has(item._id)}
+                      onSelectToggle={toggleSelection}
                     />
 
                     <button

@@ -1,4 +1,5 @@
 import Gallery from "../models/Gallery.js";
+import { isValidObjectId } from "mongoose";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 
@@ -14,9 +15,23 @@ export const uploadMedia = async (req, res) => {
       });
     }
 
-    const result = await uploadToCloudinary(
-      req.file.buffer
-    );
+    const isVideo = req.file.mimetype?.startsWith("video/");
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "church/gallery",
+      resource_type: isVideo ? "video" : "image",
+      ...(isVideo
+        ? {
+            eager: [
+              {
+                format: "mp4",
+                quality: "auto",
+                video_codec: "h264",
+                bit_rate: "1200k",
+              },
+            ],
+          }
+        : {}),
+    });
 
     const media = await Gallery.create({
       title: req.body.title || "Untitled",
@@ -25,7 +40,7 @@ export const uploadMedia = async (req, res) => {
         result.resource_type === "video"
           ? "video"
           : "image",
-      url: result.url,
+      url: result.optimized_url || result.url,
       public_id: result.public_id,
       clientPriority: null,
     });
@@ -164,6 +179,69 @@ export const deleteMedia = async (
     return res.json({
       success: true,
       message: "Deleted successfully",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+/* =========================
+   BULK DELETE MEDIA
+========================= */
+export const bulkDeleteMedia = async (
+  req,
+  res
+) => {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? [...new Set(req.body.ids.filter(Boolean))]
+      : [];
+
+    const validIds = ids.filter((id) =>
+      isValidObjectId(id)
+    );
+
+    if (!validIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one valid media id is required",
+      });
+    }
+
+    const mediaList = await Gallery.find({
+      _id: { $in: validIds },
+    });
+
+    if (!mediaList.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No matching media found",
+      });
+    }
+
+    await Promise.all(
+      mediaList.map((media) =>
+        deleteFromCloudinary(
+          media.public_id,
+          media.mediaType
+        )
+      )
+    );
+
+    await Gallery.deleteMany({
+      _id: { $in: mediaList.map((item) => item._id) },
+    });
+
+    return res.json({
+      success: true,
+      message: "Selected media deleted successfully",
+      data: {
+        requestedCount: validIds.length,
+        deletedCount: mediaList.length,
+      },
     });
   } catch (err) {
     return res.status(500).json({

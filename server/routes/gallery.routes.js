@@ -7,6 +7,7 @@ import {
   getClientMedia,
   updateMedia,
   deleteMedia,
+  bulkDeleteMedia,
   toggleClientGallery,
 } from "../controllers/galleryController.js";
 
@@ -56,6 +57,11 @@ router.put(
 /* =========================
    DELETE MEDIA
 ========================= */
+router.delete(
+  "/bulk",
+  bulkDeleteMedia
+);
+
 router.delete(
   "/:id",
   deleteMedia

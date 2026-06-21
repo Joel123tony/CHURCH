@@ -1,7 +1,13 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { FaEdit, FaTrashAlt } from "react-icons/fa";
 
-function MediaCard({ item, onDelete, onEdit }) {
+function MediaCard({
+  item,
+  onDelete,
+  onEdit,
+  selected = false,
+  onSelectToggle,
+}) {
   const videoRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -54,8 +60,27 @@ function MediaCard({ item, onDelete, onEdit }) {
 
   return (
     <>
-      <div className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg">
+      <div
+        className={`group overflow-hidden rounded-2xl border bg-white shadow transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg ${
+          selected
+            ? "border-blue-500 ring-2 ring-blue-200"
+            : "border-slate-100"
+        }`}
+      >
         <div className={`relative overflow-hidden bg-black ${mediaFrameClass}`}>
+          {typeof onSelectToggle === "function" && (
+            <label className="absolute left-3 top-3 z-30 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-slate-700 shadow-sm backdrop-blur">
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={() => onSelectToggle(item._id)}
+                onClick={(e) => e.stopPropagation()}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                aria-label={`Select ${item.title || "media"}`}
+              />
+            </label>
+          )}
+
           {isVideo ? (
             <video
               ref={videoRef}
