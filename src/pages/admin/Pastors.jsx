@@ -183,7 +183,7 @@ const sortedPastors = useMemo(() => {
 
       return matchesSearch;
     });
-  }, [search, sortedPastors, view]);
+  }, [search, sortedPastors]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

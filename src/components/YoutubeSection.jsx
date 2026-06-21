@@ -39,8 +39,12 @@ export default function YoutubeSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {videos.map((video) => (
               <a
-                key={video.id}
-                href={`https://www.youtube.com/watch?v=${video.id}`}
+                key={video.videoId || video.title}
+                href={
+                  video.videoId
+                    ? `https://www.youtube.com/watch?v=${video.videoId}`
+                    : "https://www.youtube.com/@MethodistChurchPadikuppam"
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group"
@@ -52,7 +56,9 @@ export default function YoutubeSection() {
                       alt={video.title}
                       className="w-full h-56 object-cover group-hover:scale-105 transition duration-300"
                       onError={(e) => {
-                        e.target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+                        if (video.videoId) {
+                          e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
+                        }
                       }}
                     />
                   </div>

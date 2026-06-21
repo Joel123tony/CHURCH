@@ -13,7 +13,7 @@ const translations = {
       contact: "Contact",
     },
     page: {
-      title: "Methodist Tamil Church",
+      title: "Holy Life , Gospel Ministry ",
     },
     hero: {
       heading: "MTC Padikuppam",
