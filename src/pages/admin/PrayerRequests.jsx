@@ -12,7 +12,6 @@ import {
 } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { translatePrayerItems } from "../../utils/prayerShareTranslator";
 
 const SHARE_LANGUAGE_OPTIONS = [
   { value: "english", label: "English" },
@@ -20,68 +19,10 @@ const SHARE_LANGUAGE_OPTIONS = [
   { value: "both", label: "English + Tamil" },
 ];
 
-const buildHeader = (mode) => {
-  if (mode === "ta") {
-    return [
-      "*METHODIST TAMIL CHURCH*",
-      "*PRAYER REQUESTS*",
-      "",
-      "தயவுசெய்து கீழே உள்ள வேண்டுதல்களை ஜெபத்தில் நினைவில் கொள்ளுங்கள்.",
-      "",
-    ].join("\n");
-  }
-
-  if (mode === "en-ta") {
-    return [
-      "*METHODIST TAMIL CHURCH*",
-      "*PRAYER REQUESTS / ஜெப விண்ணப்பங்கள்*",
-      "",
-      "Please uphold the following requests in prayer.",
-      "",
-    ].join("\n");
-  }
-
-  return [
-    "*METHODIST TAMIL CHURCH*",
-    "*PRAYER REQUESTS*",
-    "",
-    "Please uphold the following requests in prayer.",
-    "",
-  ].join("\n");
-};
-
-const buildMessageFromFormattedData = (data = [], mode = "en") => {
-  const header = buildHeader(mode);
-
-  if (!data.length) return header.trim();
-
-  if (mode === "ta") {
-    return [
-      header,
-      ...data.map(
-        (item, index) =>
-          `${index + 1}. ${item.nameTA || item.nameEN || "-"}\nகோரிக்கை: ${item.requestTA || item.requestEN || "-"}`
-      ),
-    ].join("\n\n");
-  }
-
-  if (mode === "en-ta") {
-    return [
-      header,
-      ...data.map(
-        (item, index) =>
-          `${index + 1}. ${item.nameEN || item.nameTA || "-"}\nRequest: ${item.requestEN || item.requestTA || "-"}\n\n${item.nameTA || item.nameEN || "-"}\nவேண்டுகோள்: ${item.requestTA || item.requestEN || "-"}`
-      ),
-    ].join("\n\n----------------------------------------\n\n");
-  }
-
-  return [
-    header,
-    ...data.map(
-      (item, index) =>
-        `${index + 1}. ${item.nameEN || item.nameTA || "-"}\nRequest: ${item.requestEN || item.requestTA || "-"}`
-    ),
-  ].join("\n\n");
+const getShareMode = (languageValue) => {
+  if (languageValue === "tamil") return "ta";
+  if (languageValue === "both") return "en-ta";
+  return "en";
 };
 
 export default function PrayerRequests() {
@@ -90,6 +31,7 @@ export default function PrayerRequests() {
   const [selectedRequests, setSelectedRequests] = useState([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [language, setLanguage] = useState("english");
+  const [shareBusy, setShareBusy] = useState(false);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -224,28 +166,20 @@ export default function PrayerRequests() {
     if (!selectedItems.length) return "";
 
     try {
-      const mode = language === "both" ? "both" : language === "tamil" ? "tamil" : "english";
-      const translatedItems = await translatePrayerItems(selectedItems, mode);
-      return buildMessageFromFormattedData(
-        translatedItems,
-        language === "both" ? "en-ta" : language === "tamil" ? "ta" : "en"
-      );
+      const mode = getShareMode(language);
+      const res = await API.post("/prayer/format", {
+        requests: selectedItems,
+        mode,
+      });
+
+      return res?.data?.whatsapp || res?.data?.template || "";
     } catch (err) {
-      console.error("Prayer translation helper failed, using fallback:", err);
+      console.error("Prayer translation error:", err);
+      toast.error(
+        err?.response?.data?.message || "Unable to translate prayer requests"
+      );
+      return "";
     }
-
-    const mode =
-      language === "both" ? "en-ta" : language === "tamil" ? "ta" : "en";
-
-    return buildMessageFromFormattedData(
-      selectedItems.map((item) => ({
-        nameEN: item.name,
-        nameTA: item.name,
-        requestEN: item.request,
-        requestTA: item.request,
-      })),
-      mode
-    );
   };
 
   const copyPrayerRequests = async () => {
@@ -254,6 +188,8 @@ export default function PrayerRequests() {
       return;
     }
 
+    setShareBusy(true);
+
     try {
       const message = await fetchTranslatedPrayerMessage();
       await navigator.clipboard.writeText(message);
@@ -261,6 +197,8 @@ export default function PrayerRequests() {
     } catch (err) {
       console.error(err);
       toast.error("Copy failed");
+    } finally {
+      setShareBusy(false);
     }
   };
 
@@ -270,9 +208,12 @@ export default function PrayerRequests() {
       return;
     }
 
+    setShareBusy(true);
+
     try {
       const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
       const message = await fetchTranslatedPrayerMessage();
+      if (!message) return;
       const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
       if (popup) {
         popup.location.href = url;
@@ -283,6 +224,8 @@ export default function PrayerRequests() {
     } catch (err) {
       console.error(err);
       toast.error("Share failed");
+    } finally {
+      setShareBusy(false);
     }
   };
 
@@ -664,18 +607,20 @@ export default function PrayerRequests() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={sharePrayerRequests}
+                disabled={shareBusy}
                 className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 font-semibold text-white transition-colors hover:bg-emerald-700"
               >
                 <FaWhatsapp />
-                WhatsApp Share
+                {shareBusy ? "Translating..." : "WhatsApp Share"}
               </button>
 
               <button
                 onClick={copyPrayerRequests}
+                disabled={shareBusy}
                 className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
               >
                 <FaCopy />
-                Copy Request
+                {shareBusy ? "Translating..." : "Copy Request"}
               </button>
 
               <button

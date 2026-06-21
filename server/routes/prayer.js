@@ -1,5 +1,5 @@
 import express from "express";
-import { cleanPrayerEngine } from "../utils/prayerCleaner.js";
+import { formatPrayerByMode } from "../utils/languageFormatter.js";
 
 const router = express.Router();
 
@@ -33,17 +33,19 @@ const buildHeader = (mode) => {
   ].join("\n");
 };
 
-const buildMessage = (cleaned, mode) => {
+const buildMessage = (formatted, mode) => {
   const header = buildHeader(mode);
 
-  if (!Array.isArray(cleaned) || !cleaned.length) return header.trim();
+  if (!Array.isArray(formatted) || formatted.length === 0) {
+    return header.trim();
+  }
 
   if (mode === "ta") {
     return [
       header,
-      ...cleaned.map(
+      ...formatted.map(
         (item, index) =>
-          `${index + 1}. பெயர்: ${item.nameTA || item.nameEN || "-"}\nகோரிக்கை: ${item.requestTA || item.requestEN || "-"}`
+          `${index + 1}. பெயர்: ${item.taName || item.enName || "-"}\nகோரிக்கை: ${item.taReq || item.enReq || "-"}`
       ),
     ].join("\n\n");
   }
@@ -51,27 +53,27 @@ const buildMessage = (cleaned, mode) => {
   if (mode === "en-ta") {
     return [
       header,
-      ...cleaned.map((item, index) => {
-        const enBlock = [
-          `${index + 1}. Name: ${item.nameEN || item.nameTA || "-"}`,
-          `Request: ${item.requestEN || item.requestTA || "-"}`,
+      ...formatted.map((item, index) => {
+        const englishBlock = [
+          `${index + 1}. Name: ${item.enName || item.taName || "-"}`,
+          `Request: ${item.enReq || item.taReq || "-"}`,
         ].join("\n");
 
-        const taBlock = [
-          `${index + 1}. பெயர்: ${item.nameTA || item.nameEN || "-"}`,
-          `கோரிக்கை: ${item.requestTA || item.requestEN || "-"}`,
+        const tamilBlock = [
+          `${index + 1}. பெயர்: ${item.taName || item.enName || "-"}`,
+          `கோரிக்கை: ${item.taReq || item.enReq || "-"}`,
         ].join("\n");
 
-        return `${enBlock}\n\n${taBlock}`;
+        return `${englishBlock}\n\n${tamilBlock}`;
       }),
     ].join("\n\n----------------------------------------\n\n");
   }
 
   return [
     header,
-    ...cleaned.map(
+    ...formatted.map(
       (item, index) =>
-        `${index + 1}. Name: ${item.nameEN || item.nameTA || "-"}\nRequest: ${item.requestEN || item.requestTA || "-"}`
+        `${index + 1}. Name: ${item.enName || item.taName || "-"}\nRequest: ${item.enReq || item.taReq || "-"}`
     ),
   ].join("\n\n");
 };
@@ -83,29 +85,29 @@ router.post("/format", async (req, res) => {
     if (!Array.isArray(requests) || requests.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Requests must be a non-empty array"
+        message: "Requests must be a non-empty array",
       });
     }
 
-    const cleaned = await cleanPrayerEngine(requests);
-    const output = buildMessage(cleaned, mode);
+    const normalizedMode = ["en", "ta", "en-ta"].includes(mode) ? mode : "en-ta";
+    const formatted = await formatPrayerByMode(requests, normalizedMode);
+    const output = buildMessage(formatted, normalizedMode);
 
-    res.json({
+    return res.json({
       success: true,
       template: output,
       whatsapp: output,
       voice: output.replace(/\n/g, " "),
-      data: cleaned,
-      mode
+      data: formatted,
+      mode: normalizedMode,
     });
-
   } catch (err) {
     console.error("Prayer API Error:", err);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error while processing prayer requests",
-      error: err.message
+      error: err.message,
     });
   }
 });
