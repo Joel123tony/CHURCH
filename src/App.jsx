@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LanguageProvider } from "./context/LanguageContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import FaviconManager from "./components/FaviconManager";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -45,35 +46,37 @@ const PageLoader = () => (
 export default function App() {
   return (
     <LanguageProvider>
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/gallery" element={<ClientGallery />} />
+  <BrowserRouter>
+    <FaviconManager />
 
-            <Route path="/admin/login" element={<Login />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/gallery" element={<ClientGallery />} />
 
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="pastors" element={<Pastors />} />
-              <Route path="events" element={<Events />} />
-              <Route path="gallery" element={<Gallery />} />
-              <Route path="messages" element={<Messages />} />
-              <Route path="prayer-requests" element={<PrayerRequests />} />
-            </Route>
+        <Route path="/admin/login" element={<Login />} />
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </LanguageProvider>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="pastors" element={<Pastors />} />
+          <Route path="events" element={<Events />} />
+          <Route path="gallery" element={<Gallery />} />
+          <Route path="messages" element={<Messages />} />
+          <Route path="prayer-requests" element={<PrayerRequests />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  </BrowserRouter>
+</LanguageProvider>
   );
 }
