@@ -18,7 +18,7 @@ export default function Home() {
   const [sectionData, setSectionData] = useState({});
 
   useEffect(() => {
-    document.title = t("page.title");
+    document.title = t("MTC Padikuppam");
   }, [t]);
 
   // Load custom section order and dynamic block styles from database
@@ -204,7 +204,7 @@ export default function Home() {
 
       <main>
         <h1 className="bg-[#F4EFE7] text-2xl font-bold text-center py-10 text-[#5b1320]">
-          {t("page.title")}
+          {t("Holy Life , Gospel Ministry")}
         </h1>
 
         {renderLayout()}

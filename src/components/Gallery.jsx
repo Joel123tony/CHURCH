@@ -22,7 +22,7 @@ function formatMediaDate(value) {
   });
 }
 
-function GalleryTile({ item, onClick, compact = false }) {
+function GalleryTile({ item, onClick, compact = false, t }) {
   const isVideo = item.mediaType === "video";
   const [shape, setShape] = useState("landscape");
   const [loading, setLoading] = useState(true);
@@ -115,7 +115,7 @@ function GalleryTile({ item, onClick, compact = false }) {
             className="min-w-0 flex-1 truncate text-[15px] font-semibold sm:text-base"
             style={{ color: "#f4efe7" }}
           >
-            {item.title || "Untitled"}
+            {item.title ? t(item.title) : t("Untitled")}
           </h3>
 
           {item.eventDate && !compact && (
@@ -236,14 +236,14 @@ export default function Gallery() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-8 flex items-center justify-between gap-4">
             <h2 className="text-3xl font-bold" style={{ color: styles.headingColor || "#54091b" }}>
-              {t("gallery.title")}
+              {t("Gallery")}
             </h2>
 
             <button
               onClick={() => setOpenModal(true)}
               className="rounded-full bg-[#54091b] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6a1231] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/40"
             >
-              {t("gallery.allMedia")}
+              {t("All Media")}
             </button>
           </div>
 
@@ -264,6 +264,7 @@ export default function Gallery() {
                   key={item._id}
                   item={item}
                   onClick={() => setSelectedMedia(item)}
+                  t={t}
                 />
               ))}
             </div>
@@ -281,10 +282,10 @@ export default function Gallery() {
               <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em]">
-                    {t("gallery.allMedia")}
+                    {t("All Media")}
                   </p>
                   <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
-                    {t("gallery.title")}
+                    {t("Gallery")}
                   </h2>
                 </div>
 
@@ -292,7 +293,7 @@ export default function Gallery() {
                   <div className="relative flex-1">
                     <input
                       type="text"
-                      placeholder={t("gallery.search")}
+                      placeholder={t("Search...")}
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       list="gallery-title-suggestions"
@@ -325,12 +326,12 @@ export default function Gallery() {
                     {filteredMedia.length}{" "}
                     {filteredMedia.length === 1 ? "item" : "items"}
                   </span>
-                  <span>Newest first</span>
+                  <span>{t("Newest first")}</span>
                 </div>
 
                 {filteredMedia.length === 0 ? (
                   <div className="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center text-slate-600 shadow-sm">
-                    No media found
+                    {t("No media found")}
                   </div>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -340,6 +341,7 @@ export default function Gallery() {
                         item={item}
                         compact
                         onClick={() => setSelectedMedia(item)}
+                        t={t}
                       />
                     ))}
                   </div>

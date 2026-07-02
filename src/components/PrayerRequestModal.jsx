@@ -45,19 +45,19 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl p-6 w-full max-w-lg">
         <h2 className="text-2xl font-bold text-primary mb-6">
-          {t("contact.prayerRequest")}
+          {t("Prayer Request")}
         </h2>
 
         {success && (
           <div className="mb-4 bg-green-100 border border-green-500 text-green-700 px-4 py-3 rounded-xl">
-            {t("prayerModal.success")}
+            {t("Prayer Request Submitted Successfully")}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
-            placeholder={t("prayerModal.name")}
+            placeholder={t("Name")}
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -66,7 +66,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
 
           <input
             type="text"
-            placeholder={t("prayerModal.phone")}
+            placeholder={t("Phone Number (Optional)")}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="w-full border rounded-xl p-3"
@@ -74,7 +74,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
 
           <textarea
             rows="5"
-            placeholder={t("prayerModal.request")}
+            placeholder={t("Prayer Request")}
             required
             value={request}
             onChange={(e) => setRequest(e.target.value)}
@@ -87,7 +87,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
               disabled={loading}
               className="flex-1 bg-primary text-white py-3 rounded-xl"
             >
-              {loading ? t("prayerModal.submitting") : t("contact.submitRequest")}
+              {loading ? t("Submitting...") : t("Submit Request")}
             </button>
 
             <button
@@ -95,7 +95,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
               onClick={onClose}
               className="px-5 border rounded-xl"
             >
-              {t("prayerModal.close")}
+              {t("Close")}
             </button>
           </div>
         </form>

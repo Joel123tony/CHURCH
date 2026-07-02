@@ -201,6 +201,18 @@ export default function AdvancedWebEditor() {
       await saveBlock(selectedSection, formData);
       await saveBlock(`${selectedSection}-draft`, formData);
 
+      // Publish Pastor Message if this is the testimonials section
+      if (selectedSection === "testimonials") {
+        try {
+          const draft = await getBlock("pastor-messages-draft");
+          if (draft && draft.data && Object.keys(draft.data).length > 0) {
+            await saveBlock("pastor-messages", draft.data);
+          }
+        } catch (e) {
+          console.warn("No pastor-messages-draft found or failed to publish pastor-messages");
+        }
+      }
+
       // Record version for history
       if (window[`__cms_record_version_${selectedSection}`]) {
         window[`__cms_record_version_${selectedSection}`](formData);

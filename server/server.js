@@ -26,6 +26,7 @@ import prayerRoutes from "./routes/prayer.js";
 import prayerRequestRoutes from "./routes/prayerRequest.routes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
 import contentRoutes from "./routes/content.routes.js";
+import translateRoutes from "./routes/translate.routes.js";
 const app = express();
 
 /* =========================
@@ -44,17 +45,8 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 /* =========================
-   RATE LIMIT
-========================= */
-app.use(
-  rateLimit({
-    windowMs: 60 * 1000,
-    max: 120,
-  })
-);
-
-/* =========================
-   CORS
+   CORS  (must come BEFORE rate-limiter so
+          429 responses still carry CORS headers)
 ========================= */
 const allowedOrigins = [
   "http://localhost:5173",
@@ -77,6 +69,17 @@ app.use(
 app.options("*", cors());
 
 /* =========================
+   RATE LIMIT  (after CORS; skip preflight)
+========================= */
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 300,
+    skip: (req) => req.method === "OPTIONS",
+  })
+);
+
+/* =========================
    BODY PARSER
 ========================= */
 app.use(express.json({ limit: "50mb" }));
@@ -90,6 +93,11 @@ let dbReady = false;
 /* =========================
    HEALTH CHECK (UPDATED)
 ========================= */
+/* =========================
+   TRANSLATE (no DB required)
+========================= */
+app.use("/api/translate", translateRoutes);
+
 app.get("/", (req, res) => {
   res.json({
     success: true,

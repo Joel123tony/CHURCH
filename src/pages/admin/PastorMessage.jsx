@@ -33,9 +33,13 @@ export default function PastorMessage() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const res = await getBlock("pastor-messages");
+        let res = await getBlock("pastor-messages-draft");
+        if (!res?.data || Object.keys(res.data).length === 0) {
+          res = await getBlock("pastor-messages");
+        }
+        
         if (res && res.data) {
-          setMessages(res.data.messages || []);
+          setMessages(Array.isArray(res.data.messages) ? res.data.messages : []);
           setMaxVisible(res.data.maxVisible !== undefined ? Number(res.data.maxVisible) : 4);
         }
       } catch (err) {
@@ -56,10 +60,10 @@ export default function PastorMessage() {
         messages: newMessages,
         maxVisible: Number(newLimit)
       };
-      await saveBlock("pastor-messages", payload);
+      await saveBlock("pastor-messages-draft", payload);
       setMessages(newMessages);
       setMaxVisible(Number(newLimit));
-      toast.success("Pastor's Message settings saved!");
+      toast.success("Pastor's Message settings saved! (Draft)");
     } catch (err) {
       console.error("Failed to save pastor messages", err);
       toast.error("Failed to save settings.");

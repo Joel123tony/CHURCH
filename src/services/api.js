@@ -1,15 +1,13 @@
-import axios from "axios";
-
-const API = "http://localhost:5000/api/content";
+import API from "../api/axios";
 
 // ✅ NAMED EXPORTS (REQUIRED)
 export const getBlock = async (key) => {
-  const res = await axios.get(`${API}/${key}`);
+  const res = await API.get(`/content/${key}`);
   return res.data;
 };
 
 export const saveBlock = async (key, data) => {
-  const res = await axios.post(`${API}/save`, {
+  const res = await API.post(`/content/save`, {
     key,
     data,
   });

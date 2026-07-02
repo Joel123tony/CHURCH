@@ -104,38 +104,38 @@ export default function Pastor() {
     <>
       <section id="pastor" className="py-16 px-6" style={{ backgroundColor: styles.backgroundColor || "#5b1320" }}>
         <div className="mx-auto max-w-7xl">
-          <h2 className="mb-8 text-3xl font-bold" style={{ color: styles.headingColor || "#FFFFFF" }}>{t("pastor.title")}</h2>
+          <h2 className="mb-8 text-3xl font-bold" style={{ color: styles.headingColor || "#FFFFFF" }}>{t("Pastor")}</h2>
 
           <div className="grid gap-6 lg:grid-cols-4">
             <div className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3" style={{ backgroundColor: styles.cardBackground || "#d8cbb7" }}>
               {loading ? (
                 <div className="py-10 text-center font-bold" style={{ color: styles.cardTextColor || "#5b1320" }}>
-                  {t("pastor.loading")}
+                  {t("Loading...")}
                 </div>
               ) : currentPastor ? (
                 <div className="grid items-center gap-8 md:grid-cols-2">
                   <div>
                     <h3 className="mb-6 text-xl font-bold" style={{ color: styles.cardTextColor || "#5b1320" }}>
-                      {t("pastor.currentPastor")}
+                      {t("Current Pastor")}
                     </h3>
 
                     <div className="space-y-4" style={{ color: styles.cardTextColor || "#5b1320" }}>
                       <p>
-                        <strong>{t("pastor.name")}:</strong> {currentPastor.name}
+                        <strong>{t("Name")}:</strong> {currentPastor.name}
                       </p>
 
                       <p>
-                        <strong>{t("pastor.role")}:</strong> {currentPastor.role}
+                        <strong>{t("Role")}:</strong> {t(currentPastor.role)}
                       </p>
 
                       <p>
-                        <strong>{t("pastor.yearsOfService")}:</strong> {serviceYears}{" "}
-                        {serviceYears === 1 ? t("pastor.year") : t("pastor.years")}
+                        <strong>{t("Years of Service")}:</strong> {serviceYears}{" "}
+                        {serviceYears === 1 ? t("Year") : t("Years")}
                       </p>
 
                       <p>
-                        <strong>{t("pastor.bio")}:</strong>{" "}
-                        {currentPastor.bio || t("pastor.noBio")}
+                        <strong>{t("Bio")}:</strong>{" "}
+                        {currentPastor.bio ? t(currentPastor.bio) : t("No details available")}
                       </p>
                     </div>
                   </div>
@@ -155,7 +155,7 @@ export default function Pastor() {
               ) : (
                 <div className="py-10 text-center">
                   <h3 className="text-2xl font-bold text-[#5b1320]">
-                    {t("pastor.noCurrent")}
+                    {t("No Current Pastor Selected")}
                   </h3>
                 </div>
               )}
@@ -163,18 +163,18 @@ export default function Pastor() {
 
             <div className="rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
               <h3 className="mb-2 text-center font-bold text-[#5b1320]">
-                {t("pastor.searchTitle")}
+                {t("Search Pastors")}
               </h3>
 
               <p className="mb-5 text-center text-sm leading-6 text-[#5b1320]/80">
-                Search by name or year to find a pastor quickly.
+                {t("Search by name or year to find a pastor quickly.")}
               </p>
 
               <div className="space-y-4">
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={t("pastor.searchByName")}
+                    placeholder={t("Search By Name")}
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
                     autoComplete="off"
@@ -203,7 +203,7 @@ export default function Pastor() {
                   <input
                     type="number"
                     inputMode="numeric"
-                    placeholder={t("pastor.searchByYear")}
+                    placeholder={t("Search By Year")}
                     value={searchYear}
                     onChange={(e) =>
                       setSearchYear(e.target.value.replace(/\D/g, ""))
@@ -216,7 +216,7 @@ export default function Pastor() {
                   onClick={searchPastors}
                   className="w-full rounded-full bg-[#5b1320] py-3 font-semibold text-white shadow-lg transition duration-300 hover:-translate-y-0.5 hover:bg-[#441018] hover:shadow-xl"
                 >
-                  {t("pastor.search")}
+                  {t("Search")}
                 </button>
               </div>
             </div>
@@ -239,7 +239,7 @@ export default function Pastor() {
           >
             <div className="flex items-center justify-between gap-4 border-b border-[#5b1320]/10 px-5 pb-4 pt-5 sm:px-8 sm:pt-6">
               <h2 className="text-xl font-bold text-[#5b1320] sm:text-2xl">
-                {t("pastor.results")}
+                {t("Search Results")}
               </h2>
 
               <button
@@ -255,7 +255,7 @@ export default function Pastor() {
               {results.length === 0 ? (
                 <div className="py-12 text-center">
                   <h3 className="text-3xl font-bold text-red-600">
-                    {t("pastor.noPastorFound")}
+                    {t("No Pastor Found")}
                   </h3>
                 </div>
               ) : (
@@ -280,16 +280,16 @@ export default function Pastor() {
 
                         {p.isCurrent && (
                           <span className="mt-2 inline-block rounded-full bg-green-600 px-3 py-1 text-xs text-white">
-                            {t("pastor.currentLabel")}
+                            {t("Current Pastor")}
                           </span>
                         )}
 
                         <p className="mt-3 text-[#5b1320]">
-                          {p.joinedYear} - {p.leftYear || t("pastor.present")}
+                          {p.joinedYear} - {p.leftYear || t("Present")}
                         </p>
 
                         <p className="mt-3 leading-6 text-[#5b1320]">
-                          {p.bio || t("pastor.noBio")}
+                          {p.bio ? t(p.bio) : t("No details available")}
                         </p>
                       </div>
                     </div>

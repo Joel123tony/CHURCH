@@ -9,13 +9,13 @@ export default function Navbar() {
 
   const links = useMemo(
     () => [
-      { key: "nav.home", href: "#hero", id: "hero" },
-      { key: "nav.history", href: "#church-history", id: "church-history" },
-      { key: "nav.events", href: "#events", id: "events" },
-      { key: "nav.gallery", href: "#gallery", id: "gallery" },
-      { key: "nav.pastor", href: "#pastor", id: "pastor" },
-      { key: "nav.testimonials", href: "#pastor-message", id: "pastor-message" },
-      { key: "nav.contact", href: "#contact", id: "contact" },
+      { key: "Home", href: "#hero", id: "hero" },
+      { key: "History", href: "#church-history", id: "church-history" },
+      { key: "Events", href: "#events", id: "events" },
+      { key: "Gallery", href: "#gallery", id: "gallery" },
+      { key: "Pastor", href: "#pastor", id: "pastor" },
+      { key: "Message", href: "#pastor-message", id: "pastor-message" },
+      { key: "Contact", href: "#contact", id: "contact" },
     ],
     []
   );
@@ -59,8 +59,8 @@ export default function Navbar() {
               />
             </Link>
             <div>
-              <h1 className="font-bold text-cream">Methodist Tamil Church</h1>
-              <p className="text-xs text-cream/80">Padikuppam</p>
+              <h1 className="font-bold text-cream">{t("Methodist Tamil Church")}</h1>
+              <p className="text-xs text-cream/80">{t("Padikuppam")}</p>
             </div>
           </div>
 

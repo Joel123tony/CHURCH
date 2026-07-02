@@ -48,11 +48,11 @@ export default function Hero() {
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
         <div>
           <h1 className="mb-6 text-5xl font-bold leading-tight" style={{ color: styles.headingColor || "#F4EFE7" }}>
-            {t("hero.heading")}
+            {t("MTC Padikuppam")}
           </h1>
 
           <p className="text-lg leading-8" style={{ color: styles.subheadingColor || "#F4EFE7" }}>
-            {t("hero.description")}
+            {t("MTC Padikuppam (Methodist Tamil Church) serves the local community through Christ-centered worship, prayer, and sound biblical teaching. We are committed to making disciples through spiritual growth, meaningful fellowship, and regular Bible study. Our church actively reaches out to the community through various outreach ministries, sharing God's love in practical ways and supporting those in need. Together, we seek to grow in faith, build strong families, and live as faithful followers of Christ, rooted in grace and truth.")}
           </p>
         </div>
 
@@ -60,11 +60,11 @@ export default function Hero() {
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black transition-transform duration-700 ease-out group-hover:scale-[1.01]">
             {loading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white">
-                <p className="font-semibold text-gray-500">{t("hero.loading")}</p>
+                <p className="font-semibold text-gray-500">{t("Loading...")}</p>
               </div>
             ) : !video.videoId ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white">
-                <p className="font-semibold text-gray-500">{t("hero.noVideo")}</p>
+                <p className="font-semibold text-gray-500">{t("No Video Available")}</p>
               </div>
             ) : (
               <iframe
@@ -79,7 +79,7 @@ export default function Hero() {
 
           <div className="mt-4 flex items-center justify-between transition-transform duration-500 ease-out group-hover:translate-y-0.5">
             <span className="font-bold text-primary">
-              {video.videoId ? `🔴 ${t("hero.latestSermon")}` : t("hero.noVideoShort")}
+              {video.videoId ? `🔴 ${t("Latest Sermon")}` : t("No Video")}
             </span>
 
             <a
@@ -96,7 +96,7 @@ export default function Hero() {
                 }`}
               style={{ backgroundColor: styles.buttonBackground || "#54091b", color: styles.buttonTextColor || "#FFFFFF" }}
             >
-              {video.videoId ? `▶ ${t("hero.watchYoutube")}` : t("hero.watchOnYoutube")}
+              {video.videoId ? `▶ ${t("Watch Video on YouTube")}` : t("Watch on YouTube")}
             </a>
           </div>
         </div>

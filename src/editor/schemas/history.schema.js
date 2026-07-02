@@ -9,9 +9,9 @@ export default {
     },
     {
       name: "content",
-      label: "History Description",
+      label: "Church History",
       type: "textarea",
-      description: "Main body text describing the church history",
+      description: "Full church history text. Use blank lines to separate paragraphs.",
     },
     {
       name: "imageUrl",

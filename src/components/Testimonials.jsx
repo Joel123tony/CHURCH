@@ -37,7 +37,7 @@ function getInitials(name = "") {
 }
 
 // ─── Single message card ──────────────────────────────────────────────────────
-function MessageCard({ item, index, visible, styles }) {
+function MessageCard({ item, index, visible, styles, t }) {
   return (
     <article
       style={{
@@ -64,7 +64,7 @@ function MessageCard({ item, index, visible, styles }) {
 
       {/* Quote */}
       <p className="flex-1 text-[15px] italic leading-7" style={{ color: styles.quoteColor || "#475569" }}>
-        {item.quote}
+        {t(item.quote)}
       </p>
 
       {/* Divider */}
@@ -87,7 +87,7 @@ function MessageCard({ item, index, visible, styles }) {
               className="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
               style={{ backgroundColor: `${styles.cardTextColor || "#5b1320"}1A`, color: styles.cardTextColor || "#5b1320" }}
             >
-              {item.role}
+              {t(item.role)}
             </span>
           )}
         </div>
@@ -101,7 +101,7 @@ export default function Testimonials() {
   const [data, setData] = useState({ messages: [], maxVisible: 4 });
   const [loading, setLoading] = useState(true);
   const { ref: sectionRef, visible } = useSectionReveal();
-  const { cmsData } = useLanguage();
+  const { t, cmsData } = useLanguage();
   const styles = cmsData?.testimonials?.styles || {};
 
   useEffect(() => {
@@ -138,7 +138,7 @@ export default function Testimonials() {
         {/* ── Heading — identical pattern to History, Gallery, Events ── */}
         <div className="pt-16 lg:pt-24">
           <h2 className="text-3xl font-bold mb-6 lg:mb-8" style={{ color: styles.headingColor || "#54091b" }}>
-            Pastor's Message
+            {t("Pastor's Message")}
           </h2>
         </div>
 
@@ -170,6 +170,7 @@ export default function Testimonials() {
                   index={i}
                   visible={visible}
                   styles={styles}
+                  t={t}
                 />
               ))}
             </div>
@@ -185,7 +186,7 @@ export default function Testimonials() {
               }}
               className="text-center text-base"
             >
-              No messages yet.
+              {t("No messages yet.")}
             </p>
           )}
 

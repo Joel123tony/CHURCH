@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import axios from "./api/axios";
+import axios from "../api/axios";
 
 export default function VoicePrayerInput() {
   const [name, setName] = useState("");
@@ -69,7 +69,7 @@ export default function VoicePrayerInput() {
       ]
     };
 
-    const res = await axios.post("/api/prayer/format", payload);
+    const res = await axios.post("/prayer/format", payload);
 
     alert("Prayer submitted successfully!");
     console.log(res.data);

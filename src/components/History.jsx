@@ -4,41 +4,60 @@ export default function History() {
   const { t, cmsData } = useLanguage();
   const styles = cmsData?.history?.styles || {};
 
-  const imgSrcOverride = t("history.image");
-  const imgSrc = (imgSrcOverride && imgSrcOverride !== "history.image")
+  const imgSrcOverride = cmsData?.history?.image;
+  const imgSrc = imgSrcOverride
     ? imgSrcOverride
     : "https://res.cloudinary.com/dhqc0n23k/image/upload/v1781002196/church_wfthtv.png";
+
+  const cmsContentText = cmsData?.history?.content;
+  const cmsContent = cmsContentText ? t(cmsContentText) : null;
+  const hasCmsContent = !!cmsContent;
+
+  const paragraphs = hasCmsContent
+    ? []
+    : [
+        t("From 1975 to 1983, the ministry led by Rev. Y. Moses Selvaraj played a significant role in the remarkable growth and development of the church. Under his dedicated leadership, the church expanded both in strength and in spiritual vision, with ministries growing steadily and purposefully."),
+        t("During this period, the ministry at Padikuppam was initiated, marking an important step in the church's mission outreach. The vision was to extend God's work beyond the local congregation, establishing a strong presence across major districts and surrounding regions."),
+        t("This foundation helped the church grow in faith, unity, and outreach, shaping its mission for future generations.")
+      ];
 
   return (
     <section id="church-history" className="overflow-hidden" style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}>
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="pt-16 lg:pt-24">
           <h2 className="text-3xl font-bold mb-6 lg:mb-8" style={{ color: styles.headingColor || "#54091b" }}>
-            {t("history.title")}
+            {cmsData?.history?.title ? t(cmsData.history.title) : t("Church History")}
           </h2>
         </div>
 
         <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 xl:gap-24 items-start mt-8 lg:mt-10">
           <div className="order-1">
             <div className="max-w-2xl lg:pr-8">
-              <p className="text-base md:text-lg leading-8 md:leading-9" style={{ color: styles.textColor || "#54091b" }}>
-                {t("history.paragraph1")}
-              </p>
-
-              <p className="mt-5 text-base md:text-lg leading-8 md:leading-9" style={{ color: styles.textColor || "#54091b" }}>
-                {t("history.paragraph2")}
-              </p>
-
-              <p className="mt-5 text-base md:text-lg leading-8 md:leading-9" style={{ color: styles.textColor || "#54091b" }}>
-                {t("history.paragraph3")}
-              </p>
+              {hasCmsContent ? (
+                <p 
+                  className="text-base md:text-lg leading-8 md:leading-9 whitespace-pre-line"
+                  style={{ color: styles.textColor || "#54091b" }}
+                >
+                  {cmsContent}
+                </p>
+              ) : (
+                paragraphs.map((text, idx) => (
+                  <p
+                    key={idx}
+                    className={`${idx > 0 ? "mt-5 " : ""}text-base md:text-lg leading-8 md:leading-9`}
+                    style={{ color: styles.textColor || "#54091b" }}
+                  >
+                    {text}
+                  </p>
+                ))
+              )}
             </div>
           </div>
 
           <div className="order-2 flex justify-center lg:justify-end lg:self-end mt-6 lg:mt-0">
             <img
               src={imgSrc}
-              alt={t("history.alt")}
+              alt={t("Methodist Tamil Church")}
               className="
                 block
                 w-full

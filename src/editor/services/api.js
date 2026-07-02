@@ -1,12 +1,10 @@
-import axios from "axios";
-
-const API = "http://localhost:5000/api/content";
+import API from "../../api/axios";
 
 /**
  * GET content block from backend
  */
 export const getBlock = async (key) => {
-  const res = await axios.get(`${API}/${key}`);
+  const res = await API.get(`/content/${key}`);
   return res.data;
 };
 
@@ -14,7 +12,7 @@ export const getBlock = async (key) => {
  * SAVE content block to backend
  */
 export const saveBlock = async (key, data) => {
-  const res = await axios.post(`${API}/save`, {
+  const res = await API.post(`/content/save`, {
     key,
     data,
   });

@@ -47,19 +47,28 @@ export default function LivePreview({
   activeSection = "hero",
   activeFormData = {}
 }) {
-  const [device, setDevice] = useState("desktop");
+  const [device, setDevice] = useState(() => {
+    if (typeof window !== "undefined") {
+      if (window.innerWidth < 768) return "mobile";
+      if (window.innerWidth >= 768 && window.innerWidth < 1024) return "tablet";
+    }
+    return "desktop";
+  });
   const [loadedData, setLoadedData] = useState({});
 
   useEffect(() => {
     const loadAllData = async () => {
       try {
-        const sections = ["hero", "history", "events", "gallery", "pastor", "pastor-messages", "contact", "footer"];
+        const sections = ["hero", "history", "events", "gallery", "pastor", "pastor-messages-draft", "contact", "footer"];
         const fetched = {};
         for (const sec of sections) {
           try {
-            const res = await getBlock(sec);
+            let fetchKey = sec;
+            const res = await getBlock(fetchKey);
             if (res && res.data) {
-              fetched[sec] = res.data;
+              // Map pastor-messages-draft to pastor-messages for the component
+              const stateKey = sec === "pastor-messages-draft" ? "pastor-messages" : sec;
+              fetched[stateKey] = res.data;
             }
           } catch (e) { }
         }
