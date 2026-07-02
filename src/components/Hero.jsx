@@ -3,7 +3,9 @@ import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function Hero() {
-  const { t } = useLanguage();
+  const { t, cmsData } = useLanguage();
+  const styles = cmsData?.hero?.styles || {};
+
   const [video, setVideo] = useState({
     videoId: "",
     title: "",
@@ -42,14 +44,14 @@ export default function Hero() {
   }, [fetchYoutubeVideo]);
 
   return (
-    <section className="bg-primary py-16 text-white">
+    <section id="hero" className="py-16 text-white" style={{ backgroundColor: styles.backgroundColor || "#54091b" }}>
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
         <div>
-          <h1 className="mb-6 text-5xl font-bold leading-tight text-cream">
+          <h1 className="mb-6 text-5xl font-bold leading-tight" style={{ color: styles.headingColor || "#F4EFE7" }}>
             {t("hero.heading")}
           </h1>
 
-          <p className="text-lg leading-8 text-cream">
+          <p className="text-lg leading-8" style={{ color: styles.subheadingColor || "#F4EFE7" }}>
             {t("hero.description")}
           </p>
         </div>
@@ -88,11 +90,11 @@ export default function Hero() {
               }
               target="_blank"
               rel="noopener noreferrer"
-              className={`rounded-full px-5 py-2 font-medium transition ${
-                video.videoId
-                  ? "bg-primary text-white hover:bg-red-700"
-                  : "bg-primary text-white hover:opacity-90"
-              }`}
+              className={`rounded-full px-5 py-2 font-medium transition ${video.videoId
+                  ? "hover:opacity-90"
+                  : "hover:opacity-90"
+                }`}
+              style={{ backgroundColor: styles.buttonBackground || "#54091b", color: styles.buttonTextColor || "#FFFFFF" }}
             >
               {video.videoId ? `▶ ${t("hero.watchYoutube")}` : t("hero.watchOnYoutube")}
             </a>

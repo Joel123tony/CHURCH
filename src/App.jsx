@@ -1,8 +1,10 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LanguageProvider } from "./context/LanguageContext";
+import { ConfirmProvider } from "./context/ConfirmContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FaviconManager from "./components/FaviconManager";
+import EditorTest from "./pages/EditorTest";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -14,7 +16,10 @@ const Pastors = lazy(() => import("./pages/admin/Pastors"));
 const Events = lazy(() => import("./pages/admin/Events"));
 const Gallery = lazy(() => import("./pages/admin/Gallery"));
 const Messages = lazy(() => import("./pages/admin/Messages"));
+const WebEditor = lazy(() => import("./pages/admin/WebEditor"));
 const PrayerRequests = lazy(() => import("./pages/admin/PrayerRequests"));
+const PastorMessage = lazy(() => import("./pages/admin/PastorMessage"));
+
 
 const PageLoader = () => (
   <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f4efe7] px-4">
@@ -46,37 +51,43 @@ const PageLoader = () => (
 export default function App() {
   return (
     <LanguageProvider>
-  <BrowserRouter>
-    <FaviconManager />
+      <ConfirmProvider>
+        <BrowserRouter>
+          <FaviconManager />
 
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/gallery" element={<ClientGallery />} />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/gallery" element={<ClientGallery />} />
 
-        <Route path="/admin/login" element={<Login />} />
+              <Route path="/editor-test" element={<EditorTest />} />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="pastors" element={<Pastors />} />
-          <Route path="events" element={<Events />} />
-          <Route path="gallery" element={<Gallery />} />
-          <Route path="messages" element={<Messages />} />
-          <Route path="prayer-requests" element={<PrayerRequests />} />
-        </Route>
+              <Route path="/admin/login" element={<Login />} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
-  </BrowserRouter>
-</LanguageProvider>
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="pastors" element={<Pastors />} />
+                <Route path="events" element={<Events />} />
+                <Route path="gallery" element={<Gallery />} />
+                <Route path="messages" element={<Messages />} />
+                <Route path="prayer-requests" element={<PrayerRequests />} />
+                <Route path="web-editor" element={<WebEditor />} />
+                <Route path="pastor-message" element={<PastorMessage />} />
+              </Route>
+
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </ConfirmProvider>
+    </LanguageProvider>
   );
 }

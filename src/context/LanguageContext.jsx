@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { getBlock } from "../services/api";
 
 const LanguageContext = createContext(null);
 
@@ -10,6 +11,7 @@ const translations = {
       events: "Events",
       gallery: "Gallery",
       pastor: "Pastor",
+      testimonials: "Message",
       contact: "Contact",
     },
     page: {
@@ -120,6 +122,7 @@ const translations = {
       events: "நிகழ்வுகள்",
       gallery: "காட்சியகம்",
       pastor: "பாஸ்டர்",
+      testimonials: "செய்தி",
       contact: "தொடர்பு",
     },
     page: {
@@ -201,7 +204,7 @@ const translations = {
       description:
         "உங்களிடம் இருந்து கேட்க நாங்கள் மகிழ்ச்சியடைகிறோம். ஆராதனை, உடன்பிறப்பு, ஜெப வேண்டுதல்கள் அல்லது ஏதேனும் கேள்விகளுக்காக எங்களை அணுகுங்கள்.",
       visitUs: "எங்களை சந்திக்கவும்",
-      address:"எண்.1 வண்டியம்மன் கோயில் தெரு,மொகப்பையர் கிழக்கு,சென்னை - 600107",
+      address: "எண்.1 வண்டியம்மன் கோயில் தெரு,மொகப்பையர் கிழக்கு,சென்னை - 600107",
       directions: "வழிகாட்டுதலைப் பெறுங்கள்",
       emailUs: "மின்னஞ்சல் அனுப்புங்கள்",
       sendEmail: "மின்னஞ்சல் அனுப்பு",
@@ -234,6 +237,9 @@ export function LanguageProvider({ children }) {
     return saved === "ta" ? "ta" : "en";
   });
 
+  const [cmsData, setCmsData] = useState({});
+  const [previewData, setPreviewData] = useState({});
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -241,8 +247,56 @@ export function LanguageProvider({ children }) {
     document.documentElement.lang = language;
   }, [language]);
 
+  // Load initial published CMS blocks from database
+  useEffect(() => {
+    const loadCms = async () => {
+      try {
+        const sections = ["hero", "history", "contact", "footer"];
+        const loaded = {};
+        for (const sec of sections) {
+          try {
+            const res = await getBlock(sec);
+            if (res && res.data) {
+              const data = res.data;
+              if (sec === "hero") {
+                if (data.heading) loaded["hero.heading"] = data.heading;
+                if (data.subheading) loaded["hero.description"] = data.subheading;
+              } else if (sec === "history") {
+                if (data.title) loaded["history.title"] = data.title;
+                if (data.content) loaded["history.paragraph1"] = data.content;
+                if (data.imageUrl) loaded["history.image"] = data.imageUrl;
+              } else if (sec === "contact") {
+                if (data.email) loaded["contact.emailUs"] = data.email;
+                if (data.phone) loaded["contact.phone"] = data.phone;
+                if (data.description) loaded["contact.description"] = data.description;
+              } else if (sec === "footer") {
+                if (data.copyright) loaded["footer.copyright"] = data.copyright;
+              }
+            }
+          } catch (e) {
+            console.warn(`CMS key ${sec} could not be loaded`, e);
+          }
+        }
+        setCmsData(loaded);
+      } catch (err) {
+        console.error("Error loading initial CMS data", err);
+      }
+    };
+    loadCms();
+  }, []);
+
   const value = useMemo(() => {
     const t = (key) => {
+      // 1. Check live preview overrides first
+      if (previewData && previewData[key] !== undefined && previewData[key] !== "") {
+        return previewData[key];
+      }
+      // 2. Check fetched CMS data next
+      if (cmsData && cmsData[key] !== undefined && cmsData[key] !== "") {
+        return cmsData[key];
+      }
+
+      // 3. Fallback to static translations
       const parts = key.split(".");
       let current = translations[language];
 
@@ -268,8 +322,12 @@ export function LanguageProvider({ children }) {
       toggleLanguage: () =>
         setLanguage((current) => (current === "en" ? "ta" : "en")),
       t,
+      previewData,
+      setPreviewData,
+      cmsData,
+      setCmsData,
     };
-  }, [language]);
+  }, [language, previewData, cmsData]);
 
   return (
     <LanguageContext.Provider value={value}>

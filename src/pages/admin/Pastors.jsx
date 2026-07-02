@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 import API from "../../api/axios";
 import { ToastContainer, toast } from "react-toastify";
+import { useConfirm } from "../../context/ConfirmContext";
 import "react-toastify/dist/ReactToastify.css";
 
 const defaultForm = {
@@ -106,6 +107,7 @@ const normalizeEducationSelection = (education) => {
 };
 
 export default function Pastors() {
+  const confirm = useConfirm();
   const [pastors, setPastors] = useState([]);
 const [view, setView] = useState("add");
   const [search, setSearch] = useState("");
@@ -364,7 +366,14 @@ const sortedPastors = useMemo(() => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this pastor?")) return;
+    const ok = await confirm({
+      title: "Delete Pastor",
+      message: "Are you sure you want to delete this pastor profile?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      isDanger: true,
+    });
+    if (!ok) return;
 
     try {
       await API.delete(`/pastors/${id}`);
@@ -377,7 +386,14 @@ const sortedPastors = useMemo(() => {
   };
 
   const setCurrentPastor = async (id) => {
-    if (!window.confirm("Set this pastor as the current pastor?")) return;
+    const ok = await confirm({
+      title: "Set Current Pastor",
+      message: "Are you sure you want to set this pastor as the current pastor?",
+      confirmText: "Set Current",
+      cancelText: "Cancel",
+      isDanger: false,
+    });
+    if (!ok) return;
 
     try {
       await API.put(`/pastors/current/${id}`);
@@ -400,15 +416,6 @@ const sortedPastors = useMemo(() => {
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-3 py-4 sm:px-6">
-      <ToastContainer
-        position="top-right"
-        autoClose={1800}
-        hideProgressBar
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="colored"
-      />
 
       <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-4 shadow-lg sm:p-6 md:flex-row md:items-center md:justify-between">
         <div>

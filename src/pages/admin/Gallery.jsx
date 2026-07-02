@@ -3,9 +3,11 @@ import API from "../../api/axios";
 import GalleryUpload from "./GalleryUpload";
 import MediaCard from "../../components/MediaCard";
 import { ToastContainer, toast } from "react-toastify";
+import { useConfirm } from "../../context/ConfirmContext";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Gallery() {
+  const confirm = useConfirm();
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -41,7 +43,13 @@ export default function Gallery() {
 
   /* DELETE */
   const deleteMedia = useCallback(async (id) => {
-    const ok = window.confirm("Delete this media?");
+    const ok = await confirm({
+      title: "Delete Media",
+      message: "Are you sure you want to delete this media item?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      isDanger: true,
+    });
     if (!ok) return;
 
     try {
@@ -53,7 +61,7 @@ export default function Gallery() {
       console.error(err);
       toast.error(err?.response?.data?.message || "Delete failed");
     }
-  }, []);
+  }, [confirm]);
 
   const bulkDeleteMedia = useCallback(async () => {
     if (!selectedItems.length) {
@@ -61,9 +69,13 @@ export default function Gallery() {
       return;
     }
 
-    const ok = window.confirm(
-      `Delete ${selectedItems.length} selected media item(s)?`
-    );
+    const ok = await confirm({
+      title: "Bulk Delete Media",
+      message: `Are you sure you want to delete ${selectedItems.length} selected media item(s)?`,
+      confirmText: "Delete All",
+      cancelText: "Cancel",
+      isDanger: true,
+    });
 
     if (!ok) return;
 
@@ -81,7 +93,7 @@ export default function Gallery() {
       console.error(err);
       toast.error(err?.response?.data?.message || "Bulk delete failed");
     }
-  }, [selectedItems]);
+  }, [selectedItems, confirm]);
 
   /* TOGGLE GALLERY */
   const toggleGallery = useCallback(async (id) => {
@@ -229,15 +241,6 @@ export default function Gallery() {
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen space-y-6">
-      <ToastContainer
-        position="top-right"
-        autoClose={1800}
-        hideProgressBar
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="colored"
-      />
 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">

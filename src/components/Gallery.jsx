@@ -136,7 +136,8 @@ function GalleryTile({ item, onClick, compact = false }) {
 }
 
 export default function Gallery() {
-  const { t } = useLanguage();
+  const { t, cmsData } = useLanguage();
+  const styles = cmsData?.gallery?.styles || {};
   const [featuredMedia, setFeaturedMedia] = useState([]);
   const [allMedia, setAllMedia] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -231,10 +232,10 @@ export default function Gallery() {
 
   return (
     <>
-      <section className="bg-[#F4EFE7] py-16">
+      <section id="gallery" className="py-16" style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-8 flex items-center justify-between gap-4">
-            <h2 className="text-3xl font-bold text-[#54091b]">
+            <h2 className="text-3xl font-bold" style={{ color: styles.headingColor || "#54091b" }}>
               {t("gallery.title")}
             </h2>
 
@@ -251,7 +252,8 @@ export default function Gallery() {
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="h-72 rounded-3xl bg-gray-200 animate-pulse"
+                  className="h-72 rounded-3xl animate-pulse"
+                  style={{ backgroundColor: styles.cardBackground || "#e5e5e5" }}
                 />
               ))}
             </div>

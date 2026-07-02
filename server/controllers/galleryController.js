@@ -21,15 +21,15 @@ export const uploadMedia = async (req, res) => {
       resource_type: isVideo ? "video" : "image",
       ...(isVideo
         ? {
-            eager: [
-              {
-                format: "mp4",
-                quality: "auto",
-                video_codec: "h264",
-                bit_rate: "1200k",
-              },
-            ],
-          }
+          eager: [
+            {
+              format: "mp4",
+              quality: "auto",
+              video_codec: "h264",
+              bit_rate: "1200k",
+            },
+          ],
+        }
         : {}),
     });
 

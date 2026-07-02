@@ -4,7 +4,8 @@ import { useLanguage } from "../context/LanguageContext";
 import { FaTimes } from "react-icons/fa";
 
 export default function Pastor() {
-  const { t } = useLanguage();
+  const { t, cmsData } = useLanguage();
+  const styles = cmsData?.pastor?.styles || {};
   const [pastors, setPastors] = useState([]);
   const [searchName, setSearchName] = useState("");
   const [searchYear, setSearchYear] = useState("");
@@ -101,24 +102,24 @@ export default function Pastor() {
 
   return (
     <>
-      <section className="bg-[#5b1320] py-16 px-6">
+      <section id="pastor" className="py-16 px-6" style={{ backgroundColor: styles.backgroundColor || "#5b1320" }}>
         <div className="mx-auto max-w-7xl">
-          <h2 className="mb-8 text-3xl font-bold text-white">{t("pastor.title")}</h2>
+          <h2 className="mb-8 text-3xl font-bold" style={{ color: styles.headingColor || "#FFFFFF" }}>{t("pastor.title")}</h2>
 
           <div className="grid gap-6 lg:grid-cols-4">
-            <div className="rounded-3xl bg-[#d8cbb7] p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3">
+            <div className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3" style={{ backgroundColor: styles.cardBackground || "#d8cbb7" }}>
               {loading ? (
-                <div className="py-10 text-center font-bold text-[#5b1320]">
+                <div className="py-10 text-center font-bold" style={{ color: styles.cardTextColor || "#5b1320" }}>
                   {t("pastor.loading")}
                 </div>
               ) : currentPastor ? (
                 <div className="grid items-center gap-8 md:grid-cols-2">
                   <div>
-                    <h3 className="mb-6 text-xl font-bold text-[#5b1320]">
+                    <h3 className="mb-6 text-xl font-bold" style={{ color: styles.cardTextColor || "#5b1320" }}>
                       {t("pastor.currentPastor")}
                     </h3>
 
-                    <div className="space-y-4 text-[#5b1320]">
+                    <div className="space-y-4" style={{ color: styles.cardTextColor || "#5b1320" }}>
                       <p>
                         <strong>{t("pastor.name")}:</strong> {currentPastor.name}
                       </p>
@@ -225,17 +226,15 @@ export default function Pastor() {
 
       {showModal && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 transition-opacity duration-200 ${
-            modalVisible ? "opacity-100" : "opacity-0"
-          }`}
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 transition-opacity duration-200 ${modalVisible ? "opacity-100" : "opacity-0"
+            }`}
           onClick={closeModal}
         >
           <div
-            className={`relative max-h-[80vh] w-full max-w-4xl overflow-y-auto rounded-[28px] border border-white/40 bg-[#d8cbb7] shadow-2xl transition-all duration-300 ease-out ${
-              modalVisible
+            className={`relative max-h-[80vh] w-full max-w-4xl overflow-y-auto rounded-[28px] border border-white/40 bg-[#d8cbb7] shadow-2xl transition-all duration-300 ease-out ${modalVisible
                 ? "translate-y-0 scale-100 opacity-100"
                 : "translate-y-3 scale-95 opacity-0"
-            }`}
+              }`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-4 border-b border-[#5b1320]/10 px-5 pb-4 pt-5 sm:px-8 sm:pt-6">

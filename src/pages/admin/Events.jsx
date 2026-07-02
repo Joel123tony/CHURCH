@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import API from "../../api/axios";
 import { ToastContainer, toast } from "react-toastify";
+import { useConfirm } from "../../context/ConfirmContext";
 import "react-toastify/dist/ReactToastify.css";
 import {
   FaCalendarAlt,
@@ -30,6 +31,7 @@ const formatTime12Hour = (value) => {
 };
 
 export default function Events() {
+  const confirm = useConfirm();
   const [events, setEvents] = useState([]);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
@@ -111,7 +113,14 @@ export default function Events() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this event?")) return;
+    const ok = await confirm({
+      title: "Delete Event",
+      message: "Are you sure you want to delete this event?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      isDanger: true,
+    });
+    if (!ok) return;
 
     try {
       await API.delete(`/events/${id}`);
@@ -143,15 +152,6 @@ export default function Events() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:px-6">
-      <ToastContainer
-        position="top-right"
-        autoClose={1800}
-        hideProgressBar
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="colored"
-      />
 
       <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-lg sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

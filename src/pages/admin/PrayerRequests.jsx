@@ -11,6 +11,7 @@ import {
   FaWhatsapp,
 } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
+import { useConfirm } from "../../context/ConfirmContext";
 import "react-toastify/dist/ReactToastify.css";
 
 const SHARE_LANGUAGE_OPTIONS = [
@@ -26,6 +27,7 @@ const getShareMode = (languageValue) => {
 };
 
 export default function PrayerRequests() {
+  const confirm = useConfirm();
   const [requests, setRequests] = useState([]);
   const [selected, setSelected] = useState(null);
   const [selectedRequests, setSelectedRequests] = useState([]);
@@ -103,12 +105,16 @@ export default function PrayerRequests() {
     );
   };
 
-  const clearSelection = () => {
+  const clearSelection = async () => {
     if (!selectedRequests.length) return;
 
-    const ok = window.confirm(
-      "Delete the selected prayer requests from the database?"
-    );
+    const ok = await confirm({
+      title: "Delete Requests",
+      message: `Are you sure you want to delete the ${selectedRequests.length} selected prayer requests from the database?`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      isDanger: true,
+    });
     if (!ok) return;
 
     API.delete("/prayer-requests/bulk", {
@@ -128,7 +134,13 @@ export default function PrayerRequests() {
   };
 
   const markPrayed = async (id) => {
-    const ok = window.confirm("Mark this prayer request as prayed?");
+    const ok = await confirm({
+      title: "Mark as Prayed",
+      message: "Are you sure you want to mark this prayer request as prayed?",
+      confirmText: "Yes, Mark",
+      cancelText: "Cancel",
+      isDanger: false,
+    });
     if (!ok) return;
 
     try {
@@ -249,15 +261,6 @@ export default function PrayerRequests() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:px-6">
-      <ToastContainer
-        position="top-right"
-        autoClose={1800}
-        hideProgressBar
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="colored"
-      />
 
       <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-lg sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

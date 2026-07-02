@@ -9,11 +9,12 @@ export default function Navbar() {
 
   const links = useMemo(
     () => [
-      { key: "nav.home", href: "#home", id: "home" },
-      { key: "nav.history", href: "#history", id: "history" },
+      { key: "nav.home", href: "#hero", id: "hero" },
+      { key: "nav.history", href: "#church-history", id: "church-history" },
       { key: "nav.events", href: "#events", id: "events" },
       { key: "nav.gallery", href: "#gallery", id: "gallery" },
       { key: "nav.pastor", href: "#pastor", id: "pastor" },
+      { key: "nav.testimonials", href: "#pastor-message", id: "pastor-message" },
       { key: "nav.contact", href: "#contact", id: "contact" },
     ],
     []

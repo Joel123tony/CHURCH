@@ -5,7 +5,8 @@ import { useLanguage } from "../context/LanguageContext";
 import { FaFire, FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 
 export default function Events() {
-  const { t } = useLanguage();
+  const { t, cmsData } = useLanguage();
+  const styles = cmsData?.events?.styles || {};
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,36 +66,36 @@ export default function Events() {
 
   if (loading) {
     return (
-      <section id="events" className="bg-primary py-20 text-center text-white">
+      <section id="events" className="py-20 text-center" style={{ backgroundColor: styles.backgroundColor || "#54091b", color: styles.textColor || "#F4EFE7" }}>
         {t("events.loading")}
       </section>
     );
   }
 
   return (
-    <section id="events" className="relative bg-primary py-20 lg:py-28 overflow-hidden">
+    <section id="events" className="relative py-20 lg:py-28 overflow-hidden" style={{ backgroundColor: styles.backgroundColor || "#54091b" }}>
       <div className="absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row gap-3 justify-between items-start mb-6">
-          <h2 className="text-cream text-3xl font-bold text-left">{t("events.title")}</h2>
+          <h2 className="text-3xl font-bold text-left" style={{ color: styles.headingColor || "#F4EFE7" }}>{t("events.title")}</h2>
         </div>
 
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <FaFire className="text-cream text-2xl" />
-              <h3 className="text-2xl font-bold text-cream">{t("events.featured")}</h3>
+              <FaFire className="text-2xl" style={{ color: styles.headingColor || "#F4EFE7" }} />
+              <h3 className="text-2xl font-bold" style={{ color: styles.headingColor || "#F4EFE7" }}>{t("events.featured")}</h3>
             </div>
 
             {latestEvent ? (
-              <div className="bg-[#f4efe7] rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 max-w-[620px]">
+              <div className="rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 max-w-[620px]" style={{ backgroundColor: styles.cardBackground || "#f4efe7" }}>
                 <div className="inline-flex px-3.5 py-1.5 rounded-full bg-primary text-white text-xs sm:text-sm font-medium mb-4 sm:mb-5">
                   {t("events.latest")}
                 </div>
 
-                <h3 className="text-2xl sm:text-3xl font-bold text-primary mb-5 sm:mb-6 leading-tight">
+                <h3 className="text-2xl sm:text-3xl font-bold mb-5 sm:mb-6 leading-tight" style={{ color: styles.cardTextColor || "#54091b" }}>
                   {latestEvent.title}
                 </h3>
 
@@ -159,8 +160,8 @@ export default function Events() {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <FaCalendarAlt className="text-cream text-2xl" />
-                <h3 className="text-2xl font-bold text-cream">{t("events.upcoming")}</h3>
+                <FaCalendarAlt className="text-2xl" style={{ color: styles.headingColor || "#F4EFE7" }} />
+                <h3 className="text-2xl font-bold" style={{ color: styles.headingColor || "#F4EFE7" }}>{t("events.upcoming")}</h3>
               </div>
 
               <span className="px-3 py-1 rounded-full bg-white/10 text-white text-sm">
@@ -169,15 +170,16 @@ export default function Events() {
             </div>
 
             <div className="space-y-5 max-h-[650px] overflow-y-auto pr-2">
-                {upcomingEvents.length > 0 ? (
-                  upcomingEvents.map((event) => (
-                    <div
-                      key={event._id}
-                      className="relative overflow-hidden bg-[#f4efe7] rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl"
-                    >
+              {upcomingEvents.length > 0 ? (
+                upcomingEvents.map((event) => (
+                  <div
+                    key={event._id}
+                    className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl"
+                    style={{ backgroundColor: styles.cardBackground || "#f4efe7" }}
+                  >
                     <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-[28px]" />
 
-                    <h4 className="text-xl font-semibold text-primary mb-4">
+                    <h4 className="text-xl font-semibold mb-4" style={{ color: styles.cardTextColor || "#54091b" }}>
                       {event.title}
                     </h4>
 
