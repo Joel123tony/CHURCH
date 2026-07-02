@@ -211,8 +211,8 @@ export default function PastorMessage() {
                           <button
                             onClick={() => handleToggleVisibility(index)}
                             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${item.visible !== false
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "bg-slate-100 text-slate-500"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-slate-100 text-slate-500"
                               }`}
                             title="Click to toggle visibility"
                           >

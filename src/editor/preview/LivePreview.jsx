@@ -42,10 +42,10 @@ function TestimonialsSection({ data }) {
   );
 }
 
-export default function LivePreview({ 
-  sectionOrder = ["hero", "history", "events", "gallery", "pastor", "contact", "footer"], 
-  activeSection = "hero", 
-  activeFormData = {} 
+export default function LivePreview({
+  sectionOrder = ["hero", "history", "events", "gallery", "pastor", "contact", "footer"],
+  activeSection = "hero",
+  activeFormData = {}
 }) {
   const [device, setDevice] = useState("desktop");
   const [loadedData, setLoadedData] = useState({});
@@ -61,10 +61,10 @@ export default function LivePreview({
             if (res && res.data) {
               fetched[sec] = res.data;
             }
-          } catch (e) {}
+          } catch (e) { }
         }
         setLoadedData(fetched);
-      } catch (err) {}
+      } catch (err) { }
     };
     loadAllData();
   }, [activeSection]);
@@ -243,9 +243,8 @@ export default function LivePreview({
               const element = (
                 <div
                   key={sectionId}
-                  className={`transition-all duration-300 ${
-                    isSelected ? "ring-4 ring-offset-2 ring-[#ee0039] relative z-10 shadow-lg" : "opacity-90"
-                  }`}
+                  className={`transition-all duration-300 ${isSelected ? "ring-4 ring-offset-2 ring-[#ee0039] relative z-10 shadow-lg" : "opacity-90"
+                    }`}
                 >
                   {isSelected && (
                     <div className="absolute left-2 top-2 z-20 rounded-md bg-[#ee0039] px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
@@ -262,9 +261,8 @@ export default function LivePreview({
                   <React.Fragment key="pastor-testimonials-group">
                     {element}
                     <div
-                      className={`transition-all duration-300 ${
-                        isTestimonialsSelected ? "ring-4 ring-offset-2 ring-[#ee0039] relative z-10 shadow-lg" : "opacity-90"
-                      }`}
+                      className={`transition-all duration-300 ${isTestimonialsSelected ? "ring-4 ring-offset-2 ring-[#ee0039] relative z-10 shadow-lg" : "opacity-90"
+                        }`}
                     >
                       {isTestimonialsSelected && (
                         <div className="absolute left-2 top-2 z-20 rounded-md bg-[#ee0039] px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">

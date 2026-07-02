@@ -12,6 +12,7 @@ import ArrayField from "./ArrayField";
 import DragDropSections from "../dragdrop/DragDropSections";
 import VersionHistory from "../versioning/VersionHistory";
 import PreviewModal from "./PreviewModal";
+import LivePreview from "../preview/LivePreview";
 
 // API & Context
 import { getBlock, saveBlock } from "../../services/api";
@@ -246,7 +247,126 @@ export default function AdvancedWebEditor() {
 
   // ─── JSX ──────────────────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-full space-y-4">
+    <>
+      {/* ─── MOBILE LAYOUT (<768px) ──────────────────────────────────────── */}
+      <div className="md:hidden flex flex-col min-h-screen bg-slate-50 pb-[88px]">
+        {/* Top Sticky Dropdown */}
+        <div className="sticky top-0 z-40 bg-white border-b border-slate-200 p-4 shadow-sm">
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">
+            Current Section
+          </label>
+          <div className="relative">
+            <select
+              value={selectedSection}
+              onChange={(e) => setSelectedSection(e.target.value)}
+              className="w-full appearance-none rounded-xl border-2 border-slate-200 bg-slate-50 p-4 pr-10 text-lg font-black text-[#54091b] outline-none transition focus:border-[#54091b]"
+            >
+              {activeSectionList.map((sec) => (
+                <option key={sec.key} value={sec.key}>
+                  {sec.label}
+                </option>
+              ))}
+            </select>
+            <FaChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          </div>
+        </div>
+
+        {/* Content Form */}
+        <div className="p-4 space-y-6">
+          {(() => {
+            const adminInfo = ADMIN_MANAGED_SECTIONS[selectedSection];
+            if (adminInfo) {
+              return (
+                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                  <FaExclamationTriangle className="mx-auto mb-3 text-amber-500" size={28} />
+                  <h2 className="text-lg font-extrabold text-slate-800">No Fields Here</h2>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Manage {adminInfo.label} content in the <a href={adminInfo.adminUrl} className="font-bold text-[#54091b] underline">dedicated panel</a>.
+                  </p>
+                </div>
+              );
+            }
+
+            const schema = schemas?.[selectedSection];
+            if (loading) {
+              return (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400">
+                  <FaSpinner className="animate-spin" size={24} />
+                  <span className="text-sm font-semibold">Loading data...</span>
+                </div>
+              );
+            }
+
+            if (!schema?.fields?.length && !schemaStyles.length) {
+              return (
+                <div className="rounded-2xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-400">
+                  No editable fields defined.
+                </div>
+              );
+            }
+
+            return (
+              <>
+                {schema?.fields?.map((field) => (
+                  <div key={field.name} className="space-y-2">
+                    <label className="block text-sm font-bold text-slate-700">
+                      {field.label} {field.required && <span className="text-red-400">*</span>}
+                    </label>
+                    {field.description && <p className="text-[11px] leading-tight text-slate-400">{field.description}</p>}
+                    {renderField(field)}
+                  </div>
+                ))}
+              </>
+            );
+          })()}
+        </div>
+
+        {/* Live Preview directly below */}
+        <div className="mt-6 border-t border-slate-200 bg-slate-100">
+          <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+            <div className="flex items-center gap-2">
+              <FaEye className="text-slate-400" />
+              <h3 className="text-sm font-bold text-slate-800">Live Preview</h3>
+            </div>
+            <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+              Mobile View
+            </span>
+          </div>
+          <div className="w-full max-w-[100vw] overflow-x-hidden p-0 relative">
+             <div className="pointer-events-none absolute inset-0 z-10 ring-1 ring-inset ring-slate-200"></div>
+             <LivePreview 
+                activeSection={selectedSection} 
+                activeFormData={formData} 
+                sectionOrder={sectionOrder}
+                isMobileInline={true}
+             />
+          </div>
+        </div>
+
+        {/* Sticky Bottom Action Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-3 border-t border-slate-200 bg-white p-4 pb-safe shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.1)]">
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={loading}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white h-14 text-[15px] font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+          >
+            <FaSave size={16} /> Save Draft
+          </button>
+          <button
+            type="button"
+            onClick={handlePublish}
+            disabled={loading}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#54091b] h-14 text-[15px] font-bold text-white shadow-md transition hover:bg-[#6b0c22] disabled:opacity-50"
+          >
+            {loading ? <FaSpinner className="animate-spin" /> : <FaGlobe size={16} />}
+            Publish
+          </button>
+        </div>
+      </div>
+
+      {/* ─── DESKTOP LAYOUT (≥768px) ────────────────────────────────────── */}
+      <div className="hidden md:block mx-auto max-w-full space-y-4">
 
       {/* ═══ HEADER ═══════════════════════════════════════════════════ */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
@@ -600,5 +720,6 @@ export default function AdvancedWebEditor() {
         url="/"
       />
     </div>
+    </>
   );
 }
