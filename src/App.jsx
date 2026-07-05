@@ -19,6 +19,7 @@ const Messages = lazy(() => import("./pages/admin/Messages"));
 const WebEditor = lazy(() => import("./pages/admin/WebEditor"));
 const PrayerRequests = lazy(() => import("./pages/admin/PrayerRequests"));
 const PastorMessage = lazy(() => import("./pages/admin/PastorMessage"));
+const Books = lazy(() => import("./pages/admin/Books"));
 
 
 const PageLoader = () => (
@@ -77,6 +78,7 @@ export default function App() {
                 <Route path="pastors" element={<Pastors />} />
                 <Route path="events" element={<Events />} />
                 <Route path="gallery" element={<Gallery />} />
+                <Route path="books" element={<Books />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="prayer-requests" element={<PrayerRequests />} />
                 <Route path="web-editor" element={<WebEditor />} />

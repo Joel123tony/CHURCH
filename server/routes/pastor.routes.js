@@ -13,6 +13,7 @@ import {
   searchPastors,
   updatePastor,
   deletePastor,
+  exportPastors,
 } from "../controllers/pastorController.js";
 
 const router = express.Router();
@@ -24,6 +25,8 @@ const ensureBodyObject = (req, res, next) => {
 /* =========================
    GET ALL PASTORS (ADMIN)
 ========================= */
+router.get("/export", exportPastors);
+
 router.get("/", async (req, res) => {
   try {
     const result = await getAllPastors(req, res);

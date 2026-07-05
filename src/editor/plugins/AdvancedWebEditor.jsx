@@ -11,9 +11,6 @@ import UrlField from "../fields/UrlField";
 import ArrayField from "./ArrayField";
 import DragDropSections from "../dragdrop/DragDropSections";
 import VersionHistory from "../versioning/VersionHistory";
-import PreviewModal from "./PreviewModal";
-import LivePreview from "../preview/LivePreview";
-
 // API & Context
 import { getBlock, saveBlock } from "../../services/api";
 import { useLanguage } from "../../context/LanguageContext";
@@ -43,17 +40,23 @@ const ALL_SECTIONS = [
   { key: "events", label: "Events" },
   { key: "gallery", label: "Gallery" },
   { key: "pastor", label: "Pastor" },
+  { key: "prayer", label: "Prayer Requests" },
   { key: "testimonials", label: "Pastor's Message" },
+  { key: "youtube", label: "YouTube" },
+  { key: "books", label: "Books & Pamphlets" },
   { key: "contact", label: "Contact" },
   { key: "footer", label: "Footer" },
 ];
 
-// Sections managed in dedicated admin panels — show info card in Content tab
+// Sections managed in dedicated admin panels — show info card in Content tab alongside fields
 const ADMIN_MANAGED_SECTIONS = {
-  events: { label: "Events", adminUrl: "/admin/events", panelName: "Events Admin Panel" },
-  gallery: { label: "Gallery", adminUrl: "/admin/gallery", panelName: "Gallery Admin Panel" },
-  pastor: { label: "Pastor", adminUrl: "/admin/pastor", panelName: "Pastor Admin Panel" },
-  testimonials: { label: "Pastor's Message", adminUrl: "/admin/pastor-message", panelName: "Pastor's Message Admin Panel" },
+  events: { label: "Events", adminUrl: "/admin/events", message: "Events content is managed in the dedicated Events Admin Panel." },
+  gallery: { label: "Gallery", adminUrl: "/admin/gallery", message: "Gallery content is managed in the dedicated Gallery Admin Panel." },
+  pastor: { label: "Pastor", adminUrl: "/admin/pastor", message: "Pastor information is managed in the dedicated Pastor Admin Panel." },
+  prayer: { label: "Prayer Requests", adminUrl: "/admin/prayer-requests", message: "Prayer Requests are managed in the dedicated Prayer Requests Admin Panel." },
+  testimonials: { label: "Pastor's Message", adminUrl: "/admin/pastor-message", message: "Pastor's Messages are managed in the dedicated Pastor's Message Admin Panel." },
+  youtube: { label: "YouTube", adminUrl: "/admin/youtube", message: "YouTube content is managed in the dedicated YouTube Admin Panel." },
+  books: { label: "Books & Pamphlets", adminUrl: "/admin/books", message: "Books & Pamphlets are managed in the dedicated Books Admin Panel." },
 };
 
 // ─── Status badge ──────────────────────────────────────────────────
@@ -88,9 +91,8 @@ export default function AdvancedWebEditor() {
   const [loading, setLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState("Published");
   const [activeTab, setActiveTab] = useState("fields");
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [sectionOrder, setSectionOrder] = useState([
-    "hero", "history", "events", "gallery", "pastor", "testimonials", "contact", "footer",
+    "hero", "history", "events", "gallery", "pastor", "prayer", "testimonials", "youtube", "books", "contact", "footer",
   ]);
 
   const { cmsData, setCmsData } = useLanguage();
@@ -102,7 +104,6 @@ export default function AdvancedWebEditor() {
     .map((key) => ALL_SECTIONS.find((s) => s.key === key))
     .filter(Boolean);
 
-  const autoSaveTimerRef = useRef(null);
   const dropdownRef = useRef(null);
 
   // Close dropdown on outside click
@@ -138,58 +139,20 @@ export default function AdvancedWebEditor() {
     loadData();
   }, [selectedSection]);
 
-  // ── Auto save ────────────────────────────────────────────────────
-  const triggerAutoSave = (dataToSave) => {
-    setSaveStatus("Typing...");
-
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    autoSaveTimerRef.current = setTimeout(async () => {
-      setSaveStatus("Saving Draft...");
-      try {
-        await saveBlock(`${selectedSection}-draft`, dataToSave);
-        setSaveStatus("Draft Saved");
-      } catch {
-        setSaveStatus("Draft Failed");
-      }
-    }, 1500);
-  };
-
   // ── Field change ─────────────────────────────────────────────────
   const handleChange = (name, value) => {
-    setFormData((prev) => {
-      const updated = { ...prev, [name]: value };
-      triggerAutoSave(updated);
-      return updated;
-    });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // ── Style change ─────────────────────────────────────────────────
   const handleStyleChange = (key, val) => {
-    setFormData((prev) => {
-      const updated = {
-        ...prev,
-        styles: {
-          ...(prev.styles || {}),
-          [key]: val,
-        },
-      };
-      triggerAutoSave(updated);
-      return updated;
-    });
-  };
-
-  // ── Save draft manually ──────────────────────────────────────────
-  const handleSaveDraft = async () => {
-    setSaveStatus("Saving Draft...");
-    try {
-      await saveBlock(`${selectedSection}-draft`, formData);
-      setSaveStatus("Draft Saved");
-    } catch {
-      setSaveStatus("Draft Failed");
-    }
+    setFormData((prev) => ({
+      ...prev,
+      styles: {
+        ...(prev.styles || {}),
+        [key]: val,
+      },
+    }));
   };
 
   // ── Publish ──────────────────────────────────────────────────────
@@ -199,7 +162,6 @@ export default function AdvancedWebEditor() {
 
     try {
       await saveBlock(selectedSection, formData);
-      await saveBlock(`${selectedSection}-draft`, formData);
 
       // Publish Pastor Message if this is the testimonials section
       if (selectedSection === "testimonials") {
@@ -219,10 +181,10 @@ export default function AdvancedWebEditor() {
       }
 
       setSaveStatus("Published");
-      alert("Published Successfully!");
+      alert("✅ Changes published successfully.");
     } catch (err) {
       setSaveStatus("Publish Failed");
-      alert("Publish Failed");
+      alert("Publish Failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -291,9 +253,12 @@ export default function AdvancedWebEditor() {
               return (
                 <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
                   <FaExclamationTriangle className="mx-auto mb-3 text-amber-500" size={28} />
-                  <h2 className="text-lg font-extrabold text-slate-800">No Fields Here</h2>
+                  <h2 className="text-lg font-extrabold text-slate-800">No Content Fields Here</h2>
                   <p className="mt-2 text-sm text-slate-500">
-                    Manage {adminInfo.label} content in the <a href={adminInfo.adminUrl} className="font-bold text-[#54091b] underline">dedicated panel</a>.
+                    {adminInfo.message}
+                  </p>
+                  <p className="mt-3 text-xs text-slate-400">
+                    To customise colours and layout, switch to the Style tab.
                   </p>
                 </div>
               );
@@ -333,37 +298,15 @@ export default function AdvancedWebEditor() {
           })()}
         </div>
 
-        {/* Live Preview directly below */}
-        <div className="mt-6 border-t border-slate-200 bg-slate-100">
-          <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
-            <div className="flex items-center gap-2">
-              <FaEye className="text-slate-400" />
-              <h3 className="text-sm font-bold text-slate-800">Live Preview</h3>
-            </div>
-            <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-              Mobile View
-            </span>
-          </div>
-          <div className="w-full max-w-[100vw] overflow-x-hidden p-0 relative">
-             <div className="pointer-events-none absolute inset-0 z-10 ring-1 ring-inset ring-slate-200"></div>
-             <LivePreview 
-                activeSection={selectedSection} 
-                activeFormData={formData} 
-                sectionOrder={sectionOrder}
-                isMobileInline={true}
-             />
-          </div>
-        </div>
 
-        {/* Sticky Bottom Action Bar */}
+
         <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-3 border-t border-slate-200 bg-white p-4 pb-safe shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.1)]">
           <button
             type="button"
-            onClick={handleSaveDraft}
-            disabled={loading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white h-14 text-[15px] font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+            onClick={() => window.open(`/#${selectedSection}`, "_blank")}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white h-14 text-[15px] font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
-            <FaSave size={16} /> Save Draft
+            <FaEye size={16} /> Preview
           </button>
           <button
             type="button"
@@ -398,21 +341,11 @@ export default function AdvancedWebEditor() {
           {/* Preview */}
           <button
             type="button"
-            onClick={() => setShowPreviewModal(true)}
+            onClick={() => window.open(`/#${selectedSection}`, "_blank")}
             className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:border-slate-300"
-            title="Open published site in preview modal"
+            title="Open published site in new tab"
           >
             <FaEye className="text-slate-400" /> Preview
-          </button>
-
-          {/* Save Draft */}
-          <button
-            type="button"
-            onClick={handleSaveDraft}
-            disabled={loading}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-          >
-            <FaSave className="text-slate-400" /> Save
           </button>
 
           {/* Publish */}
@@ -528,13 +461,7 @@ export default function AdvancedWebEditor() {
               </div>
               <h2 className="text-base font-extrabold text-slate-800">No Content Fields Here</h2>
               <p className="mt-2 text-sm text-slate-500 max-w-sm mx-auto">
-                <strong>{adminInfo.label}</strong> content is managed in the dedicated&nbsp;
-                <a
-                  href={adminInfo.adminUrl}
-                  className="text-[#54091b] font-bold underline underline-offset-2 hover:opacity-80"
-                >
-                  {adminInfo.panelName}
-                </a>.
+                {adminInfo.message}
               </p>
               <p className="mt-3 text-xs text-slate-400">
                 To customise colours and layout, switch to the&nbsp;
@@ -616,8 +543,21 @@ export default function AdvancedWebEditor() {
               No style controls defined for this section.
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2">
-              {schemaStyles.map((s) => {
+            <div className="space-y-10">
+              {Object.entries(
+                schemaStyles.reduce((acc, s) => {
+                  const group = s.group || "General";
+                  if (!acc[group]) acc[group] = [];
+                  acc[group].push(s);
+                  return acc;
+                }, {})
+              ).map(([groupName, stylesInGroup]) => (
+                <div key={groupName}>
+                  <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2">
+                    {groupName}
+                  </h3>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    {stylesInGroup.map((s) => {
                 const value = formData?.styles?.[s.name] ?? s.default ?? "";
 
                 if (s.type === "select") {
@@ -696,8 +636,11 @@ export default function AdvancedWebEditor() {
                   </div>
                 );
               })}
+              </div>
             </div>
-          )}
+          ))}
+          </div>
+        )}
         </div>
       )}
 
@@ -716,7 +659,6 @@ export default function AdvancedWebEditor() {
             activeData={formData}
             onRestore={(data) => {
               setFormData(data);
-              triggerAutoSave(data);
             }}
             onPreviewVersion={(snap) => {
               setFormData(snap);
@@ -726,11 +668,6 @@ export default function AdvancedWebEditor() {
         </div>
       )}
 
-      <PreviewModal
-        isOpen={showPreviewModal}
-        onClose={() => setShowPreviewModal(false)}
-        url="/"
-      />
     </div>
     </>
   );

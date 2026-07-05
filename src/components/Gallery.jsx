@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { FaTimes } from "react-icons/fa";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { FaTimes, FaDownload, FaSpinner, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -22,31 +22,12 @@ function formatMediaDate(value) {
   });
 }
 
-function GalleryTile({ item, onClick, compact = false, t }) {
+function GalleryTile({ item, onClick, compact = false, t, styles = {} }) {
   const isVideo = item.mediaType === "video";
-  const [shape, setShape] = useState("landscape");
   const [loading, setLoading] = useState(true);
 
-  const frameClass =
-    shape === "portrait"
-      ? "aspect-[4/5]"
-      : shape === "square"
-        ? "aspect-square"
-        : "aspect-[16/10]";
-
-  const resolveShape = (width, height) => {
-    if (!width || !height) return;
-
-    const diff = Math.abs(width - height);
-    const threshold = Math.max(width, height) * 0.12;
-
-    if (diff <= threshold) {
-      setShape("square");
-      return;
-    }
-
-    setShape(width < height ? "portrait" : "landscape");
-  };
+  // Use a fixed aspect ratio so all cards are completely uniform
+  const frameClass = "aspect-[4/3]";
 
   return (
     <div
@@ -59,7 +40,8 @@ function GalleryTile({ item, onClick, compact = false, t }) {
           onClick?.();
         }
       }}
-      className="group block w-full cursor-pointer text-left bg-[#54091b] rounded-3xl overflow-hidden shadow-lg transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]"
+      className="group flex flex-col h-full w-full cursor-pointer text-left rounded-3xl overflow-hidden shadow-lg transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]"
+      style={{ backgroundColor: styles.cardBackground || "#54091b" }}
     >
       <div className={`relative overflow-hidden bg-[#0f172a] ${frameClass}`}>
         {isVideo ? (
@@ -69,26 +51,14 @@ function GalleryTile({ item, onClick, compact = false, t }) {
             muted={compact}
             preload="metadata"
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-            onLoadedMetadata={(e) => {
-              setLoading(false);
-              resolveShape(
-                e.currentTarget.videoWidth,
-                e.currentTarget.videoHeight
-              );
-            }}
+            onLoadedMetadata={() => setLoading(false)}
           />
         ) : (
           <img
             src={item.url}
             alt={item.title || "gallery media"}
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-            onLoad={(e) => {
-              setLoading(false);
-              resolveShape(
-                e.currentTarget.naturalWidth,
-                e.currentTarget.naturalHeight
-              );
-            }}
+            onLoad={() => setLoading(false)}
           />
         )}
 
@@ -109,24 +79,27 @@ function GalleryTile({ item, onClick, compact = false, t }) {
         )}
       </div>
 
-      <div className={compact ? "p-3 sm:p-4" : "p-4 sm:p-5"}>
+      <div className={`${compact ? "p-3 sm:p-4" : "p-4 sm:p-5"} flex flex-col flex-1`}>
         <div className="flex items-start justify-between gap-3">
           <h3
-            className="min-w-0 flex-1 truncate text-[15px] font-semibold sm:text-base"
-            style={{ color: "#f4efe7" }}
+            className={`min-w-0 flex-1 truncate ${styles.cardTitleFontSize || "text-[15px] sm:text-base"} ${styles.cardTitleFontWeight || "font-semibold"}`}
+            style={{ color: styles.cardTitleColor || "#f4efe7" }}
           >
             {item.title ? t(item.title) : t("Untitled")}
           </h3>
 
           {item.eventDate && !compact && (
-            <span className="shrink-0 rounded-full bg-[#f4efe7] px-2.5 py-1 text-[11px] font-semibold text-[#54091b]">
+            <span 
+              className={`shrink-0 rounded-full px-2.5 py-1 ${styles.metadataFontSize || "text-[11px]"} font-semibold`} 
+              style={{ backgroundColor: styles.cardTitleColor || "#f4efe7", color: styles.cardBackground || "#54091b" }}
+            >
               {formatMediaDate(item.eventDate)}
             </span>
           )}
         </div>
 
         {!compact && item.createdAt && !item.eventDate && (
-          <p className="mt-1 text-xs" style={{ color: "#f4efe7" }}>
+          <p className={`mt-1 ${styles.metadataFontSize || "text-xs"}`} style={{ color: styles.metadataColor || "#f4efe7" }}>
             {formatMediaDate(item.createdAt)}
           </p>
         )}
@@ -144,6 +117,47 @@ export default function Gallery() {
   const [openModal, setOpenModal] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedMedia, setSelectedMedia] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [touchStartX, setTouchStartX] = useState(null);
+  const handleDownload = async (media) => {
+    if (downloading || !media?.url) return;
+
+    setDownloading(true);
+    setToastMessage("");
+    try {
+      let baseName = media.title ? media.title.trim() : "Media";
+      baseName = baseName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+      if (!baseName) baseName = "Media";
+
+      const urlParts = media.url.split('?')[0].split('/');
+      const filenameFromUrl = urlParts[urlParts.length - 1];
+      const urlExt = filenameFromUrl.split('.').pop();
+      let extension = urlExt && urlExt.length <= 4 ? urlExt : (media.mediaType === "video" ? "mp4" : "jpg");
+
+      const filename = `${baseName}.${extension}`;
+
+      const response = await fetch(media.url);
+      if (!response.ok) throw new Error("Network response was not ok");
+      const blob = await response.blob();
+      
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+    } catch (err) {
+      console.error("Download error:", err);
+      setToastMessage(t("Unable to download the media. Please try again."));
+      setTimeout(() => setToastMessage(""), 4000);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchGallery = async () => {
@@ -230,12 +244,57 @@ export default function Gallery() {
     setOpenModal(false);
   };
 
+  // --- Navigation Logic ---
+  const activeList = openModal ? filteredMedia : featuredMedia;
+  const currentIndex = selectedMedia ? activeList.findIndex((m) => m._id === selectedMedia._id) : -1;
+  const hasNext = currentIndex !== -1 && currentIndex < activeList.length - 1;
+  const hasPrev = currentIndex > 0;
+
+  const handleNext = useCallback(() => {
+    if (hasNext) setSelectedMedia(activeList[currentIndex + 1]);
+  }, [hasNext, activeList, currentIndex]);
+
+  const handlePrev = useCallback(() => {
+    if (hasPrev) setSelectedMedia(activeList[currentIndex - 1]);
+  }, [hasPrev, activeList, currentIndex]);
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (diff > 50 && hasNext) {
+      handleNext();
+    } else if (diff < -50 && hasPrev) {
+      handlePrev();
+    }
+    setTouchStartX(null);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!selectedMedia) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowRight") handleNext();
+      if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "Escape") setSelectedMedia(null);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedMedia, handleNext, handlePrev]);
+
   return (
     <>
       <section id="gallery" className="py-16" style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-8 flex items-center justify-between gap-4">
-            <h2 className="text-3xl font-bold" style={{ color: styles.headingColor || "#54091b" }}>
+            <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#54091b" }}>
               {t("Gallery")}
             </h2>
 
@@ -248,24 +307,26 @@ export default function Gallery() {
           </div>
 
           {loading ? (
-            <div className="grid gap-5 md:grid-cols-4">
+            <div className="flex snap-x snap-mandatory overflow-x-auto pb-4 gap-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="h-72 rounded-3xl animate-pulse"
+                  className="snap-center shrink-0 w-[85vw] sm:w-auto h-72 rounded-3xl animate-pulse"
                   style={{ backgroundColor: styles.cardBackground || "#e5e5e5" }}
                 />
               ))}
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex snap-x snap-mandatory overflow-x-auto pb-6 gap-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
               {featuredMedia.map((item) => (
-                <GalleryTile
-                  key={item._id}
-                  item={item}
-                  onClick={() => setSelectedMedia(item)}
-                  t={t}
-                />
+                <div key={item._id} className="snap-center shrink-0 w-[85vw] sm:w-auto">
+                  <GalleryTile
+                    item={item}
+                    onClick={() => setSelectedMedia(item)}
+                    t={t}
+                    styles={styles}
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -297,7 +358,8 @@ export default function Gallery() {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       list="gallery-title-suggestions"
-                      className="h-12 w-full rounded-full border border-[#d9cfbf] bg-white px-5 pr-12 text-[#54091b] outline-none transition placeholder:text-[#8a6f60] focus:border-[#f4efe7] focus:ring-2 focus:ring-[#f4efe7]/20"
+                      className="h-12 w-full rounded-full border border-[#d9cfbf] px-5 pr-12 outline-none transition focus:ring-2 focus:ring-[#f4efe7]/20"
+                      style={{ backgroundColor: styles.searchBg || "#FFFFFF", color: styles.searchText || "#54091b" }}
                     />
 
                     <datalist id="gallery-title-suggestions">
@@ -342,6 +404,7 @@ export default function Gallery() {
                         compact
                         onClick={() => setSelectedMedia(item)}
                         t={t}
+                        styles={styles}
                       />
                     ))}
                   </div>
@@ -354,23 +417,63 @@ export default function Gallery() {
 
       {selectedMedia && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
           onClick={() => setSelectedMedia(null)}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
+          {hasPrev && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+              className="absolute left-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition md:flex"
+              style={{ color: styles.arrowColor || "#FFFFFF", backgroundColor: "rgba(255,255,255,0.1)" }}
+            >
+              <FaChevronLeft size={24} />
+            </button>
+          )}
+
+          {hasNext && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleNext(); }}
+              className="absolute right-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition md:flex"
+              style={{ color: styles.arrowColor || "#FFFFFF", backgroundColor: "rgba(255,255,255,0.1)" }}
+            >
+              <FaChevronRight size={24} />
+            </button>
+          )}
+
           <div
             className="relative w-full max-w-6xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setSelectedMedia(null)}
-              aria-label="Close viewer"
-              className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:bg-white"
-            >
-              <FaTimes size={16} />
-            </button>
+            <div className="absolute right-3 top-3 z-10 flex items-center gap-3">
+              <button
+                onClick={() => handleDownload(selectedMedia)}
+                disabled={downloading}
+                aria-label="Download Media"
+                className="flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: styles.buttonBackground || "#FFFFFF", color: styles.buttonTextColor || "#0f172a" }}
+              >
+                {downloading ? <FaSpinner className="animate-spin" size={16} /> : <FaDownload size={15} />}
+              </button>
+              <button
+                onClick={() => setSelectedMedia(null)}
+                aria-label="Close viewer"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:bg-white"
+              >
+                <FaTimes size={16} />
+              </button>
+            </div>
+
+            {toastMessage && (
+              <div className="absolute top-16 right-3 z-20 rounded-xl bg-white/95 px-4 py-3 text-sm font-semibold text-red-600 shadow-xl backdrop-blur-sm sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
+                {toastMessage}
+              </div>
+            )}
 
             {selectedMedia.mediaType === "video" ? (
               <video
+                key={selectedMedia._id}
                 src={selectedMedia.url}
                 controls
                 autoPlay
@@ -378,6 +481,7 @@ export default function Gallery() {
               />
             ) : (
               <img
+                key={selectedMedia._id}
                 src={selectedMedia.url}
                 alt={selectedMedia.title}
                 className="max-h-[85vh] w-full rounded-2xl bg-black object-contain shadow-2xl"

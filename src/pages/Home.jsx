@@ -9,12 +9,13 @@ import YoutubeSection from "../components/YoutubeSection";
 import Contact from "../components/Contact";
 import Footer from "../components/Footer";
 import Testimonials from "../components/Testimonials";
+import Books from "../components/Books";
 import { useLanguage } from "../context/LanguageContext";
 import { getBlock } from "../services/api";
 
 export default function Home() {
   const { t } = useLanguage();
-  const [sectionOrder, setSectionOrder] = useState(["hero", "history", "events", "gallery", "pastor", "testimonials", "contact", "footer"]);
+  const [sectionOrder, setSectionOrder] = useState(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"]);
   const [sectionData, setSectionData] = useState({});
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function Home() {
 
         if (loadedArray && loadedArray.length > 0) {
           // Always enforce correct relative order for all known middle sections
-          const defaultMiddle = ["history", "events", "gallery", "pastor", "testimonials", "contact"];
+          const defaultMiddle = ["history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact"];
 
           // Build the final middle by: keep loaded sections in their saved order,
           // then inject any missing ones at their canonical position.
@@ -71,16 +72,16 @@ export default function Home() {
 
           setSectionOrder(["hero", ...finalMiddle, "footer"]);
         } else {
-          setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "contact", "footer"]);
+          setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"]);
         }
       } catch (err) {
         console.warn("Failed to load section order, using defaults.", err);
-        setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "contact", "footer"]);
+        setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"]);
       }
 
       // Fetch styles/content for all sections
       try {
-        const sections = ["hero", "history", "events", "gallery", "pastor", "testimonials", "contact", "footer"];
+        const sections = ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"];
         const fetched = {};
         for (const sec of sections) {
           try {
@@ -166,15 +167,16 @@ export default function Home() {
         component = <Gallery />;
         break;
       case "pastor":
-        component = (
-          <React.Fragment key="pastor-group">
-            <Pastor />
-            <YoutubeSection />
-          </React.Fragment>
-        );
+        component = <Pastor />;
         break;
       case "testimonials":
         component = <Testimonials />;
+        break;
+      case "youtube":
+        component = <YoutubeSection />;
+        break;
+      case "books":
+        component = <Books />;
         break;
       case "contact":
         component = <Contact />;

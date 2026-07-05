@@ -1,5 +1,5 @@
 export default {
-  label: "Pastor's Message",
+  label: "YouTube Section",
   fields: [],
   styles: [
     { name: "backgroundColor", label: "Background Color", type: "color", default: "#F4EFE7", group: "Section" },
@@ -8,13 +8,13 @@ export default {
     { name: "sectionTitleFontWeight", label: "Section Title Font Weight", type: "select", options: ["font-normal", "font-medium", "font-semibold", "font-bold", "font-extrabold"], default: "font-bold", group: "Typography" },
     { name: "subtitleColor", label: "Subtitle Color", type: "color", default: "#1E293B", group: "Typography" },
     { name: "subtitleFontSize", label: "Subtitle Font Size", type: "select", options: ["text-sm", "text-base", "text-lg", "text-xl"], default: "text-base", group: "Typography" },
-    { name: "cardTitleColor", label: "Card Title Color", type: "color", default: "#54091b", group: "Typography" },
+    { name: "cardTitleColor", label: "Video Title Color", type: "color", default: "#F4EFE7", group: "Typography" },
     { name: "cardTitleFontSize", label: "Card Title Font Size", type: "select", options: ["text-base", "text-lg", "text-xl", "text-2xl"], default: "text-lg", group: "Typography" },
     { name: "cardTitleFontWeight", label: "Card Title Font Weight", type: "select", options: ["font-medium", "font-semibold", "font-bold"], default: "font-bold", group: "Typography" },
-    { name: "metadataColor", label: "Metadata Color", type: "color", default: "#475569", group: "Typography" },
+    { name: "metadataColor", label: "Date Color", type: "color", default: "#F4EFE7", group: "Typography" },
     { name: "metadataFontSize", label: "Metadata Font Size", type: "select", options: ["text-xs", "text-sm", "text-base"], default: "text-sm", group: "Typography" },
-    { name: "bodyTextColor", label: "Body Text Color", type: "color", default: "#1E293B", group: "Typography" },
-    { name: "bodyFontSize", label: "Body Font Size", type: "select", options: ["text-xs", "text-sm", "text-base", "text-lg"], default: "text-base", group: "Typography" },
-    { name: "cardBackground", label: "Card Background Color", type: "color", default: "#FFFFFF", group: "Cards" }
+    { name: "cardBackground", label: "Card Background Color", type: "color", default: "#FFFFFF", group: "Cards" },
+    { name: "buttonBackground", label: "Button Background Color", type: "color", default: "#54091b", group: "Buttons" },
+    { name: "buttonTextColor", label: "Button Text Color", type: "color", default: "#FFFFFF", group: "Buttons" }
   ]
 };

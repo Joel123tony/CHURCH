@@ -1,0 +1,561 @@
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import API from "../../api/axios";
+import { toast } from "react-toastify";
+import { FaTrash, FaEdit, FaBook, FaUpload, FaImage, FaTimes, FaFilePdf, FaBookOpen } from "react-icons/fa";
+import { useConfirm } from "../../context/ConfirmContext";
+import { useDropzone } from "react-dropzone";
+
+// Helper to format file size
+const formatBytes = (bytes, decimals = 2) => {
+  if (!+bytes) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+};
+
+export default function Books() {
+  const confirm = useConfirm();
+  
+  // Tabs State
+  const [activeTab, setActiveTab] = useState("add"); // "add" or "shelf"
+
+  // Data State
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  
+  // Form State
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
+  const [pdfFile, setPdfFile] = useState(null);
+  
+  const [editItem, setEditItem] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  
+  const pdfInputRef = useRef(null);
+  
+  // File Dropzone for Cover Image
+  const onDrop = useCallback((acceptedFiles) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setCoverFile(file);
+      setCoverPreview(URL.createObjectURL(file));
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"],
+      "image/webp": [".webp"]
+    },
+    multiple: false
+  });
+
+  const fetchBooks = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get("/books");
+      setBooks(res.data.books || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch books");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBooks();
+    return () => {
+      if (coverPreview && typeof coverPreview === 'string' && coverPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(coverPreview);
+      }
+    }
+  }, []);
+
+  const resetForm = () => {
+    setTitle("");
+    setDate("");
+    setCoverFile(null);
+    if (coverPreview && typeof coverPreview === 'string' && coverPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(coverPreview);
+    }
+    setCoverPreview(null);
+    setPdfFile(null);
+    setEditItem(null);
+    if (pdfInputRef.current) {
+      pdfInputRef.current.value = "";
+    }
+  };
+
+  const openEdit = (book) => {
+    resetForm();
+    setEditItem(book);
+    setTitle(book.title || "");
+    setDate(book.date || "");
+    setCoverPreview(book.coverImageUrl || null);
+    setActiveTab("add");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title) {
+      return toast.error("Title is required");
+    }
+    
+    if (!editItem) {
+      if (!coverFile) return toast.error("Cover image is required for new book");
+      if (!pdfFile) return toast.error("PDF file is required for new book");
+    }
+
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("date", date);
+      
+      if (coverFile) {
+        formData.append("coverImage", coverFile);
+      }
+      if (pdfFile) {
+        formData.append("pdfFile", pdfFile);
+      }
+
+      if (editItem) {
+        await API.put(`/books/${editItem._id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        toast.success("Book updated successfully");
+      } else {
+        await API.post("/books", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        toast.success("Book added successfully");
+      }
+      
+      resetForm();
+      fetchBooks();
+      setActiveTab("shelf");
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Failed to save book");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteBook = async (id) => {
+    const ok = await confirm({
+      title: "Delete Book",
+      message: "Are you sure you want to delete this book? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      isDanger: true,
+    });
+
+    if (!ok) return;
+
+    try {
+      await API.delete(`/books/${id}`);
+      setBooks((prev) => prev.filter((book) => book._id !== id));
+      toast.success("Book deleted successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete book");
+    }
+  };
+
+  const sortedBooks = useMemo(() => {
+    return [...books].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [books]);
+
+  const filteredBooks = useMemo(() => {
+    return sortedBooks.filter(book => book.title?.toLowerCase().includes(search.toLowerCase()));
+  }, [sortedBooks, search]);
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen">
+      {/* Header section */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#54091b] flex items-center gap-3 tracking-tight">
+            <FaBook className="text-[#ee0039]" />
+            Books & Pamphlets
+          </h1>
+          <p className="text-slate-500 mt-1.5 text-sm font-medium">Manage your library of PDFs and visual covers.</p>
+        </div>
+      </div>
+
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
+        <button
+          onClick={() => setActiveTab("add")}
+          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
+            activeTab === "add" 
+              ? "bg-[#ee0039] text-white shadow-md" 
+              : "text-slate-500 hover:bg-slate-100"
+          }`}
+        >
+          {editItem ? <FaEdit /> : <FaUpload />}
+          {editItem ? "Edit Book" : "Add Book"}
+        </button>
+        <button
+          onClick={() => setActiveTab("shelf")}
+          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
+            activeTab === "shelf" 
+              ? "bg-[#54091b] text-white shadow-md" 
+              : "text-slate-500 hover:bg-slate-100"
+          }`}
+        >
+          <FaBookOpen />
+          Book Shelf
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="relative w-full">
+        {/* ADD BOOK TAB */}
+        {activeTab === "add" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* Form Section */}
+              <div className="lg:col-span-8">
+                <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-6 sm:p-8">
+                  <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">
+                        {editItem ? "Edit Book Details" : "Upload New Book"}
+                      </h2>
+                      <p className="text-sm text-slate-500 mt-1">Fill in the details below to publish a book.</p>
+                    </div>
+                    {editItem && (
+                      <button 
+                        onClick={() => { resetForm(); setActiveTab("shelf"); }}
+                        className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-sm font-bold flex items-center gap-2"
+                      >
+                        <FaTimes /> Cancel Edit
+                      </button>
+                    )}
+                  </div>
+                  
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-5">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Book Title *</label>
+                        <input
+                          type="text"
+                          required
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="e.g. The History of the Methodist Church"
+                          className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Date / Author / Subtitle (Optional)</label>
+                        <input
+                          type="text"
+                          value={date}
+                          onChange={(e) => setDate(e.target.value)}
+                          placeholder="e.g. October 2024 or Rev. John Doe"
+                          className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white"
+                        />
+                      </div>
+                      
+                      {/* Upload Zones Container */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                        
+                        {/* Cover Image Dropzone */}
+                        <div className="space-y-2">
+                           <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">
+                              Book Cover Image {editItem ? "(Optional)" : "*"}
+                            </label>
+                            <div 
+                              {...getRootProps()} 
+                              className={`relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[200px] overflow-hidden group ${
+                                isDragActive 
+                                  ? 'border-[#ee0039] bg-[#ee0039]/5' 
+                                  : coverPreview ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:bg-slate-50 hover:border-slate-400'
+                              }`}
+                            >
+                              <input {...getInputProps()} />
+                              
+                              {coverPreview ? (
+                                <>
+                                  <div className="absolute inset-0 z-0 opacity-20 blur-xl">
+                                    <img src={coverPreview} alt="Blur bg" className="w-full h-full object-cover" />
+                                  </div>
+                                  <div className="relative z-10 w-full flex flex-col items-center">
+                                    <img 
+                                      src={coverPreview} 
+                                      alt="Cover Preview" 
+                                      className="h-28 object-contain rounded-lg shadow-md mb-3"
+                                    />
+                                    <span className="text-xs font-bold text-emerald-700 bg-white/80 px-3 py-1 rounded-full backdrop-blur-sm">Image Selected</span>
+                                  </div>
+                                  <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-2xl transition-opacity z-20">
+                                     <p className="text-white text-sm font-bold bg-black/50 px-4 py-2 rounded-full">Change Cover</p>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4 group-hover:bg-[#ee0039]/10 group-hover:text-[#ee0039] transition-colors">
+                                    <FaImage className="text-2xl text-slate-400 group-hover:text-[#ee0039]" />
+                                  </div>
+                                  <p className="text-slate-700 font-bold">Drag & Drop Image</p>
+                                  <p className="text-xs text-slate-400 mt-1">or click to browse</p>
+                                </>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 font-medium mt-2">Accepted formats: <span className="font-bold text-slate-700">JPG, JPEG, PNG, WEBP</span></p>
+                        </div>
+
+                        {/* PDF File Upload */}
+                        <div className="space-y-2">
+                          <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">
+                            Book PDF File {editItem ? "(Optional)" : "*"}
+                          </label>
+                          <div 
+                            className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all min-h-[200px] relative hover:bg-slate-50 hover:border-slate-400 ${
+                              pdfFile ? 'border-blue-400 bg-blue-50' : 'border-slate-300'
+                            }`}
+                          >
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              ref={pdfInputRef}
+                              onChange={(e) => setPdfFile(e.target.files[0])}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />
+                            
+                            {pdfFile ? (
+                              <div className="flex flex-col items-center z-0">
+                                <div className="w-14 h-14 rounded-full bg-white shadow-sm flex items-center justify-center mb-3 text-blue-600">
+                                  <FaFilePdf className="text-2xl" />
+                                </div>
+                                <p className="text-sm font-bold text-slate-800 line-clamp-1 px-2">{pdfFile.name}</p>
+                                <p className="text-xs font-semibold text-blue-600 mt-1 bg-white px-3 py-1 rounded-full shadow-sm">
+                                  {formatBytes(pdfFile.size)}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center z-0">
+                                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4 text-slate-400">
+                                  <FaFilePdf className="text-2xl" />
+                                </div>
+                                <p className="text-slate-700 font-bold">Upload PDF File</p>
+                                <p className="text-xs text-slate-400 mt-1">Click to select document</p>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium mt-2">Accepted format: <span className="font-bold text-slate-700">PDF (.pdf)</span></p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-6 border-t border-slate-100">
+                      <button
+                        type="submit"
+                        disabled={uploading}
+                        className="px-8 py-3.5 rounded-xl text-white bg-[#ee0039] hover:bg-[#d00030] transition-colors font-bold disabled:opacity-70 flex items-center gap-2 shadow-lg shadow-[#ee0039]/30"
+                      >
+                        {uploading ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Uploading Book...
+                          </>
+                        ) : (
+                          <>
+                            <FaUpload />
+                            {editItem ? "Save Changes" : "Publish Book"}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              {/* Preview Section */}
+              <div className="lg:col-span-4 hidden md:block">
+                <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-6 sticky top-6">
+                  <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Live Client Preview
+                  </h2>
+
+                  <div className="flex justify-center bg-[#F4EFE7] p-8 rounded-2xl overflow-hidden shadow-inner">
+                    <div className="w-[240px] group cursor-pointer">
+                      <div 
+                        className="relative aspect-[2/3] rounded-[28px] overflow-hidden bg-white shadow-2xl transition-all duration-300 group-hover:-translate-y-2"
+                        style={{ borderLeft: `8px solid #54091b20` }}
+                      >
+                        {coverPreview ? (
+                          <img
+                            src={coverPreview}
+                            alt={title || "Preview"}
+                            className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300">
+                            <FaImage className="text-5xl mb-2 opacity-50" />
+                            <span className="text-xs font-bold uppercase tracking-wider">No Cover</span>
+                          </div>
+                        )}
+                        
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex flex-col justify-end p-6">
+                          <div className="w-12 h-12 rounded-full bg-white text-[#ee0039] flex items-center justify-center mb-4 transform translate-y-4 group-hover:translate-y-0 transition duration-300 shadow-lg">
+                            <FaBookOpen className="text-xl" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-5 px-2">
+                        <h3 className="font-bold text-lg line-clamp-2 leading-tight text-[#54091b]">
+                          {title || "Book Title"}
+                        </h3>
+                        {(date || !title) && (
+                          <p className="text-sm mt-1.5 font-medium opacity-70 text-[#54091b]">
+                            {date || "Optional Subtitle / Date"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 text-center text-xs text-slate-400 font-medium bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    This preview accurately reflects how the book will appear on the website's homepage.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* BOOK SHELF TAB */}
+        {activeTab === "shelf" && (
+          <div className="animate-in fade-in slide-in-from-right-8 duration-500 space-y-6">
+            
+            {/* Search Bar */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Search books by title or author..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full border-2 border-slate-100 rounded-xl py-3 pl-4 pr-10 focus:outline-none focus:border-[#54091b] focus:ring-1 focus:ring-[#54091b] transition-all"
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <FaTimes />
+                  </button>
+                )}
+              </div>
+              <div className="px-4 text-sm font-bold text-slate-400 whitespace-nowrap">
+                {filteredBooks.length} {filteredBooks.length === 1 ? 'Book' : 'Books'}
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <div key={n} className="bg-white rounded-3xl aspect-[2/3] animate-pulse border border-slate-100 shadow-sm" />
+                ))}
+              </div>
+            ) : filteredBooks.length === 0 ? (
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-16 text-center">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FaBook className="text-3xl text-slate-300" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-700">No books found</h3>
+                <p className="text-slate-500 mt-1">Try adjusting your search or add a new book.</p>
+                <button 
+                  onClick={() => setActiveTab("add")}
+                  className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition"
+                >
+                  Upload New Book
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {filteredBooks.map((book, index) => (
+                  <div 
+                    key={book._id} 
+                    className="group flex flex-col bg-white rounded-[24px] shadow-sm hover:shadow-xl border border-slate-100 overflow-hidden transition-all duration-300 hover:-translate-y-1.5"
+                    style={{ animationDelay: `${Math.min(index, 10) * 50}ms` }}
+                  >
+                    {/* Cover Area */}
+                    <div className="relative aspect-[2/3] w-full bg-slate-100 overflow-hidden border-b border-slate-100">
+                      <img 
+                        src={book.coverImageUrl} 
+                        alt={book.title} 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                        loading="lazy" 
+                      />
+                      
+                      {/* Hover Actions Overlay */}
+                      <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
+                        <button
+                          onClick={() => openEdit(book)}
+                          className="w-10 h-10 rounded-full bg-white text-blue-600 flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
+                          title="Edit Details"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => deleteBook(book._id)}
+                          className="w-10 h-10 rounded-full bg-white text-red-600 flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
+                          title="Delete Book"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+
+                      {/* PDF Quick Link */}
+                      <a 
+                        href={book.pdfUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-[#54091b] hover:bg-white transition-colors z-10"
+                        title="View PDF Document"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <FaFilePdf size={12} />
+                      </a>
+                    </div>
+                    
+                    {/* Info Area */}
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className="font-bold text-slate-800 line-clamp-2 text-sm leading-tight" title={book.title}>{book.title}</h3>
+                      {book.date && (
+                        <p className="text-xs text-slate-500 mt-1 font-medium">{book.date}</p>
+                      )}
+                      
+                      <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-50 px-2 py-1 rounded-md">
+                          {new Date(book.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

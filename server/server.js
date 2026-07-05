@@ -27,6 +27,7 @@ import prayerRequestRoutes from "./routes/prayerRequest.routes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
 import contentRoutes from "./routes/content.routes.js";
 import translateRoutes from "./routes/translate.routes.js";
+import bookRoutes from "./routes/bookRoutes.js";
 const app = express();
 
 /* =========================
@@ -133,6 +134,7 @@ app.use("/api/prayer", prayerRoutes);
 app.use("/api/prayer-requests", prayerRequestRoutes);
 app.use("/api/youtube", youtubeRoutes);
 app.use("/api/content", contentRoutes);
+app.use("/api/books", bookRoutes);
 
 /* =========================
    404 HANDLER

@@ -66,7 +66,7 @@ export default function Events() {
 
   if (loading) {
     return (
-      <section id="events" className="py-20 text-center" style={{ backgroundColor: styles.backgroundColor || "#54091b", color: styles.textColor || "#F4EFE7" }}>
+      <section id="events" className="py-20 text-center" style={{ backgroundColor: styles.backgroundColor || "#54091b", color: styles.bodyTextColor || "#F4EFE7" }}>
         {t("Loading Events...")}
       </section>
     );
@@ -79,14 +79,14 @@ export default function Events() {
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row gap-3 justify-between items-start mb-6">
-          <h2 className="text-3xl font-bold text-left" style={{ color: styles.headingColor || "#F4EFE7" }}>{t("Events")}</h2>
+          <h2 className={`text-left ${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#F4EFE7" }}>{t("Events")}</h2>
         </div>
 
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <FaFire className="text-2xl" style={{ color: styles.headingColor || "#F4EFE7" }} />
-              <h3 className="text-2xl font-bold" style={{ color: styles.headingColor || "#F4EFE7" }}>{t("Featured Event")}</h3>
+              <FaFire className="text-2xl" style={{ color: styles.sectionTitleColor || "#F4EFE7" }} />
+              <h3 className={`text-2xl ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#F4EFE7" }}>{t("Featured Event")}</h3>
             </div>
 
             {latestEvent ? (
@@ -95,7 +95,7 @@ export default function Events() {
                   {t("Latest Event")}
                 </div>
 
-                <h3 className="text-2xl sm:text-3xl font-bold mb-5 sm:mb-6 leading-tight" style={{ color: styles.cardTextColor || "#54091b" }}>
+                <h3 className={`sm:text-3xl mb-5 sm:mb-6 leading-tight ${styles.cardTitleFontSize || "text-2xl"} ${styles.cardTitleFontWeight || "font-bold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
                   {t(latestEvent.title)}
                 </h3>
 
@@ -106,10 +106,10 @@ export default function Events() {
                     </div>
 
                     <div>
-                      <p className="text-[11px] sm:text-xs text-gray-500 uppercase tracking-wide">
+                      <p className={`uppercase tracking-wide ${styles.metadataFontSize || "text-[11px] sm:text-xs"}`} style={{ color: styles.metadataColor || "#6b7280" }}>
                         {t("Date")}
                       </p>
-                      <p className="font-medium text-base sm:text-lg leading-tight">
+                      <p className={`leading-tight ${styles.bodyFontSize || "text-base sm:text-lg"} font-medium`} style={{ color: styles.bodyTextColor || "#1E293B" }}>
                         {new Date(latestEvent.date).toLocaleDateString("en-IN", {
                           day: "numeric",
                           month: "long",
@@ -125,10 +125,10 @@ export default function Events() {
                     </div>
 
                     <div>
-                      <p className="text-[11px] sm:text-xs text-gray-500 uppercase tracking-wide">
+                      <p className={`uppercase tracking-wide ${styles.metadataFontSize || "text-[11px] sm:text-xs"}`} style={{ color: styles.metadataColor || "#6b7280" }}>
                         {t("Time")}
                       </p>
-                      <p className="font-medium text-base sm:text-lg leading-tight">
+                      <p className={`leading-tight ${styles.bodyFontSize || "text-base sm:text-lg"} font-medium`} style={{ color: styles.bodyTextColor || "#1E293B" }}>
                         {latestEvent.time || "TBA"}
                       </p>
                     </div>
@@ -140,10 +140,10 @@ export default function Events() {
                     </div>
 
                     <div>
-                      <p className="text-[11px] sm:text-xs text-gray-500 uppercase tracking-wide">
+                      <p className={`uppercase tracking-wide ${styles.metadataFontSize || "text-[11px] sm:text-xs"}`} style={{ color: styles.metadataColor || "#6b7280" }}>
                         {t("Venue")}
                       </p>
-                      <p className="font-medium text-base sm:text-lg leading-tight">
+                      <p className={`leading-tight ${styles.bodyFontSize || "text-base sm:text-lg"} font-medium`} style={{ color: styles.bodyTextColor || "#1E293B" }}>
                         {t(latestEvent.venue)}
                       </p>
                     </div>
@@ -160,8 +160,8 @@ export default function Events() {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <FaCalendarAlt className="text-2xl" style={{ color: styles.headingColor || "#F4EFE7" }} />
-                <h3 className="text-2xl font-bold" style={{ color: styles.headingColor || "#F4EFE7" }}>{t("Upcoming Events")}</h3>
+                <FaCalendarAlt className="text-2xl" style={{ color: styles.sectionTitleColor || "#F4EFE7" }} />
+                <h3 className={`text-2xl ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#F4EFE7" }}>{t("Upcoming Events")}</h3>
               </div>
 
               <span className="px-3 py-1 rounded-full bg-white/10 text-white text-sm">
@@ -179,11 +179,11 @@ export default function Events() {
                   >
                     <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-[28px]" />
 
-                    <h4 className="text-xl font-semibold mb-4" style={{ color: styles.cardTextColor || "#54091b" }}>
+                    <h4 className={`mb-4 ${styles.cardTitleFontSize || "text-xl"} ${styles.cardTitleFontWeight || "font-semibold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
                       {t(event.title)}
                     </h4>
 
-                    <div className="space-y-3 text-gray-700 text-sm">
+                    <div className={`space-y-3 ${styles.metadataFontSize || "text-sm"}`} style={{ color: styles.metadataColor || "#374151" }}>
                       <div className="flex items-center gap-3">
                         <FaCalendarAlt className="text-primary" />
                         <span>

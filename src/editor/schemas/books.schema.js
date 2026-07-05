@@ -1,5 +1,5 @@
 export default {
-  label: "Pastor's Message",
+  label: "Books & Pamphlets Section",
   fields: [],
   styles: [
     { name: "backgroundColor", label: "Background Color", type: "color", default: "#F4EFE7", group: "Section" },
@@ -13,8 +13,10 @@ export default {
     { name: "cardTitleFontWeight", label: "Card Title Font Weight", type: "select", options: ["font-medium", "font-semibold", "font-bold"], default: "font-bold", group: "Typography" },
     { name: "metadataColor", label: "Metadata Color", type: "color", default: "#475569", group: "Typography" },
     { name: "metadataFontSize", label: "Metadata Font Size", type: "select", options: ["text-xs", "text-sm", "text-base"], default: "text-sm", group: "Typography" },
-    { name: "bodyTextColor", label: "Body Text Color", type: "color", default: "#1E293B", group: "Typography" },
-    { name: "bodyFontSize", label: "Body Font Size", type: "select", options: ["text-xs", "text-sm", "text-base", "text-lg"], default: "text-base", group: "Typography" },
-    { name: "cardBackground", label: "Card Background Color", type: "color", default: "#FFFFFF", group: "Cards" }
+    { name: "cardBackground", label: "Card Background Color", type: "color", default: "#FFFFFF", group: "Cards" },
+    { name: "searchBg", label: "Search Background Color", type: "color", default: "#FFFFFF", group: "Search" },
+    { name: "searchText", label: "Search Text Color", type: "color", default: "#1E293B", group: "Search" },
+    { name: "searchPlaceholder", label: "Search Placeholder Color", type: "color", default: "#94A3B8", group: "Search" },
+    { name: "arrowColor", label: "Navigation Arrow Color", type: "color", default: "#54091b", group: "Navigation" }
   ]
 };

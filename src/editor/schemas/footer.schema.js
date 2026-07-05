@@ -15,8 +15,14 @@ export default {
     },
   ],
   styles: [
-    { name: "backgroundColor", label: "Background Color", type: "color", default: "#54091b" },
-    { name: "textColor",       label: "Text Color",       type: "color", default: "#F4EFE7" },
-    { name: "linkColor",       label: "Link / Icon Color", type: "color", default: "#EFBF04" },
-  ],
+    { name: "backgroundColor", label: "Background Color", type: "color", default: "#54091b", group: "Section" },
+    { name: "sectionTitleColor", label: "Section Title Color", type: "color", default: "#FFFFFF", group: "Typography" },
+    { name: "sectionTitleFontSize", label: "Section Title Font Size", type: "select", options: ["text-2xl", "text-3xl", "text-4xl", "text-5xl"], default: "text-3xl", group: "Typography" },
+    { name: "sectionTitleFontWeight", label: "Section Title Font Weight", type: "select", options: ["font-normal", "font-medium", "font-semibold", "font-bold", "font-extrabold"], default: "font-bold", group: "Typography" },
+    { name: "bodyTextColor", label: "Body Text Color", type: "color", default: "#F4EFE7", group: "Typography" },
+    { name: "bodyFontSize", label: "Body Font Size", type: "select", options: ["text-xs", "text-sm", "text-base", "text-lg"], default: "text-base", group: "Typography" },
+    { name: "metadataColor", label: "Link Color", type: "color", default: "#F4EFE7", group: "Typography" },
+    { name: "metadataFontSize", label: "Metadata Font Size", type: "select", options: ["text-xs", "text-sm", "text-base"], default: "text-sm", group: "Typography" },
+    { name: "iconColor", label: "Social Icon Color", type: "color", default: "#FFFFFF", group: "Icons" }
+  ]
 };

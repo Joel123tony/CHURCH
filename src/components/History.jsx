@@ -25,7 +25,7 @@ export default function History() {
     <section id="church-history" className="overflow-hidden" style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}>
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="pt-16 lg:pt-24">
-          <h2 className="text-3xl font-bold mb-6 lg:mb-8" style={{ color: styles.headingColor || "#54091b" }}>
+          <h2 className={`mb-6 lg:mb-8 ${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#54091b" }}>
             {cmsData?.history?.title ? t(cmsData.history.title) : t("Church History")}
           </h2>
         </div>
@@ -35,8 +35,8 @@ export default function History() {
             <div className="max-w-2xl lg:pr-8">
               {hasCmsContent ? (
                 <p 
-                  className="text-base md:text-lg leading-8 md:leading-9 whitespace-pre-line"
-                  style={{ color: styles.textColor || "#54091b" }}
+                  className={`leading-8 md:leading-9 whitespace-pre-line ${styles.bodyFontSize || "text-base md:text-lg"}`}
+                  style={{ color: styles.bodyTextColor || "#54091b" }}
                 >
                   {cmsContent}
                 </p>
@@ -44,8 +44,8 @@ export default function History() {
                 paragraphs.map((text, idx) => (
                   <p
                     key={idx}
-                    className={`${idx > 0 ? "mt-5 " : ""}text-base md:text-lg leading-8 md:leading-9`}
-                    style={{ color: styles.textColor || "#54091b" }}
+                    className={`${idx > 0 ? "mt-5 " : ""}leading-8 md:leading-9 ${styles.bodyFontSize || "text-base md:text-lg"}`}
+                    style={{ color: styles.bodyTextColor || "#54091b" }}
                   >
                     {text}
                   </p>

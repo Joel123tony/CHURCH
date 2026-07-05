@@ -50,42 +50,42 @@ function MessageCard({ item, index, visible, styles, t }) {
       <span
         aria-hidden="true"
         className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-bl-[4rem] transition-all duration-300"
-        style={{ backgroundColor: `${styles.cardTextColor || "#5b1320"}0A` }}
+        style={{ backgroundColor: `${styles.cardTitleColor || "#5b1320"}0A` }}
       />
 
       {/* Opening quote mark */}
       <span
         aria-hidden="true"
         className="mb-3 block select-none font-serif text-6xl leading-none"
-        style={{ color: `${styles.cardTextColor || "#5b1320"}33` }}
+        style={{ color: `${styles.cardTitleColor || "#5b1320"}33` }}
       >
         &ldquo;
       </span>
 
       {/* Quote */}
-      <p className="flex-1 text-[15px] italic leading-7" style={{ color: styles.quoteColor || "#475569" }}>
+      <p className={`flex-1 italic leading-7 ${styles.bodyFontSize || "text-[15px]"}`} style={{ color: styles.bodyTextColor || "#475569" }}>
         {t(item.quote)}
       </p>
 
       {/* Divider */}
-      <div className="my-5 h-px bg-gradient-to-r from-transparent via-current to-transparent" style={{ color: `${styles.cardTextColor || "#5b1320"}33` }} />
+      <div className="my-5 h-px bg-gradient-to-r from-transparent via-current to-transparent" style={{ color: `${styles.cardTitleColor || "#5b1320"}33` }} />
 
       {/* Author */}
       <div className="flex items-center gap-3">
         <div
           className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ring-2"
-          style={{ backgroundColor: styles.cardTextColor || "#5b1320", color: styles.cardBackground || "#FFFFFF", ringColor: `${styles.cardTextColor || "#5b1320"}33` }}
+          style={{ backgroundColor: styles.cardTitleColor || "#5b1320", color: styles.cardBackground || "#FFFFFF", ringColor: `${styles.cardTitleColor || "#5b1320"}33` }}
         >
           {getInitials(item.author) || "?"}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold" style={{ color: styles.cardTextColor || "#5b1320" }}>
+          <p className={`truncate ${styles.cardTitleFontSize || "text-sm"} ${styles.cardTitleFontWeight || "font-bold"}`} style={{ color: styles.cardTitleColor || "#5b1320" }}>
             {item.author}
           </p>
           {item.role && (
             <span
-              className="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
-              style={{ backgroundColor: `${styles.cardTextColor || "#5b1320"}1A`, color: styles.cardTextColor || "#5b1320" }}
+              className={`mt-0.5 inline-block rounded-full px-2 py-0.5 font-semibold ${styles.metadataFontSize || "text-[11px]"}`}
+              style={{ backgroundColor: `${styles.metadataColor || "#5b1320"}1A`, color: styles.metadataColor || "#5b1320" }}
             >
               {t(item.role)}
             </span>
@@ -98,7 +98,7 @@ function MessageCard({ item, index, visible, styles, t }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Testimonials() {
-  const [data, setData] = useState({ messages: [], maxVisible: 4 });
+  const [data, setData] = useState({ messages: [] });
   const [loading, setLoading] = useState(true);
   const { ref: sectionRef, visible } = useSectionReveal();
   const { t, cmsData } = useLanguage();
@@ -112,9 +112,7 @@ export default function Testimonials() {
   }, []);
 
   const allMessages = Array.isArray(data?.messages) ? data.messages : [];
-  const visibleMessages = allMessages.filter((item) => item.visible !== false);
-  const limit = data?.maxVisible !== undefined ? Number(data.maxVisible) : 4;
-  const items = visibleMessages.slice(0, limit);
+  const items = allMessages.filter((item) => item.visible !== false);
 
   const isEmpty = !loading && items.length === 0;
 
@@ -130,16 +128,21 @@ export default function Testimonials() {
     <section
       id="pastor-message"
       ref={sectionRef}
-      className="overflow-hidden"
+      className="py-16 overflow-hidden"
       style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}
     >
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
 
-        {/* ── Heading — identical pattern to History, Gallery, Events ── */}
-        <div className="pt-16 lg:pt-24">
-          <h2 className="text-3xl font-bold mb-6 lg:mb-8" style={{ color: styles.headingColor || "#54091b" }}>
-            {t("Pastor's Message")}
+        {/* ── Heading ── */}
+        <div className="mb-6 lg:mb-8">
+          <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#54091b" }}>
+            {cmsData?.testimonials?.title || t("Pastor's Message")}
           </h2>
+          {cmsData?.testimonials?.subtitle && (
+            <p className={`mt-2 ${styles.subtitleFontSize || "text-base"}`} style={{ color: styles.subtitleColor || "#1E293B" }}>
+              {cmsData.testimonials.subtitle}
+            </p>
+          )}
         </div>
 
         {/* ── Content area ── */}

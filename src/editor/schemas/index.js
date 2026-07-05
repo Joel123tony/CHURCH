@@ -6,6 +6,9 @@ import testimonials from "./testimonials.schema";
 import events from "./events.schema";
 import gallery from "./gallery.schema";
 import pastor from "./pastor.schema";
+import youtube from "./youtube.schema";
+import books from "./books.schema";
+import prayer from "./prayer.schema";
 
 export default {
   hero,
@@ -13,6 +16,9 @@ export default {
   events,
   gallery,
   pastor,
+  prayer,
+  youtube,
+  books,
   testimonials,
   contact,
   footer,

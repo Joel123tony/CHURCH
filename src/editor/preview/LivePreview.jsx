@@ -6,6 +6,7 @@ import Events from "../../components/Events";
 import Gallery from "../../components/Gallery";
 import Pastor from "../../components/Pastor";
 import YoutubeSection from "../../components/YoutubeSection";
+import Books from "../../components/Books";
 import Contact from "../../components/Contact";
 import Footer from "../../components/Footer";
 import { getBlock } from "../../services/api";
@@ -43,7 +44,7 @@ function TestimonialsSection({ data }) {
 }
 
 export default function LivePreview({
-  sectionOrder = ["hero", "history", "events", "gallery", "pastor", "contact", "footer"],
+  sectionOrder = ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"],
   activeSection = "hero",
   activeFormData = {}
 }) {
@@ -59,7 +60,7 @@ export default function LivePreview({
   useEffect(() => {
     const loadAllData = async () => {
       try {
-        const sections = ["hero", "history", "events", "gallery", "pastor", "pastor-messages-draft", "contact", "footer"];
+        const sections = ["hero", "history", "events", "gallery", "pastor", "pastor-messages-draft", "youtube", "books", "contact", "footer"];
         const fetched = {};
         for (const sec of sections) {
           try {
@@ -158,15 +159,16 @@ export default function LivePreview({
         component = <Gallery />;
         break;
       case "pastor":
-        component = (
-          <React.Fragment key="pastor-group">
-            <Pastor />
-            <YoutubeSection />
-          </React.Fragment>
-        );
+        component = <Pastor />;
         break;
       case "testimonials":
         component = <TestimonialsSection data={loadedData["pastor-messages"]} />;
+        break;
+      case "youtube":
+        component = <YoutubeSection />;
+        break;
+      case "books":
+        component = <Books />;
         break;
       case "contact":
         component = <Contact />;
@@ -263,27 +265,6 @@ export default function LivePreview({
                   {renderSection(sectionId)}
                 </div>
               );
-
-              if (sectionId === "pastor") {
-                const isTestimonialsSelected = "testimonials" === activeSection;
-                return (
-                  <React.Fragment key="pastor-testimonials-group">
-                    {element}
-                    <div
-                      className={`transition-all duration-300 ${isTestimonialsSelected ? "ring-4 ring-offset-2 ring-[#ee0039] relative z-10 shadow-lg" : "opacity-90"
-                        }`}
-                    >
-                      {isTestimonialsSelected && (
-                        <div className="absolute left-2 top-2 z-20 rounded-md bg-[#ee0039] px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
-                          Editing Section
-                        </div>
-                      )}
-                      {renderSection("testimonials")}
-                    </div>
-                  </React.Fragment>
-                );
-              }
-              return element;
             })}
           </div>
         </div>

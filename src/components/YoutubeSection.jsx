@@ -3,7 +3,8 @@ import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function YoutubeSection() {
-  const { t } = useLanguage();
+  const { t, cmsData } = useLanguage();
+  const styles = cmsData?.youtube?.styles || {};
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,11 +26,18 @@ export default function YoutubeSection() {
   }, []);
 
   return (
-    <section className="py-16 bg-cream">
-      <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-3xl font-bold text-primary mb-10">
-          {t("youtube")}
-        </h2>
+    <section id="Youtube" className="py-16" style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}>
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+        <div className="mb-6 lg:mb-8">
+          <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#54091b" }}>
+            {cmsData?.youtube?.title || t("youtube")}
+          </h2>
+          {cmsData?.youtube?.subtitle && (
+            <p className={`mt-2 ${styles.subtitleFontSize || "text-base"}`} style={{ color: styles.subtitleColor || "#1E293B" }}>
+              {cmsData.youtube.subtitle}
+            </p>
+          )}
+        </div>
 
         {loading ? (
           <div className="text-center text-primary">{t("youtube.loading")}</div>
@@ -49,7 +57,7 @@ export default function YoutubeSection() {
                 rel="noopener noreferrer"
                 className="group"
               >
-                <div className="bg-primary rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300">
+                <div className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300" style={{ backgroundColor: styles.cardBackground || "#54091b" }}>
                   <div className="relative overflow-hidden">
                     <img
                       src={video.thumbnail}
@@ -64,12 +72,12 @@ export default function YoutubeSection() {
                   </div>
 
                   <div className="p-4">
-                    <h3 className="font-semibold text-cream line-clamp-2">
+                    <h3 className={`line-clamp-2 ${styles.cardTitleFontSize || "text-base"} ${styles.cardTitleFontWeight || "font-semibold"}`} style={{ color: styles.cardTitleColor || "#F4EFE7" }}>
                       {video.title}
                     </h3>
 
                     {video.publishedAt && (
-                      <p className="text-sm text-cream/80 mt-2">
+                      <p className={`mt-2 ${styles.metadataFontSize || "text-sm"}`} style={{ color: styles.metadataColor || "#F4EFE7" }}>
                         {new Date(video.publishedAt).toLocaleDateString()}
                       </p>
                     )}

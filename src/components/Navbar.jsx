@@ -15,6 +15,7 @@ export default function Navbar() {
       { key: "Gallery", href: "#gallery", id: "gallery" },
       { key: "Pastor", href: "#pastor", id: "pastor" },
       { key: "Message", href: "#pastor-message", id: "pastor-message" },
+      { key: "Books", href: "#books", id: "books" },
       { key: "Contact", href: "#contact", id: "contact" },
     ],
     []

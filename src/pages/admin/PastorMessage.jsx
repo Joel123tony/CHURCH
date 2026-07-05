@@ -16,7 +16,6 @@ import {
 export default function PastorMessage() {
   const confirm = useConfirm();
   const [messages, setMessages] = useState([]);
-  const [maxVisible, setMaxVisible] = useState(4);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -40,7 +39,6 @@ export default function PastorMessage() {
         
         if (res && res.data) {
           setMessages(Array.isArray(res.data.messages) ? res.data.messages : []);
-          setMaxVisible(res.data.maxVisible !== undefined ? Number(res.data.maxVisible) : 4);
         }
       } catch (err) {
         console.error("Failed to load pastor messages", err);
@@ -53,17 +51,19 @@ export default function PastorMessage() {
   }, []);
 
   // Save to DB
-  const saveToDb = async (newMessages, newLimit) => {
+  const saveToDb = async (newMessages) => {
     setSaving(true);
     try {
       const payload = {
-        messages: newMessages,
-        maxVisible: Number(newLimit)
+        messages: newMessages
       };
+      // Save to draft for the editor state
       await saveBlock("pastor-messages-draft", payload);
+      // Immediately publish to live client state
+      await saveBlock("pastor-messages", payload);
+
       setMessages(newMessages);
-      setMaxVisible(Number(newLimit));
-      toast.success("Pastor's Message settings saved! (Draft)");
+      toast.success("Pastor's Message updated successfully!");
     } catch (err) {
       console.error("Failed to save pastor messages", err);
       toast.error("Failed to save settings.");
@@ -121,7 +121,7 @@ export default function PastorMessage() {
       updated.push(item);
     }
 
-    saveToDb(updated, maxVisible);
+    saveToDb(updated);
     setShowModal(false);
   };
 
@@ -132,7 +132,7 @@ export default function PastorMessage() {
       ...updated[index],
       visible: updated[index].visible === false ? true : false
     };
-    saveToDb(updated, maxVisible);
+    saveToDb(updated);
   };
 
   // Delete Message
@@ -146,14 +146,7 @@ export default function PastorMessage() {
     });
     if (!ok) return;
     const updated = messages.filter((_, i) => i !== index);
-    saveToDb(updated, maxVisible);
-  };
-
-  // Change max limit count
-  const handleLimitChange = (val) => {
-    const num = Number(val);
-    if (isNaN(num) || num < 1) return;
-    saveToDb(messages, num);
+    saveToDb(updated);
   };
 
   return (
@@ -182,9 +175,9 @@ export default function PastorMessage() {
           <FaSpinner className="animate-spin text-[#54091b]" size={36} />
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
+        <div className="w-full">
           {/* MESSAGES LIST TABLE */}
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-md">
+          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-md w-full">
             <h2 className="mb-4 text-lg font-bold text-slate-900">Pastor Messages ({messages.length})</h2>
 
             {messages.length === 0 ? (
@@ -255,39 +248,6 @@ export default function PastorMessage() {
                 </table>
               </div>
             )}
-          </div>
-
-          {/* MODULE CONFIG SETTINGS */}
-          <div className="space-y-6">
-            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-md">
-              <h2 className="mb-3 text-lg font-bold text-[#54091b]">Layout Config</h2>
-              <p className="text-xs text-slate-400 mb-4">
-                Configure constraints for pastor messages rendered inside the client home page layout.
-              </p>
-
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-bold text-slate-700">
-                    Max Visible Messages (Limit)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={maxVisible}
-                    onChange={(e) => handleLimitChange(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 p-2.5 text-sm outline-none focus:border-[#54091b]"
-                  />
-                  <p className="text-[10px] text-slate-400">
-                    Determines the max number of visible cards shown on the page (Default: 4).
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-amber-50/50 border border-amber-100 p-3 text-xs text-amber-800">
-                  <strong>💡 Display Logic:</strong> If more visible items exist than the limit above, the church site will display only the first selected items up to the limit.
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}

@@ -5,24 +5,27 @@ import { useConfirm } from "../../context/ConfirmContext";
 
 export default function DragDropSections({ onOrderChange }) {
   const confirm = useConfirm();
-  const [sections, setSections] = useState(["hero", "history", "events", "gallery", "pastor", "testimonials", "contact", "footer"]);
+  const [sections, setSections] = useState(["hero", "history", "events", "gallery", "pastor", "prayer", "testimonials", "youtube", "books", "contact", "footer"]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [draggedIndex, setDraggedIndex] = useState(null);
 
   const labels = {
-    hero: "Hero Banner",
+    hero: "Hero Section",
     history: "Church History",
-    events: "Events & Announcements",
-    gallery: "Photo Gallery",
-    pastor: "Pastor Section",
+    events: "Events",
+    gallery: "Gallery",
+    pastor: "Pastor",
+    prayer: "Prayer Requests",
     testimonials: "Pastor's Message",
-    contact: "Contact Details",
-    footer: "Footer Copyright"
+    youtube: "YouTube",
+    books: "Books & Pamphlets",
+    contact: "Contact",
+    footer: "Footer"
   };
 
   const sanitizeOrder = (loadedArray) => {
-    const defaultMiddle = ["history", "events", "gallery", "pastor", "testimonials", "contact"];
+    const defaultMiddle = ["history", "events", "gallery", "pastor", "prayer", "testimonials", "youtube", "books", "contact"];
     
     // Extract middle sections from loaded array, keeping only valid ones
     const loadedMiddle = Array.isArray(loadedArray)
@@ -111,7 +114,7 @@ export default function DragDropSections({ onOrderChange }) {
   };
 
   const resetDefault = () => {
-    const defaultOrder = ["hero", "history", "events", "gallery", "pastor", "testimonials", "contact", "footer"];
+    const defaultOrder = ["hero", "history", "events", "gallery", "pastor", "prayer", "testimonials", "youtube", "books", "contact", "footer"];
     setSections(defaultOrder);
     handleSave(defaultOrder);
   };

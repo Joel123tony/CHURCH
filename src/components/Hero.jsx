@@ -47,11 +47,11 @@ export default function Hero() {
     <section id="hero" className="py-16 text-white" style={{ backgroundColor: styles.backgroundColor || "#54091b" }}>
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-2">
         <div>
-          <h1 className="mb-6 text-5xl font-bold leading-tight" style={{ color: styles.headingColor || "#F4EFE7" }}>
+          <h1 className={`mb-6 leading-tight ${styles.sectionTitleFontSize || "text-5xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#F4EFE7" }}>
             {t("MTC Padikuppam")}
           </h1>
 
-          <p className="text-lg leading-8" style={{ color: styles.subheadingColor || "#F4EFE7" }}>
+          <p className={`leading-8 ${styles.subtitleFontSize || "text-lg"}`} style={{ color: styles.subtitleColor || "#F4EFE7" }}>
             {t("MTC Padikuppam (Methodist Tamil Church) serves the local community through Christ-centered worship, prayer, and sound biblical teaching. We are committed to making disciples through spiritual growth, meaningful fellowship, and regular Bible study. Our church actively reaches out to the community through various outreach ministries, sharing God's love in practical ways and supporting those in need. Together, we seek to grow in faith, build strong families, and live as faithful followers of Christ, rooted in grace and truth.")}
           </p>
         </div>

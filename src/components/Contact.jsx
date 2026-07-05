@@ -18,10 +18,10 @@ export default function Contact() {
 
   return (
     <>
-      <section id="contact" className="py-12 sm:py-14 lg:py-16" style={{ backgroundColor: styles.backgroundColor || "#54091b" }}>
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-8 max-w-xl text-left sm:mb-10">
-            <h2 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: styles.headingColor || "#F4EFE7" }}>
+      <section id="contact" className="py-16" style={{ backgroundColor: styles.backgroundColor || "#54091b" }}>
+        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+          <div className="mb-6 lg:mb-8">
+            <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#F4EFE7" }}>
               {t("Contact Us")}
             </h2>
           </div>
@@ -35,13 +35,13 @@ export default function Contact() {
                 <FaMapMarkerAlt size={18} />
               </div>
 
-              <h3 className="mb-3 text-lg font-bold sm:text-xl" style={{ color: styles.cardTextColor || "#54091b" }}>
+              <h3 className={`mb-3 ${styles.cardTitleFontSize || "text-lg sm:text-xl"} ${styles.cardTitleFontWeight || "font-bold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
                 {t("Visit Us")}
               </h3>
 
               <p
-                className="flex-grow leading-7 text-sm sm:text-[15px]"
-                style={{ color: styles.cardTextColor || "#54091b" }}
+                className={`flex-grow leading-7 ${styles.bodyFontSize || "text-sm sm:text-[15px]"}`}
+                style={{ color: styles.bodyTextColor || "#54091b" }}
               >
                 {t("No.1 Vandiamman Koil Street, Mogappair East, Chennai - 600107")}
               </p>
@@ -65,13 +65,13 @@ export default function Contact() {
                 <FaEnvelope size={18} />
               </div>
 
-              <h3 className="mb-3 text-lg font-bold sm:text-xl" style={{ color: styles.cardTextColor || "#54091b" }}>
+              <h3 className={`mb-3 ${styles.cardTitleFontSize || "text-lg sm:text-xl"} ${styles.cardTitleFontWeight || "font-bold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
                 {t("Email Us")}
               </h3>
 
               <p
-                className="flex-grow break-words text-sm sm:text-[15px]"
-                style={{ color: styles.cardTextColor || "#54091b" }}
+                className={`flex-grow break-words ${styles.bodyFontSize || "text-sm sm:text-[15px]"}`}
+                style={{ color: styles.bodyTextColor || "#54091b" }}
               >
                 methodistchurch1975@gmail.com
               </p>
@@ -93,13 +93,13 @@ export default function Contact() {
                 <FaPrayingHands size={18} />
               </div>
 
-              <h3 className="mb-3 text-lg font-bold sm:text-xl" style={{ color: styles.cardTextColor || "#54091b" }}>
+              <h3 className={`mb-3 ${styles.cardTitleFontSize || "text-lg sm:text-xl"} ${styles.cardTitleFontWeight || "font-bold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
                 {t("Prayer Request")}
               </h3>
 
               <p
-                className="flex-grow leading-7 text-sm sm:text-[15px]"
-                style={{ color: styles.cardTextColor || "#54091b" }}
+                className={`flex-grow leading-7 ${styles.bodyFontSize || "text-sm sm:text-[15px]"}`}
+                style={{ color: styles.bodyTextColor || "#54091b" }}
               >
                 {t("Call to me and I will answer you and tell you great and unsearchable things you do not know.")}
                 <br />
@@ -117,7 +117,7 @@ export default function Contact() {
           </div>
 
           <div className="mt-10 text-center sm:mt-12">
-            <h3 className="mb-4 text-lg font-semibold sm:mb-5 sm:text-xl" style={{ color: styles.headingColor || "#F4EFE7" }}>
+            <h3 className={`mb-4 sm:mb-5 ${styles.subtitleFontSize || "text-lg sm:text-xl"} font-semibold`} style={{ color: styles.subtitleColor || "#F4EFE7" }}>
               {t("Connect With Us")}
             </h3>
 
@@ -127,7 +127,7 @@ export default function Contact() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-110 sm:h-12 sm:w-12"
-                style={{ backgroundColor: styles.cardBackground || "#F4EFE7", color: styles.cardTextColor || "#54091b" }}
+                style={{ backgroundColor: styles.cardBackground || "#F4EFE7", color: styles.iconColor || "#54091b" }}
               >
                 <FaFacebookF size={16} />
               </a>
@@ -137,7 +137,7 @@ export default function Contact() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-110 sm:h-12 sm:w-12"
-                style={{ backgroundColor: styles.cardBackground || "#F4EFE7", color: styles.cardTextColor || "#54091b" }}
+                style={{ backgroundColor: styles.cardBackground || "#F4EFE7", color: styles.iconColor || "#54091b" }}
               >
                 <FaInstagram size={16} />
               </a>
@@ -147,7 +147,7 @@ export default function Contact() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-110 sm:h-12 sm:w-12"
-                style={{ backgroundColor: styles.cardBackground || "#F4EFE7", color: styles.cardTextColor || "#54091b" }}
+                style={{ backgroundColor: styles.cardBackground || "#F4EFE7", color: styles.iconColor || "#54091b" }}
               >
                 <FaYoutube size={16} />
               </a>

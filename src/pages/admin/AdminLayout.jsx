@@ -15,6 +15,7 @@ import {
   FaUserShield,
   FaUsers,
   FaComments,
+  FaBook,
 } from "react-icons/fa";
 
 export default function AdminLayout() {
@@ -84,6 +85,7 @@ export default function AdminLayout() {
         { to: "/admin/gallery", label: "Gallery", icon: FaPhotoVideo },
         { to: "/admin/prayer-requests", label: "Prayer Requests", icon: FaPrayingHands },
         { to: "/admin/pastor-message", label: "Pastor's Message", icon: FaComments },
+        { to: "/admin/books", label: "Books", icon: FaBook },
       ],
     },
     {

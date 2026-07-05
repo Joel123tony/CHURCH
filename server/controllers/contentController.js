@@ -6,6 +6,10 @@ export const getBlock = async (req, res) => {
     key: req.params.key
   });
 
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+
   res.json(block || { key: req.params.key, data: {} });
 };
 

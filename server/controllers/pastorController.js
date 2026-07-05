@@ -1,4 +1,5 @@
 import Pastor from "../models/Pastor.js";
+import ExcelJS from "exceljs";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 
@@ -412,3 +413,65 @@ export const deletePastor = async (req, res) => {
     });
   }
 };
+
+/* =========================
+  EXPORT PASTORS (EXCEL)
+========================= */
+export const exportPastors = async (req, res) => {
+  try {
+    const pastors = await Pastor.find().sort({ createdAt: -1 });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Pastors");
+
+    sheet.columns = [
+      { header: "Name", key: "name", width: 25 },
+      { header: "Role / Position", key: "role", width: 25 },
+      { header: "Phone", key: "number", width: 20 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "Address", key: "church", width: 40 },
+      { header: "Biography", key: "bio", width: 50 },
+      { header: "Created Date", key: "createdAt", width: 15 },
+      { header: "Updated Date", key: "updatedAt", width: 15 },
+    ];
+
+    sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+    sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF54091B" } };
+    sheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+    sheet.views = [{ state: "frozen", xSplit: 0, ySplit: 1 }];
+
+    pastors.forEach((p) => {
+      sheet.addRow({
+        name: p.name,
+        role: p.role,
+        number: p.number || p.phone || "N/A",
+        email: p.email || "N/A",
+        church: p.church || "N/A",
+        bio: p.bio || "N/A",
+        createdAt: p.createdAt ? p.createdAt.toISOString().split("T")[0] : "N/A",
+        updatedAt: p.updatedAt ? p.updatedAt.toISOString().split("T")[0] : "N/A",
+      });
+    });
+
+    sheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+    });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="Pastors_${new Date().toISOString().split("T")[0]}.xlsx"`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error("EXPORT ERROR:", err);
+    res.status(500).json({ success: false, message: "Export failed" });
+  }
+};
+
