@@ -1,7 +1,11 @@
 import fetch from "node-fetch";
 
 // ─── Terminology Glossary (Overrides for strict quality) ─────────────
-
+const GLOSSARY = {
+  "Holy Life": "பரிசுத்த ஜீவியம்",
+  "Gospel Ministry": "சுவிசேஷ ஊழியம்",
+  "Holy Life , Gospel Ministry": "பரிசுத்த ஜீவியம் , சுவிசேஷ ஊழியம்",
+};
 
 // ─── In-memory translation cache ───────────────────────────────────
 const cache = new Map();
@@ -90,6 +94,12 @@ export async function translate(req, res) {
       // Skip empty/whitespace-only strings
       if (!text || !text.trim()) {
         results[i] = text;
+        continue;
+      }
+
+      // 1. Check Glossary
+      if (GLOSSARY[text]) {
+        results[i] = GLOSSARY[text];
         continue;
       }
 
