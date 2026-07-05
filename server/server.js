@@ -1,11 +1,12 @@
 import dotenv from "dotenv";
 import path from "path";
-import { fileURLToPath } from "url";
+import fs from "fs";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const envPath = fs.existsSync(path.join(process.cwd(), "server", ".env"))
+  ? path.join(process.cwd(), "server", ".env")
+  : path.join(process.cwd(), ".env");
 
-dotenv.config({ path: path.join(__dirname, ".env") });
+dotenv.config({ path: envPath });
 
 import express from "express";
 import cors from "cors";

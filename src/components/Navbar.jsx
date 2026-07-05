@@ -50,33 +50,43 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-primary text-cream shadow-lg transition-colors duration-500 ease-out">
       <div className="container-custom">
-        <div className="flex h-20 items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/admin">
+        <div className="flex h-20 items-center justify-between gap-4">
+          
+          {/* Logo Area - Left Aligned */}
+          <div className="flex shrink-0 items-center gap-3">
+            <Link to="/admin" className="shrink-0">
               <img
                 src="https://res.cloudinary.com/dhqc0n23k/image/upload/v1781002190/methodist_logo_syy6ca.png"
-                className="h-12 w-12"
+                className="h-12 w-12 shrink-0"
                 alt="logo"
               />
             </Link>
-            <div>
+            <div className="whitespace-nowrap">
               <h1 className="font-bold text-cream">{t("Methodist Tamil Church")}</h1>
               <p className="text-xs text-cream/80">{t("Padikuppam")}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-8">
-            <ul className="hidden gap-8 lg:flex">
+          {/* Desktop Navigation - Centered */}
+          <div className="hidden flex-1 items-center justify-center lg:flex">
+            <ul
+              className={`flex items-center justify-center ${
+                language === "ta" ? "gap-3 xl:gap-5 text-[15px]" : "gap-6 xl:gap-8 text-base"
+              }`}
+            >
               {links.map((link) => (
-                <li key={link.id}>
+                <li key={link.id} className="whitespace-nowrap">
                   <a href={link.href} className={linkClass(link.id)}>
                     {t(link.key)}
                   </a>
                 </li>
               ))}
             </ul>
+          </div>
 
-            <div className="hidden items-center overflow-hidden rounded-full border border-white/20 lg:flex">
+          {/* Right Aligned Area: Desktop Language Switch & Mobile Toggle */}
+          <div className="flex shrink-0 items-center gap-4">
+            <div className="hidden shrink-0 items-center overflow-hidden rounded-full border border-white/20 lg:flex">
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
@@ -100,35 +110,41 @@ export default function Navbar() {
                 தமிழ்
               </button>
             </div>
-          </div>
 
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="text-2xl text-cream transition-transform duration-300 hover:scale-110 lg:hidden"
-          >
-            {menuOpen ? "✕" : "☰"}
-          </button>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="shrink-0 text-2xl text-cream transition-transform duration-300 hover:scale-110 lg:hidden"
+            >
+              {menuOpen ? "✕" : "☰"}
+            </button>
+          </div>
         </div>
 
+        {/* Mobile Navigation */}
         {menuOpen && (
           <div className="border-t border-white/10 py-4 lg:hidden">
-            {links.map((link) => (
-              <a
-                key={link.id}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className={`block py-3 transition-colors duration-300 ${
-                  active === link.id ? "font-bold text-cream" : "text-cream/80"
-                }`}
-              >
-                {t(link.key)}
-              </a>
-            ))}
+            <div className="flex flex-col">
+              {links.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className={`block py-3 transition-colors duration-300 ${
+                    active === link.id ? "font-bold text-cream" : "text-cream/80"
+                  } ${language === "ta" ? "text-[15px]" : "text-base"}`}
+                >
+                  {t(link.key)}
+                </a>
+              ))}
+            </div>
 
             <div className="mt-4 flex w-fit overflow-hidden rounded-full border border-white/20">
               <button
                 type="button"
-                onClick={() => setLanguage("en")}
+                onClick={() => {
+                  setLanguage("en");
+                  setMenuOpen(false);
+                }}
                 className={`px-4 py-2 text-sm transition-colors duration-300 ${
                   language === "en"
                     ? "bg-cream text-primary"
@@ -139,7 +155,10 @@ export default function Navbar() {
               </button>
               <button
                 type="button"
-                onClick={() => setLanguage("ta")}
+                onClick={() => {
+                  setLanguage("ta");
+                  setMenuOpen(false);
+                }}
                 className={`px-4 py-2 text-sm transition-colors duration-300 ${
                   language === "ta"
                     ? "bg-cream text-primary"
