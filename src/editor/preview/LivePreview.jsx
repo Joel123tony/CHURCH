@@ -92,57 +92,6 @@ export default function LivePreview({
 
   const renderSection = (id) => {
     const isSelected = id === activeSection;
-    const blockData = isSelected ? activeFormData : (loadedData[id] || {});
-    const styles = blockData.styles || {};
-
-    let styleBlock = null;
-    const hasStyles = styles && Object.values(styles).some(val => val);
-    if (hasStyles) {
-      const selectors = [];
-      if (styles.backgroundColor) {
-        selectors.push(`.cms-sec-${id} { background-color: ${styles.backgroundColor} !important; }`);
-        selectors.push(`.cms-sec-${id} section, .cms-sec-${id} footer { background-color: ${styles.backgroundColor} !important; }`);
-        selectors.push(`.cms-sec-${id} .bg-primary, .cms-sec-${id} .bg-cream { background-color: ${styles.backgroundColor} !important; }`);
-      }
-      if (styles.textColor) {
-        selectors.push(`.cms-sec-${id} { color: ${styles.textColor} !important; }`);
-        selectors.push(`.cms-sec-${id} section, .cms-sec-${id} footer { color: ${styles.textColor} !important; }`);
-        selectors.push(`.cms-sec-${id} p { color: ${styles.textColor} !important; }`);
-      }
-      if (styles.headingColor) {
-        selectors.push(`.cms-sec-${id} h1, .cms-sec-${id} h2, .cms-sec-${id} h3, .cms-sec-${id} h4 { color: ${styles.headingColor} !important; }`);
-      }
-      if (styles.paragraphColor) {
-        selectors.push(`.cms-sec-${id} p { color: ${styles.paragraphColor} !important; }`);
-      }
-      if (styles.linkColor) {
-        selectors.push(`.cms-sec-${id} a { color: ${styles.linkColor} !important; }`);
-      }
-      if (styles.cardBg) {
-        selectors.push(`.cms-sec-${id} .bg-white, .cms-sec-${id} .bg-\\[\\#F4EFE7\\]\\/40, .cms-sec-${id} .bg-\\[\\#f4efe7\\] { background-color: ${styles.cardBg} !important; }`);
-      }
-      if (styles.cardTextColor) {
-        selectors.push(`.cms-sec-${id} .bg-white *, .cms-sec-${id} .bg-\\[\\#F4EFE7\\]\\/40 *, .cms-sec-${id} .bg-\\[\\#f4efe7\\] * { color: ${styles.cardTextColor} !important; }`);
-      }
-      if (styles.cardBorderColor) {
-        selectors.push(`.cms-sec-${id} .border { border-color: ${styles.cardBorderColor} !important; }`);
-      }
-      if (styles.cardShadow) {
-        const shadowValues = {
-          none: "none",
-          "shadow-sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-          shadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-          "shadow-md": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-          "shadow-lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-          "shadow-xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-          "shadow-2xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-        };
-        selectors.push(`.cms-sec-${id} .shadow-2xl, .cms-sec-${id} .shadow-sm, .cms-sec-${id} .shadow-md, .cms-sec-${id} .shadow { box-shadow: ${shadowValues[styles.cardShadow]} !important; }`);
-      }
-      if (selectors.length > 0) {
-        styleBlock = <style dangerouslySetInnerHTML={{ __html: selectors.join("\n") }} />;
-      }
-    }
 
     let component = null;
     switch (id) {
@@ -182,7 +131,6 @@ export default function LivePreview({
 
     return (
       <div key={id} className={`cms-sec-${id} w-full`}>
-        {styleBlock}
         {component}
       </div>
     );

@@ -5,11 +5,21 @@ import MediaCard from "../../components/MediaCard";
 import { ToastContainer, toast } from "react-toastify";
 import { useConfirm } from "../../context/ConfirmContext";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  FaImage,
+  FaPlus,
+  FaList,
+  FaUpload,
+  FaSearch
+} from "react-icons/fa";
 
 export default function Gallery() {
   const confirm = useConfirm();
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Tabs State
+  const [activeTab, setActiveTab] = useState("add"); // "add" | "list"
 
   const [search, setSearch] = useState("");
   const [editItem, setEditItem] = useState(null);
@@ -39,6 +49,7 @@ export default function Gallery() {
   /* UPLOAD SUCCESS */
   const handleUploadSuccess = useCallback((newItems) => {
     setMedia((prev) => [...newItems, ...prev]);
+    setActiveTab("list");
   }, []);
 
   /* DELETE */
@@ -240,214 +251,261 @@ export default function Gallery() {
   );
 
   return (
-    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen space-y-6">
-
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h1 className="text-2xl sm:text-3xl font-bold">
-          Gallery Management
-        </h1>
-
-        <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium w-fit">
+    <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen w-full">
+      {/* HEADER SECTION - strictly functional */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#54091b] flex items-center gap-3 tracking-tight">
+            <FaImage className="text-[#ee0039]" />
+            Gallery Management
+          </h1>
+        </div>
+        <div className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800 border border-emerald-200">
           Homepage Gallery: {galleryCount}/4
         </div>
       </div>
 
-      {/* UPLOAD */}
-      <div className="bg-white rounded-xl shadow p-4 sm:p-5">
-        <GalleryUpload onSuccess={handleUploadSuccess} />
+      {/* TABS NAVIGATION */}
+      <div className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
+        <button
+          onClick={() => setActiveTab("add")}
+          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
+            activeTab === "add" 
+              ? "bg-[#ee0039] text-white shadow-md" 
+              : "text-slate-500 hover:bg-slate-100"
+          }`}
+        >
+          <FaPlus /> Add Media
+        </button>
+        <button
+          onClick={() => setActiveTab("list")}
+          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
+            activeTab === "list" 
+              ? "bg-[#54091b] text-white shadow-md" 
+              : "text-slate-500 hover:bg-slate-100"
+          }`}
+        >
+          <FaList /> Gallery List
+        </button>
       </div>
 
-      {/* SEARCH */}
-      <input
-        type="text"
-        placeholder="Search by title..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full border rounded-xl p-3"
-      />
+      <div className="relative w-full">
+        {/* ADD TAB */}
+        {activeTab === "add" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <FaUpload className="text-[#ee0039]" /> Upload Media
+                </h2>
+              </div>
+              <GalleryUpload onSuccess={handleUploadSuccess} />
+            </div>
+          </div>
+        )}
 
-      {filteredMedia.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm font-medium text-slate-600">
-            {selectedCount > 0 ? (
-              <>
-                {selectedCount} selected
-                {visibleSelectedCount > 0
-                  ? ` (${visibleSelectedCount} visible)`
-                  : ""}
-              </>
+        {/* LIST TAB */}
+        {activeTab === "list" && (
+          <div className="animate-in fade-in slide-in-from-right-8 duration-500 space-y-6">
+            {loading ? (
+              <div className="flex h-64 items-center justify-center">
+                <p className="text-slate-500 font-medium">Loading gallery...</p>
+              </div>
             ) : (
-              "No items selected"
+              <>
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                  {/* SEARCH & FILTERS */}
+                  <div className="relative mb-6">
+                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search gallery by title..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="w-full border-2 border-slate-200 rounded-xl p-3.5 pl-11 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+                    />
+                  </div>
+
+                  {/* BULK ACTIONS */}
+                  {filteredMedia.length > 0 && (
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6">
+                      <div className="text-sm font-bold text-slate-600">
+                        {selectedCount > 0 ? (
+                          <span className="text-[#ee0039]">
+                            {selectedCount} selected
+                            {visibleSelectedCount > 0 ? ` (${visibleSelectedCount} visible)` : ""}
+                          </span>
+                        ) : (
+                          "Select items to perform bulk actions"
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={toggleSelectAllVisible}
+                          className="rounded-xl bg-white border-2 border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                        >
+                          {allVisibleSelected ? "Unselect All" : "Select All"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={clearSelection}
+                          className="rounded-xl bg-white border-2 border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                        >
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          onClick={bulkDeleteMedia}
+                          disabled={!selectedCount}
+                          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-600/20"
+                        >
+                          Delete Selected
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* EMPTY STATE */}
+                  {filteredMedia.length === 0 && (
+                    <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center text-slate-400 font-medium">
+                      No media found. Try a different search or upload new items.
+                    </div>
+                  )}
+
+                  {/* GRID */}
+                  {filteredMedia.length > 0 && (
+                    <div className="space-y-8">
+                      {pinnedMedia.length > 0 && (
+                        <section>
+                          <div className="flex items-center gap-3 mb-4">
+                            <h2 className="text-lg font-bold text-slate-800">
+                              Homepage Gallery
+                            </h2>
+                            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                              {pinnedMedia.length} pinned
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                            {pinnedMedia.map((item, index) => (
+                              <div
+                                key={item._id}
+                                className="animate-admin-card-in relative flex flex-col group"
+                                style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}
+                              >
+                                <div className="absolute z-20 top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+                                  Position #{item.clientPriority}
+                                </div>
+
+                                <MediaCard
+                                  item={item}
+                                  onDelete={deleteMedia}
+                                  onEdit={openEdit}
+                                  selected={selectedSet.has(item._id)}
+                                  onSelectToggle={toggleSelection}
+                                />
+
+                                <button
+                                  onClick={() => toggleGallery(item._id)}
+                                  className="mt-3 w-full py-2.5 rounded-xl font-bold text-[#ee0039] bg-rose-50 hover:bg-rose-100 transition-colors border border-rose-100"
+                                >
+                                  Remove From Gallery
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      {regularMedia.length > 0 && (
+                        <section className={`${pinnedMedia.length > 0 ? "border-t border-slate-100 pt-8" : ""}`}>
+                          <div className="flex items-center justify-between gap-3 mb-4">
+                            <h2 className="text-lg font-bold text-slate-800">
+                              Other Media
+                            </h2>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                              Newest First
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                            {regularMedia.map((item, index) => (
+                              <div
+                                key={item._id}
+                                className="animate-admin-card-in relative flex flex-col group"
+                                style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}
+                              >
+                                <MediaCard
+                                  item={item}
+                                  onDelete={deleteMedia}
+                                  onEdit={openEdit}
+                                  selected={selectedSet.has(item._id)}
+                                  onSelectToggle={toggleSelection}
+                                />
+
+                                <button
+                                  onClick={() => toggleGallery(item._id)}
+                                  className="mt-3 w-full py-2.5 rounded-xl font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-100"
+                                >
+                                  Pin to Homepage
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={toggleSelectAllVisible}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              {allVisibleSelected ? "Unselect All" : "Select All"}
-            </button>
-
-            <button
-              type="button"
-              onClick={clearSelection}
-              className="rounded-lg bg-slate-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600"
-            >
-              Clear Selection
-            </button>
-
-            <button
-              type="button"
-              onClick={bulkDeleteMedia}
-              disabled={!selectedCount}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Delete Selected
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* LOADING */}
-      {loading && (
-        <div className="text-gray-500">Loading gallery...</div>
-      )}
-
-      {/* EMPTY */}
-      {!loading && filteredMedia.length === 0 && (
-        <div className="bg-white rounded-xl p-8 sm:p-10 text-center text-gray-500">
-          No media found
-        </div>
-      )}
-
-      {/* GRID */}
-      {filteredMedia.length > 0 && (
-        <div className="space-y-6">
-          {pinnedMedia.length > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg sm:text-xl font-semibold text-slate-800">
-                  Homepage Gallery
-                </h2>
-
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                  {pinnedMedia.length} pinned
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-                {pinnedMedia.map((item, index) => (
-                  <div
-                    key={item._id}
-                    className="animate-admin-card-in relative flex flex-col"
-                    style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}
-                  >
-                    <div className="absolute z-20 top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
-                      Gallery #{item.clientPriority}
-                    </div>
-
-                    <MediaCard
-                      item={item}
-                      onDelete={deleteMedia}
-                      onEdit={openEdit}
-                      selected={selectedSet.has(item._id)}
-                      onSelectToggle={toggleSelection}
-                    />
-
-                    <button
-                      onClick={() => toggleGallery(item._id)}
-                      className="mt-2 w-full py-2 rounded-lg text-white text-sm transition-colors bg-red-600 hover:bg-red-700"
-                    >
-                      Remove From Gallery
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {regularMedia.length > 0 && (
-            <section className={`${pinnedMedia.length > 0 ? "border-t border-slate-200 pt-6" : ""} space-y-3`}>
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg sm:text-xl font-semibold text-slate-800">
-                  Other Media
-                </h2>
-
-                <p className="text-xs sm:text-sm text-slate-500">
-                  Ordered by newest date
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-                {regularMedia.map((item, index) => (
-                  <div
-                    key={item._id}
-                    className="animate-admin-card-in relative flex flex-col"
-                    style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}
-                  >
-                    <MediaCard
-                      item={item}
-                      onDelete={deleteMedia}
-                      onEdit={openEdit}
-                      selected={selectedSet.has(item._id)}
-                      onSelectToggle={toggleSelection}
-                    />
-
-                    <button
-                      onClick={() => toggleGallery(item._id)}
-                      className="mt-2 w-full py-2 rounded-lg text-white text-sm transition-colors bg-green-600 hover:bg-green-700"
-                    >
-                      Show In Gallery
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* EDIT MODAL */}
       {editItem && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-5 sm:p-6 w-full max-w-md space-y-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-black text-[#54091b] border-b border-slate-100 pb-4">Edit Media Details</h2>
 
-            <h2 className="text-xl font-bold">Edit Media</h2>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Media Title"
+                className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+              />
+            </div>
 
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title"
-              className="w-full border rounded-lg p-3"
-            />
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Event Date</label>
+              <input
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+              />
+            </div>
 
-            <input
-              type="date"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              className="w-full border rounded-lg p-3"
-            />
-
-            <div className="flex flex-col sm:flex-row justify-end gap-3">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
               <button
                 onClick={() => setEditItem(null)}
-                className="px-4 py-2 rounded bg-gray-400 text-white"
+                className="px-6 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-colors"
               >
                 Cancel
               </button>
-
               <button
                 onClick={saveEdit}
-                className="px-4 py-2 rounded bg-green-600 text-white"
+                className="px-6 py-3 rounded-xl bg-[#54091b] text-white font-bold hover:bg-[#3d0613] transition-colors shadow-md shadow-[#54091b]/20"
               >
-                Save
+                Save Changes
               </button>
             </div>
-
           </div>
         </div>
       )}

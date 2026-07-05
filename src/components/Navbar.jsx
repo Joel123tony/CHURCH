@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import methodistLogo from "../assets/methodist-logo.png";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -56,9 +57,9 @@ export default function Navbar() {
           <div className="flex shrink-0 items-center gap-3">
             <Link to="/admin" className="shrink-0">
               <img
-                src="https://res.cloudinary.com/dhqc0n23k/image/upload/v1781002190/methodist_logo_syy6ca.png"
-                className="h-12 w-12 shrink-0"
-                alt="logo"
+                src={methodistLogo}
+                className="h-12 w-12 shrink-0 object-contain"
+                alt="Methodist Logo"
               />
             </Link>
             <div className="whitespace-nowrap">

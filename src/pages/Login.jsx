@@ -67,15 +67,19 @@ export default function Login() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card} onKeyDown={handleKeyDown}>
-
-        <h2 style={styles.h2}>MTC Padikuppam</h2>
-        <h4 style={styles.h4}>Admin Login</h4>
+    <div className="flex h-screen items-center justify-center bg-gradient-to-br from-[#e11d48] to-[#54091b]">
+      <div
+        className="flex w-[360px] flex-col gap-3 rounded-[14px] bg-white p-[25px] shadow-[0_15px_40px_rgba(0,0,0,0.3)]"
+        onKeyDown={handleKeyDown}
+      >
+        <h2 className="m-0 text-center font-bold text-[#54091b]">MTC Padikuppam</h2>
+        <h4 className="mb-[10px] -mt-[5px] text-center font-medium text-[#666]">
+          Admin Login
+        </h4>
 
         {/* EMAIL */}
         <input
-          style={styles.input}
+          className="w-full rounded-lg border border-[#ddd] p-[10px] text-[14px] outline-none"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -83,9 +87,9 @@ export default function Login() {
         />
 
         {/* PASSWORD */}
-        <div style={styles.passwordBox}>
+        <div className="relative flex items-center">
           <input
-            style={styles.input}
+            className="w-full rounded-lg border border-[#ddd] p-[10px] text-[14px] outline-none"
             type={showPassword ? "text" : "password"}
             placeholder="Password"
             value={password}
@@ -96,7 +100,7 @@ export default function Login() {
           <button
             type="button"
             onClick={() => setShowPassword((p) => !p)}
-            style={styles.eyeBtn}
+            className="absolute right-[10px] flex cursor-pointer items-center justify-center border-none bg-transparent text-[#666]"
           >
             {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
           </button>
@@ -106,8 +110,8 @@ export default function Login() {
         <button
           onClick={handleLogin}
           disabled={loading}
+          className="rounded-lg border-none bg-[#e11d48] p-[10px] font-bold text-white transition-opacity"
           style={{
-            ...styles.loginBtn,
             opacity: loading ? 0.7 : 1,
             cursor: loading ? "not-allowed" : "pointer",
           }}
@@ -118,94 +122,11 @@ export default function Login() {
         {/* GO TO CLIENT */}
         <button
           onClick={() => (window.location.href = "/")}
-          style={styles.clientBtn}
+          className="rounded-lg border border-[#e11d48] bg-transparent p-[10px] font-bold text-[#e11d48]"
         >
           Go To MTC
         </button>
-
       </div>
     </div>
   );
 }
-
-/* ================= STYLES ================= */
-const styles = {
-  container: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "linear-gradient(135deg, #e11d48, #54091b)",
-  },
-
-  card: {
-    width: "360px",
-    padding: "25px",
-    borderRadius: "14px",
-    background: "#fff",
-    boxShadow: "0 15px 40px rgba(0,0,0,0.3)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-
-  h2: {
-    textAlign: "center",
-    margin: 0,
-    color: "#54091b",
-    fontWeight: "bold",
-  },
-
-  h4: {
-    textAlign: "center",
-    marginTop: "-5px",
-    marginBottom: "10px",
-    color: "#666",
-    fontWeight: "500",
-  },
-
-  input: {
-    width: "100%",
-    padding: "10px",
-    borderRadius: "8px",
-    border: "1px solid #ddd",
-    outline: "none",
-    fontSize: "14px",
-  },
-
-  passwordBox: {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-  },
-
-  eyeBtn: {
-    position: "absolute",
-    right: "10px",
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    color: "#666",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  loginBtn: {
-    padding: "10px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#e11d48",
-    color: "#fff",
-    fontWeight: "bold",
-  },
-
-  clientBtn: {
-    padding: "10px",
-    border: "1px solid #e11d48",
-    borderRadius: "8px",
-    background: "transparent",
-    color: "#e11d48",
-    fontWeight: "bold",
-  },
-};

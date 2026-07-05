@@ -144,16 +144,7 @@ export default function AdvancedWebEditor() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ── Style change ─────────────────────────────────────────────────
-  const handleStyleChange = (key, val) => {
-    setFormData((prev) => ({
-      ...prev,
-      styles: {
-        ...(prev.styles || {}),
-        [key]: val,
-      },
-    }));
-  };
+
 
   // ── Publish ──────────────────────────────────────────────────────
   const handlePublish = async () => {
@@ -216,8 +207,7 @@ export default function AdvancedWebEditor() {
     }
   };
 
-  // ── Style renderer ────────────────────────────────────────────────
-  const schemaStyles = currentSchema?.styles || [];
+
 
   // ─── JSX ──────────────────────────────────────────────────────────
   return (
@@ -257,9 +247,6 @@ export default function AdvancedWebEditor() {
                   <p className="mt-2 text-sm text-slate-500">
                     {adminInfo.message}
                   </p>
-                  <p className="mt-3 text-xs text-slate-400">
-                    To customise colours and layout, switch to the Style tab.
-                  </p>
                 </div>
               );
             }
@@ -274,7 +261,7 @@ export default function AdvancedWebEditor() {
               );
             }
 
-            if (!schema?.fields?.length && !schemaStyles.length) {
+            if (!schema?.fields?.length) {
               return (
                 <div className="rounded-2xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-400">
                   No editable fields defined.
@@ -416,12 +403,7 @@ export default function AdvancedWebEditor() {
           Editing:&nbsp;<span className="text-[#54091b]">{currentSection?.label}</span>
         </span>
 
-        {/* Info pill when Pastor's Message is selected but only Style is available */}
-        {selectedSection === "testimonials" && activeTab !== "styles" && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 border border-amber-100">
-            Style-only section — use the Style tab to customise
-          </span>
-        )}
+
       </div>
 
       {/* ═══ TABS ════════════════════════════════════════════════════ */}
@@ -429,7 +411,6 @@ export default function AdvancedWebEditor() {
         <div className="flex items-center gap-0.5 overflow-x-auto">
           {[
             { tab: "fields", Icon: FaEdit, label: "Content" },
-            { tab: "styles", Icon: FaPalette, label: "Style" },
             { tab: "reorder", Icon: FaListOl, label: "Reorder" },
             { tab: "history", Icon: FaHistory, label: "History" },
           ].map(({ tab, Icon, label }) => (
@@ -462,16 +443,6 @@ export default function AdvancedWebEditor() {
               <h2 className="text-base font-extrabold text-slate-800">No Content Fields Here</h2>
               <p className="mt-2 text-sm text-slate-500 max-w-sm mx-auto">
                 {adminInfo.message}
-              </p>
-              <p className="mt-3 text-xs text-slate-400">
-                To customise colours and layout, switch to the&nbsp;
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("styles")}
-                  className="font-bold text-[#54091b] underline underline-offset-2 hover:opacity-80"
-                >
-                  Style tab
-                </button>.
               </p>
             </div>
           );
@@ -524,125 +495,7 @@ export default function AdvancedWebEditor() {
         );
       })()}
 
-      {/* ─── STYLE TAB ───────────────────────────────────────────── */}
-      {activeTab === "styles" && (
-        <div className="rounded-b-2xl rounded-tr-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-lg font-extrabold text-slate-800">
-              Style Editor{" "}
-              <span className="text-[#54091b]">— {currentSection?.label}</span>
-            </h2>
-            <p className="mt-0.5 text-xs text-slate-400">
-              Customize the visual appearance of this section. Publish to apply changes.
-            </p>
-          </div>
 
-          {schemaStyles.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-400">
-              <FaPalette className="mx-auto mb-2 text-slate-300" size={24} />
-              No style controls defined for this section.
-            </div>
-          ) : (
-            <div className="space-y-10">
-              {Object.entries(
-                schemaStyles.reduce((acc, s) => {
-                  const group = s.group || "General";
-                  if (!acc[group]) acc[group] = [];
-                  acc[group].push(s);
-                  return acc;
-                }, {})
-              ).map(([groupName, stylesInGroup]) => (
-                <div key={groupName}>
-                  <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-2">
-                    {groupName}
-                  </h3>
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    {stylesInGroup.map((s) => {
-                const value = formData?.styles?.[s.name] ?? s.default ?? "";
-
-                if (s.type === "select") {
-                  return (
-                    <div key={s.name} className="space-y-1.5">
-                      <label className="block text-sm font-bold text-slate-700">{s.label}</label>
-                      <select
-                        value={value}
-                        onChange={(e) => handleStyleChange(s.name, e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 p-2.5 text-sm outline-none focus:border-[#54091b] transition bg-white"
-                      >
-                        {s.options.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                }
-
-                // Default: color picker
-                const THEME_COLORS = ["#531B24", "#C6B7A2", "#F4EFE7", "#FFFFFF", "#000000"];
-
-                return (
-                  <div key={s.name} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        {s.label}
-                      </label>
-                      <div
-                        className="h-6 w-6 rounded-md border border-slate-200 shadow-sm"
-                        style={{ backgroundColor: value || "#ffffff" }}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Preset Theme Colors</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2.5">
-                        {THEME_COLORS.map(c => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => handleStyleChange(s.name, c)}
-                            className={`h-7 w-7 rounded-full border-2 transition-all hover:scale-110 ${value?.toLowerCase() === c.toLowerCase()
-                              ? 'border-[#54091b] shadow-md scale-110'
-                              : 'border-slate-200 shadow-sm'
-                              }`}
-                            style={{ backgroundColor: c }}
-                            title={c}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 pt-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Custom Color</span>
-                      </div>
-                      <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-1.5 pr-3 shadow-sm focus-within:border-[#54091b] transition-colors">
-                        <input
-                          type="color"
-                          value={value || "#ffffff"}
-                          onChange={(e) => handleStyleChange(s.name, e.target.value)}
-                          className="h-8 w-12 cursor-pointer rounded border-0 bg-transparent p-0"
-                        />
-                        <input
-                          type="text"
-                          value={value}
-                          onChange={(e) => handleStyleChange(s.name, e.target.value)}
-                          placeholder="#000000"
-                          className="flex-1 bg-transparent text-sm font-mono uppercase outline-none text-slate-700"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              </div>
-            </div>
-          ))}
-          </div>
-        )}
-        </div>
-      )}
 
       {/* ─── REORDER TAB ─────────────────────────────────────────── */}
       {activeTab === "reorder" && (

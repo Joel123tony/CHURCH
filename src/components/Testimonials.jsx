@@ -37,58 +37,38 @@ function getInitials(name = "") {
 }
 
 // ─── Single message card ──────────────────────────────────────────────────────
-function MessageCard({ item, index, visible, styles, t }) {
+function MessageCard({ item, index, visible, t }) {
   return (
     <article
-      style={{
-        animationDelay: `${index * 90}ms`,
-        backgroundColor: styles.cardBackground || "#FFFFFF",
-      }}
-      className={`group relative flex flex-col overflow-hidden rounded-3xl border border-[#5b1320]/10 p-7 shadow-md transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl ${visible ? "animate-event-card-in" : "opacity-0"}`}
+      style={{ animationDelay: `${index * 90}ms` }}
+      className={`group relative flex flex-col overflow-hidden rounded-[24px] bg-white border border-slate-100 p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] ${visible ? "animate-event-card-in" : "opacity-0"}`}
     >
-      {/* Subtle corner tint */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-bl-[4rem] transition-all duration-300"
-        style={{ backgroundColor: `${styles.cardTitleColor || "#5b1320"}0A` }}
-      />
+      {/* Decorative top border highlight on hover */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ee0039] to-[#54091b] opacity-40 transition-opacity duration-300 group-hover:opacity-100" />
 
-      {/* Opening quote mark */}
-      <span
-        aria-hidden="true"
-        className="mb-3 block select-none font-serif text-6xl leading-none"
-        style={{ color: `${styles.cardTitleColor || "#5b1320"}33` }}
-      >
-        &ldquo;
-      </span>
+      {/* Quote Icon */}
+      <svg className="w-10 h-10 text-[#ee0039]/25 mb-6 transition-colors duration-300 group-hover:text-[#ee0039]/40" fill="currentColor" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M10 8c-3.3 0-6 2.7-6 6v10h10V14H10c0-1.1.9-2 2-2V8zm14 0c-3.3 0-6 2.7-6 6v10h10V14H24c0-1.1.9-2 2-2V8z" />
+      </svg>
 
       {/* Quote */}
-      <p className={`flex-1 italic leading-7 ${styles.bodyFontSize || "text-[15px]"}`} style={{ color: styles.bodyTextColor || "#475569" }}>
-        {t(item.quote)}
+      <p className="flex-1 text-base leading-relaxed text-slate-600 mb-8 font-medium">
+        "{t(item.quote)}"
       </p>
 
-      {/* Divider */}
-      <div className="my-5 h-px bg-gradient-to-r from-transparent via-current to-transparent" style={{ color: `${styles.cardTitleColor || "#5b1320"}33` }} />
-
       {/* Author */}
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ring-2"
-          style={{ backgroundColor: styles.cardTitleColor || "#5b1320", color: styles.cardBackground || "#FFFFFF", ringColor: `${styles.cardTitleColor || "#5b1320"}33` }}
-        >
+      <div className="flex items-center gap-4 pt-5 border-t border-slate-100/60">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#54091b]/5 text-base font-bold text-[#54091b] ring-1 ring-[#54091b]/10 group-hover:bg-[#54091b]/10 transition-colors duration-300 shadow-sm">
           {getInitials(item.author) || "?"}
         </div>
         <div className="min-w-0">
-          <p className={`truncate ${styles.cardTitleFontSize || "text-sm"} ${styles.cardTitleFontWeight || "font-bold"}`} style={{ color: styles.cardTitleColor || "#5b1320" }}>
+          <p className="truncate text-base font-bold text-slate-900 transition-colors duration-300 group-hover:text-[#54091b]">
             {item.author}
           </p>
           {item.role && (
-            <span
-              className={`mt-0.5 inline-block rounded-full px-2 py-0.5 font-semibold ${styles.metadataFontSize || "text-[11px]"}`}
-              style={{ backgroundColor: `${styles.metadataColor || "#5b1320"}1A`, color: styles.metadataColor || "#5b1320" }}
-            >
+            <p className="truncate text-sm font-semibold text-[#ee0039] mt-0.5">
               {t(item.role)}
-            </span>
+            </p>
           )}
         </div>
       </div>
@@ -102,7 +82,6 @@ export default function Testimonials() {
   const [loading, setLoading] = useState(true);
   const { ref: sectionRef, visible } = useSectionReveal();
   const { t, cmsData } = useLanguage();
-  const styles = cmsData?.testimonials?.styles || {};
 
   useEffect(() => {
     getBlock("pastor-messages")
@@ -128,18 +107,17 @@ export default function Testimonials() {
     <section
       id="pastor-message"
       ref={sectionRef}
-      className="py-16 overflow-hidden"
-      style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}
+      className="py-16 overflow-hidden bg-[#F4EFE7]"
     >
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
 
         {/* ── Heading ── */}
         <div className="mb-6 lg:mb-8">
-          <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#54091b" }}>
+          <h2 className="text-3xl font-bold text-[#54091b]">
             {cmsData?.testimonials?.title || t("Pastor's Message")}
           </h2>
           {cmsData?.testimonials?.subtitle && (
-            <p className={`mt-2 ${styles.subtitleFontSize || "text-base"}`} style={{ color: styles.subtitleColor || "#1E293B" }}>
+            <p className="mt-2 text-base text-[#1E293B]">
               {cmsData.testimonials.subtitle}
             </p>
           )}
@@ -154,8 +132,7 @@ export default function Testimonials() {
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
-                  className="h-52 animate-pulse rounded-3xl shadow-sm"
-                  style={{ backgroundColor: styles.cardBackground || "#FFFFFF" }}
+                  className="h-52 animate-pulse rounded-3xl shadow-sm bg-[#FFFFFF]"
                 />
               ))}
             </div>
@@ -172,7 +149,6 @@ export default function Testimonials() {
                   item={item}
                   index={i}
                   visible={visible}
-                  styles={styles}
                   t={t}
                 />
               ))}
@@ -185,9 +161,8 @@ export default function Testimonials() {
               style={{
                 opacity: visible ? 1 : 0,
                 transition: "opacity 0.5s ease",
-                color: styles.textColor || "#1E293B",
               }}
-              className="text-center text-base"
+              className="text-center text-base text-[#1E293B]"
             >
               {t("No messages yet.")}
             </p>

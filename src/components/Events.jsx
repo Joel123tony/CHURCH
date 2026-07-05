@@ -6,7 +6,6 @@ import { FaFire, FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 
 export default function Events() {
   const { t, cmsData } = useLanguage();
-  const styles = cmsData?.events?.styles || {};
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,36 +65,36 @@ export default function Events() {
 
   if (loading) {
     return (
-      <section id="events" className="py-20 text-center" style={{ backgroundColor: styles.backgroundColor || "#54091b", color: styles.bodyTextColor || "#F4EFE7" }}>
+      <section id="events" className="py-20 text-center bg-[#54091b] text-[#F4EFE7]">
         {t("Loading Events...")}
       </section>
     );
   }
 
   return (
-    <section id="events" className="relative py-20 lg:py-28 overflow-hidden" style={{ backgroundColor: styles.backgroundColor || "#54091b" }}>
+    <section id="events" className="relative py-20 lg:py-28 overflow-hidden bg-[#54091b]">
       <div className="absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row gap-3 justify-between items-start mb-6">
-          <h2 className={`text-left ${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#F4EFE7" }}>{t("Events")}</h2>
+          <h2 className="text-left text-3xl font-bold text-[#F4EFE7]">{t("Events")}</h2>
         </div>
 
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <FaFire className="text-2xl" style={{ color: styles.sectionTitleColor || "#F4EFE7" }} />
-              <h3 className={`text-2xl ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#F4EFE7" }}>{t("Featured Event")}</h3>
+              <FaFire className="text-2xl text-[#F4EFE7]" />
+              <h3 className="text-2xl font-bold text-[#F4EFE7]">{t("Featured Event")}</h3>
             </div>
 
             {latestEvent ? (
-              <div className="rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 max-w-[620px]" style={{ backgroundColor: styles.cardBackground || "#f4efe7" }}>
+              <div className="rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 max-w-[620px] bg-[#f4efe7]">
                 <div className="inline-flex px-3.5 py-1.5 rounded-full bg-primary text-white text-xs sm:text-sm font-medium mb-4 sm:mb-5">
                   {t("Latest Event")}
                 </div>
 
-                <h3 className={`sm:text-3xl mb-5 sm:mb-6 leading-tight ${styles.cardTitleFontSize || "text-2xl"} ${styles.cardTitleFontWeight || "font-bold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
+                <h3 className="sm:text-3xl mb-5 sm:mb-6 leading-tight text-2xl font-bold text-[#54091b]">
                   {t(latestEvent.title)}
                 </h3>
 
@@ -106,10 +105,10 @@ export default function Events() {
                     </div>
 
                     <div>
-                      <p className={`uppercase tracking-wide ${styles.metadataFontSize || "text-[11px] sm:text-xs"}`} style={{ color: styles.metadataColor || "#6b7280" }}>
+                      <p className="uppercase tracking-wide text-[11px] sm:text-xs text-[#6b7280]">
                         {t("Date")}
                       </p>
-                      <p className={`leading-tight ${styles.bodyFontSize || "text-base sm:text-lg"} font-medium`} style={{ color: styles.bodyTextColor || "#1E293B" }}>
+                      <p className="leading-tight text-base sm:text-lg font-medium text-[#1E293B]">
                         {new Date(latestEvent.date).toLocaleDateString("en-IN", {
                           day: "numeric",
                           month: "long",
@@ -125,10 +124,10 @@ export default function Events() {
                     </div>
 
                     <div>
-                      <p className={`uppercase tracking-wide ${styles.metadataFontSize || "text-[11px] sm:text-xs"}`} style={{ color: styles.metadataColor || "#6b7280" }}>
+                      <p className="uppercase tracking-wide text-[11px] sm:text-xs text-[#6b7280]">
                         {t("Time")}
                       </p>
-                      <p className={`leading-tight ${styles.bodyFontSize || "text-base sm:text-lg"} font-medium`} style={{ color: styles.bodyTextColor || "#1E293B" }}>
+                      <p className="leading-tight text-base sm:text-lg font-medium text-[#1E293B]">
                         {latestEvent.time || "TBA"}
                       </p>
                     </div>
@@ -140,10 +139,10 @@ export default function Events() {
                     </div>
 
                     <div>
-                      <p className={`uppercase tracking-wide ${styles.metadataFontSize || "text-[11px] sm:text-xs"}`} style={{ color: styles.metadataColor || "#6b7280" }}>
+                      <p className="uppercase tracking-wide text-[11px] sm:text-xs text-[#6b7280]">
                         {t("Venue")}
                       </p>
-                      <p className={`leading-tight ${styles.bodyFontSize || "text-base sm:text-lg"} font-medium`} style={{ color: styles.bodyTextColor || "#1E293B" }}>
+                      <p className="leading-tight text-base sm:text-lg font-medium text-[#1E293B]">
                         {t(latestEvent.venue)}
                       </p>
                     </div>
@@ -160,8 +159,8 @@ export default function Events() {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <FaCalendarAlt className="text-2xl" style={{ color: styles.sectionTitleColor || "#F4EFE7" }} />
-                <h3 className={`text-2xl ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#F4EFE7" }}>{t("Upcoming Events")}</h3>
+                <FaCalendarAlt className="text-2xl text-[#F4EFE7]" />
+                <h3 className="text-2xl font-bold text-[#F4EFE7]">{t("Upcoming Events")}</h3>
               </div>
 
               <span className="px-3 py-1 rounded-full bg-white/10 text-white text-sm">
@@ -174,16 +173,15 @@ export default function Events() {
                 upcomingEvents.map((event) => (
                   <div
                     key={event._id}
-                    className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl"
-                    style={{ backgroundColor: styles.cardBackground || "#f4efe7" }}
+                    className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl bg-[#f4efe7]"
                   >
                     <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-[28px]" />
 
-                    <h4 className={`mb-4 ${styles.cardTitleFontSize || "text-xl"} ${styles.cardTitleFontWeight || "font-semibold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
+                    <h4 className="mb-4 text-xl font-semibold text-[#54091b]">
                       {t(event.title)}
                     </h4>
 
-                    <div className={`space-y-3 ${styles.metadataFontSize || "text-sm"}`} style={{ color: styles.metadataColor || "#374151" }}>
+                    <div className="space-y-3 text-sm text-[#374151]">
                       <div className="flex items-center gap-3">
                         <FaCalendarAlt className="text-primary" />
                         <span>

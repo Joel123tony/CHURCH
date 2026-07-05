@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import API from "../../api/axios";
 import { toast } from "react-toastify";
-import { FaTrash, FaEdit, FaBook, FaUpload, FaImage, FaTimes, FaFilePdf, FaBookOpen } from "react-icons/fa";
+import { FaTrash, FaEdit, FaBook, FaUpload, FaImage, FaTimes, FaFilePdf, FaBookOpen, FaEye } from "react-icons/fa";
 import { useConfirm } from "../../context/ConfirmContext";
 import { useDropzone } from "react-dropzone";
+import PdfViewerModal from "../../components/PdfViewerModal";
 
 // Helper to format file size
 const formatBytes = (bytes, decimals = 2) => {
@@ -36,6 +37,7 @@ export default function Books() {
   
   const [editItem, setEditItem] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
   
   const pdfInputRef = useRef(null);
   
@@ -395,45 +397,74 @@ export default function Books() {
                   </h2>
 
                   <div className="flex justify-center bg-[#F4EFE7] p-8 rounded-2xl overflow-hidden shadow-inner">
-                    <div className="w-[240px] group cursor-pointer">
-                      <div 
-                        className="relative aspect-[2/3] rounded-[28px] overflow-hidden bg-white shadow-2xl transition-all duration-300 group-hover:-translate-y-2"
-                        style={{ borderLeft: `8px solid #54091b20` }}
-                      >
-                        {coverPreview ? (
-                          <img
-                            src={coverPreview}
-                            alt={title || "Preview"}
-                            className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300">
-                            <FaImage className="text-5xl mb-2 opacity-50" />
-                            <span className="text-xs font-bold uppercase tracking-wider">No Cover</span>
-                          </div>
-                        )}
-                        
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex flex-col justify-end p-6">
-                          <div className="w-12 h-12 rounded-full bg-white text-[#ee0039] flex items-center justify-center mb-4 transform translate-y-4 group-hover:translate-y-0 transition duration-300 shadow-lg">
-                            <FaBookOpen className="text-xl" />
-                          </div>
+                    <div className="w-[200px] cursor-pointer">
+                      <div className="rounded-2xl overflow-hidden shadow-md border border-gray-100 flex flex-col h-full bg-[#F4EFE7]">
+                        <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
+                          {coverPreview ? (
+                            <img
+                              src={coverPreview}
+                              alt={title || "Preview"}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300">
+                              <FaImage className="text-5xl mb-2 opacity-50" />
+                              <span className="text-xs font-bold uppercase tracking-wider">No Cover</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      
-                      <div className="mt-5 px-2">
-                        <h3 className="font-bold text-lg line-clamp-2 leading-tight text-[#54091b]">
-                          {title || "Book Title"}
-                        </h3>
-                        {(date || !title) && (
-                          <p className="text-sm mt-1.5 font-medium opacity-70 text-[#54091b]">
-                            {date || "Optional Subtitle / Date"}
-                          </p>
-                        )}
+                        
+                        <div className="p-3 sm:p-4 flex-1 flex flex-col bg-[#54091b]">
+                          <h3 className="line-clamp-2 leading-snug text-base font-semibold text-[#f4efe7]">
+                            {title || "Book Title"}
+                          </h3>
+                          {(date || !title) && (
+                            <p className="mt-1.5 opacity-80 text-xs text-[#f4efe7]">
+                              {date || "Optional Subtitle / Date"}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* PDF Preview Section */}
+                  <div className="mt-5 space-y-3">
+                    {(pdfFile || editItem?.pdfUrl) ? (
+                      <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-xl p-3">
+                        <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                          <FaFilePdf size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-blue-900 truncate">
+                            {pdfFile ? pdfFile.name : "Existing PDF"}
+                          </p>
+                          <p className="text-[10px] font-medium text-blue-600">
+                            {pdfFile ? formatBytes(pdfFile.size) : "Uploaded to cloud"}
+                          </p>
+                        </div>
+                        {/* Only allow preview for existing URLs (not local file objects) */}
+                        {editItem?.pdfUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setShowPdfPreview(true)}
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors flex items-center gap-1.5 shrink-0 shadow-sm"
+                          >
+                            <FaEye size={11} /> Preview
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="w-9 h-9 rounded-lg bg-slate-200 text-slate-400 flex items-center justify-center shrink-0">
+                          <FaFilePdf size={16} />
+                        </div>
+                        <p className="text-xs font-medium text-slate-400">No PDF attached yet</p>
+                      </div>
+                    )}
+                  </div>
                   
-                  <div className="mt-6 text-center text-xs text-slate-400 font-medium bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="mt-5 text-center text-xs text-slate-400 font-medium bg-slate-50 p-3 rounded-xl border border-slate-100">
                     This preview accurately reflects how the book will appear on the website's homepage.
                   </div>
                 </div>
@@ -556,6 +587,14 @@ export default function Books() {
           </div>
         )}
       </div>
+
+      {/* PDF Preview Modal */}
+      <PdfViewerModal
+        isOpen={showPdfPreview}
+        onClose={() => setShowPdfPreview(false)}
+        pdfUrl={editItem?.pdfUrl}
+        title={editItem?.title || title || "PDF Preview"}
+      />
     </div>
   );
 }

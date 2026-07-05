@@ -86,73 +86,51 @@ export default function UploadPanel({ onSuccess }) {
   };
 
   return (
-    <div style={styles.card}>
+    <div className="rounded-[10px] bg-white p-[15px] shadow-[0_0_10px_rgba(0,0,0,0.1)]">
       <h3>Upload Pastor</h3>
 
       <input
         placeholder="Pastor Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        style={styles.input}
+        className="mb-[10px] w-full rounded-md border border-[#ccc] p-[10px]"
       />
 
       <input
         placeholder="Joined Year"
         value={joinedYear}
         onChange={(e) => setJoinedYear(e.target.value)}
-        style={styles.input}
+        className="mb-[10px] w-full rounded-md border border-[#ccc] p-[10px]"
       />
 
       <input type="file" onChange={handleFileChange} />
 
       {/* PREVIEW */}
       {preview && (
-        <div style={{ marginTop: 10 }}>
+        <div className="mt-[10px]">
           {file?.type?.startsWith("video") ? (
             <video
               src={preview}
               controls
-              style={{ width: "100%", borderRadius: 8 }}
+              className="w-full rounded-lg"
             />
           ) : (
             <img
               src={preview}
               alt="preview"
-              style={{ width: "100%", borderRadius: 8 }}
+              className="w-full rounded-lg"
             />
           )}
         </div>
       )}
 
-      <button onClick={handleSubmit} style={styles.btn} disabled={loading}>
+      <button 
+        onClick={handleSubmit} 
+        className="mt-2 w-full cursor-pointer rounded-md border-none bg-[#16a34a] p-[10px] text-white" 
+        disabled={loading}
+      >
         {loading ? "Uploading..." : "Upload Pastor"}
       </button>
     </div>
   );
-}
-
-/* ================= STYLES ================= */
-const styles = {
-  card: {
-    background: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-  },
-  input: {
-    width: "100%",
-    padding: 10,
-    marginBottom: 10,
-    border: "1px solid #ccc",
-    borderRadius: 6,
-  },
-  btn: {
-    width: "100%",
-    padding: 10,
-    background: "#16a34a",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-  },
-};
+}

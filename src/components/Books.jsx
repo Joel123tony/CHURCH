@@ -6,9 +6,7 @@ import { useLanguage } from "../context/LanguageContext";
 
 export default function Books() {
   const { t, cmsData } = useLanguage();
-  const styles = cmsData?.books?.styles || {};
-  const bgColor = styles.backgroundColor || "#F4EFE7";
-  
+
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -46,31 +44,30 @@ export default function Books() {
   };
 
   return (
-    <section id="books" className="py-16" style={{ backgroundColor: bgColor }}>
+    <section id="books" className="py-16 bg-[#F4EFE7]">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-        
+
         {/* Header Section */}
         <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#54091b" }}>
+            <h2 className="text-3xl font-bold text-[#54091b]">
               {cmsData?.books?.title || t("Books & Pamphlets")}
             </h2>
             {cmsData?.books?.subtitle && (
-              <p className={`mt-2 ${styles.subtitleFontSize || "text-base"}`} style={{ color: styles.subtitleColor || "#1E293B" }}>
+              <p className="mt-2 text-base text-[#1E293B]">
                 {cmsData.books.subtitle}
               </p>
             )}
           </div>
-          
+
           {/* Search Bar aligned to top-right on desktop */}
           <div className="w-full md:w-[280px] lg:w-[320px] relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FaSearch style={{ color: styles.searchText || "#94A3B8" }} className="text-sm" />
+              <FaSearch className="text-sm text-[#94A3B8]" />
             </div>
             <input
               type="text"
-              style={{ backgroundColor: styles.searchBg || "#FFFFFF", color: styles.searchText || "#1E293B" }}
-              className="w-full border border-gray-200 rounded-lg py-2 pl-9 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-[#ee0039]/50 transition shadow-sm h-10"
+              className="w-full border border-gray-200 rounded-lg py-2 pl-9 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-[#ee0039]/50 transition shadow-sm h-10 bg-[#FFFFFF] text-[#1E293B]"
               placeholder={cmsData?.books?.searchPlaceholder || t("Search by title...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -92,30 +89,28 @@ export default function Books() {
               <div className="w-8 h-8 border-4 border-[#ee0039] border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : filteredBooks.length === 0 ? (
-            <div className="text-center py-10 text-sm font-medium opacity-80" style={{ color: styles.bodyTextColor || "#1E293B" }}>
+            <div className="text-center py-10 text-sm font-medium opacity-80 text-[#1E293B]">
               {cmsData?.books?.emptyStateMessage || t("No books found matching your search.")}
             </div>
           ) : (
             <>
               {/* Navigation Arrows (Desktop) */}
-              <button 
+              <button
                 onClick={scrollLeft}
-                className="absolute left-[-20px] top-1/2 -translate-y-1/2 z-10 hidden md:flex items-center justify-center w-12 h-12 rounded-full bg-white/90 backdrop-blur shadow-lg border border-gray-100 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white"
-                style={{ color: styles.arrowColor || "#54091b" }}
+                className="absolute left-[-20px] top-1/2 -translate-y-1/2 z-10 hidden md:flex items-center justify-center w-12 h-12 rounded-full bg-white/90 backdrop-blur shadow-lg border border-gray-100 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white text-[#54091b]"
               >
                 <FaChevronLeft className="pr-1 text-lg" />
               </button>
-              
-              <button 
+
+              <button
                 onClick={scrollRight}
-                className="absolute right-[-20px] top-1/2 -translate-y-1/2 z-10 hidden md:flex items-center justify-center w-12 h-12 rounded-full bg-white/90 backdrop-blur shadow-lg border border-gray-100 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white"
-                style={{ color: styles.arrowColor || "#54091b" }}
+                className="absolute right-[-20px] top-1/2 -translate-y-1/2 z-10 hidden md:flex items-center justify-center w-12 h-12 rounded-full bg-white/90 backdrop-blur shadow-lg border border-gray-100 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white text-[#54091b]"
               >
                 <FaChevronRight className="pl-1 text-lg" />
               </button>
 
               {/* Horizontal Scroll Area */}
-              <div 
+              <div
                 ref={scrollContainerRef}
                 className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 snap-x snap-mandatory hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0 scroll-smooth"
               >
@@ -126,9 +121,8 @@ export default function Books() {
                     className="snap-start shrink-0 w-[85vw] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer"
                   >
                     {/* Book Card matching YouTube card style */}
-                    <div 
-                      className="rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] border border-gray-100 flex flex-col h-full"
-                      style={{ backgroundColor: styles.cardBackground || "#FFFFFF" }}
+                    <div
+                      className="rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] border border-gray-100 flex flex-col h-full bg-[#F4EFE7]"
                     >
                       <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
                         <img
@@ -138,13 +132,13 @@ export default function Books() {
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      
-                      <div className="p-3 sm:p-4 flex-1 flex flex-col" style={{ backgroundColor: styles.cardBackground || "#FFFFFF" }}>
-                        <h3 className={`line-clamp-2 leading-snug ${styles.cardTitleFontSize || "text-base"} ${styles.cardTitleFontWeight || "font-semibold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
+
+                      <div className="p-3 sm:p-4 flex-1 flex flex-col bg-[#54091b]">
+                        <h3 className="line-clamp-2 leading-snug text-base font-semibold !text-[#f4efe7]">
                           {book.title}
                         </h3>
                         {book.date && (
-                          <p className={`mt-1.5 opacity-80 ${styles.metadataFontSize || "text-xs"}`} style={{ color: styles.metadataColor || "#475569" }}>
+                          <p className="mt-1.5 opacity-80 text-xs text-[#f4efe7]">
                             {book.date}
                           </p>
                         )}

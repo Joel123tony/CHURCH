@@ -5,13 +5,29 @@ import { FaTimes, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// Configure PDF.js worker for Vite using explicit ?url import
-import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+// Configure PDF.js worker using CDN to guarantee version match and avoid Netlify/Vite build issues
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+/**
+ * Normalize Cloudinary raw PDF URLs.
+ * Cloudinary stores PDFs with resource_type "raw", which may omit the .pdf extension.
+ * pdfjs needs proper content-type detection — appending .pdf to the URL path ensures this.
+ */
+function normalizePdfUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  
+  // If it's a Cloudinary raw URL without .pdf extension, append it
+  if (url.includes("/raw/upload/") && !url.toLowerCase().endsWith(".pdf")) {
+    return url + ".pdf";
+  }
+  
+  return url;
+}
 
 export default function PdfViewerModal({ isOpen, onClose, pdfUrl, title }) {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
+  const [retryKey, setRetryKey] = useState(0);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const bookRef = useRef(null);
 
@@ -41,6 +57,11 @@ export default function PdfViewerModal({ isOpen, onClose, pdfUrl, title }) {
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
     setPageNumber(1);
+  };
+
+  const handleRetry = (e) => {
+    e.stopPropagation();
+    setRetryKey(prev => prev + 1);
   };
 
   const onPage = (e) => {
@@ -73,7 +94,8 @@ export default function PdfViewerModal({ isOpen, onClose, pdfUrl, title }) {
         onClick={(e) => e.stopPropagation()}
       >
         <Document
-          file={pdfUrl}
+          key={retryKey}
+          file={normalizePdfUrl(pdfUrl)}
           onLoadSuccess={onDocumentLoadSuccess}
           loading={
             <div className="text-white flex flex-col items-center">
@@ -81,7 +103,20 @@ export default function PdfViewerModal({ isOpen, onClose, pdfUrl, title }) {
               Loading Book...
             </div>
           }
-          error={<div className="text-white">Failed to load PDF. Please try again later.</div>}
+          error={
+            <div className="text-white flex flex-col items-center bg-black/40 p-6 rounded-lg backdrop-blur">
+              <div className="text-red-400 mb-2 font-semibold">Failed to load PDF.</div>
+              <div className="text-sm text-gray-300 text-center mb-4 max-w-sm">
+                The file may be unavailable, restricted, or corrupted. Please try again later.
+              </div>
+              <button 
+                onClick={handleRetry}
+                className="bg-white/10 hover:bg-white/20 border border-white/30 px-6 py-2 rounded-full transition-colors font-medium text-sm"
+              >
+                Retry
+              </button>
+            </div>
+          }
           onLoadError={(error) => {
             console.error("PDF Viewer Error:", error);
             console.error("PDF URL Attempted:", pdfUrl);

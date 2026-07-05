@@ -4,7 +4,6 @@ import { useLanguage } from "../context/LanguageContext";
 
 export default function YoutubeSection() {
   const { t, cmsData } = useLanguage();
-  const styles = cmsData?.youtube?.styles || {};
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,23 +25,23 @@ export default function YoutubeSection() {
   }, []);
 
   return (
-    <section id="Youtube" className="py-16" style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}>
+    <section id="Youtube" className="py-16 bg-[#54091b]">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="mb-6 lg:mb-8">
-          <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#54091b" }}>
+          <h2 className="text-3xl font-bold text-white">
             {cmsData?.youtube?.title || t("youtube")}
           </h2>
           {cmsData?.youtube?.subtitle && (
-            <p className={`mt-2 ${styles.subtitleFontSize || "text-base"}`} style={{ color: styles.subtitleColor || "#1E293B" }}>
+            <p className="mt-2 text-base text-white/80">
               {cmsData.youtube.subtitle}
             </p>
           )}
         </div>
 
         {loading ? (
-          <div className="text-center text-primary">{t("youtube.loading")}</div>
+          <div className="text-center text-white/70">{t("youtube.loading")}</div>
         ) : videos.length === 0 ? (
-          <div className="text-center text-primary">{t("youtube.noVideos")}</div>
+          <div className="text-center text-white/70">{t("youtube.noVideos")}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {videos.map((video) => (
@@ -57,7 +56,7 @@ export default function YoutubeSection() {
                 rel="noopener noreferrer"
                 className="group"
               >
-                <div className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300" style={{ backgroundColor: styles.cardBackground || "#54091b" }}>
+                <div className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 bg-[#F4EFE7]">
                   <div className="relative overflow-hidden">
                     <img
                       src={video.thumbnail}
@@ -72,12 +71,12 @@ export default function YoutubeSection() {
                   </div>
 
                   <div className="p-4">
-                    <h3 className={`line-clamp-2 ${styles.cardTitleFontSize || "text-base"} ${styles.cardTitleFontWeight || "font-semibold"}`} style={{ color: styles.cardTitleColor || "#F4EFE7" }}>
+                    <h3 className="line-clamp-2 text-base font-semibold !text-[#531B24]">
                       {video.title}
                     </h3>
 
                     {video.publishedAt && (
-                      <p className={`mt-2 ${styles.metadataFontSize || "text-sm"}`} style={{ color: styles.metadataColor || "#F4EFE7" }}>
+                      <p className="mt-2 text-sm text-[#54091b]">
                         {new Date(video.publishedAt).toLocaleDateString()}
                       </p>
                     )}

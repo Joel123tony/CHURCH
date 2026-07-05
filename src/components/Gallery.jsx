@@ -22,7 +22,7 @@ function formatMediaDate(value) {
   });
 }
 
-function GalleryTile({ item, onClick, compact = false, t, styles = {} }) {
+function GalleryTile({ item, onClick, compact = false, t }) {
   const isVideo = item.mediaType === "video";
   const [loading, setLoading] = useState(true);
 
@@ -40,8 +40,7 @@ function GalleryTile({ item, onClick, compact = false, t, styles = {} }) {
           onClick?.();
         }
       }}
-      className="group flex flex-col h-full w-full cursor-pointer text-left rounded-3xl overflow-hidden shadow-lg transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]"
-      style={{ backgroundColor: styles.cardBackground || "#54091b" }}
+      className="group flex flex-col h-full w-full cursor-pointer text-left rounded-3xl overflow-hidden shadow-lg transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b] bg-[#54091b]"
     >
       <div className={`relative overflow-hidden bg-[#0f172a] ${frameClass}`}>
         {isVideo ? (
@@ -82,16 +81,14 @@ function GalleryTile({ item, onClick, compact = false, t, styles = {} }) {
       <div className={`${compact ? "p-3 sm:p-4" : "p-4 sm:p-5"} flex flex-col flex-1`}>
         <div className="flex items-start justify-between gap-3">
           <h3
-            className={`min-w-0 flex-1 truncate ${styles.cardTitleFontSize || "text-[15px] sm:text-base"} ${styles.cardTitleFontWeight || "font-semibold"}`}
-            style={{ color: styles.cardTitleColor || "#f4efe7" }}
+            className="min-w-0 flex-1 truncate text-[15px] sm:text-base font-semibold text-[#f4efe7]"
           >
             {item.title ? t(item.title) : t("Untitled")}
           </h3>
 
           {item.eventDate && !compact && (
             <span 
-              className={`shrink-0 rounded-full px-2.5 py-1 ${styles.metadataFontSize || "text-[11px]"} font-semibold`} 
-              style={{ backgroundColor: styles.cardTitleColor || "#f4efe7", color: styles.cardBackground || "#54091b" }}
+              className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-[#f4efe7] text-[#54091b]" 
             >
               {formatMediaDate(item.eventDate)}
             </span>
@@ -99,7 +96,7 @@ function GalleryTile({ item, onClick, compact = false, t, styles = {} }) {
         </div>
 
         {!compact && item.createdAt && !item.eventDate && (
-          <p className={`mt-1 ${styles.metadataFontSize || "text-xs"}`} style={{ color: styles.metadataColor || "#f4efe7" }}>
+          <p className="mt-1 text-xs text-[#f4efe7]">
             {formatMediaDate(item.createdAt)}
           </p>
         )}
@@ -110,7 +107,6 @@ function GalleryTile({ item, onClick, compact = false, t, styles = {} }) {
 
 export default function Gallery() {
   const { t, cmsData } = useLanguage();
-  const styles = cmsData?.gallery?.styles || {};
   const [featuredMedia, setFeaturedMedia] = useState([]);
   const [allMedia, setAllMedia] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -291,10 +287,10 @@ export default function Gallery() {
 
   return (
     <>
-      <section id="gallery" className="py-16" style={{ backgroundColor: styles.backgroundColor || "#F4EFE7" }}>
+      <section id="gallery" className="py-16 bg-[#F4EFE7]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-8 flex items-center justify-between gap-4">
-            <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#54091b" }}>
+            <h2 className="text-3xl font-bold text-[#54091b]">
               {t("Gallery")}
             </h2>
 
@@ -311,8 +307,7 @@ export default function Gallery() {
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="snap-center shrink-0 w-[85vw] sm:w-auto h-72 rounded-3xl animate-pulse"
-                  style={{ backgroundColor: styles.cardBackground || "#e5e5e5" }}
+                  className="snap-center shrink-0 w-[85vw] sm:w-auto h-72 rounded-3xl animate-pulse bg-[#e5e5e5]"
                 />
               ))}
             </div>
@@ -324,7 +319,6 @@ export default function Gallery() {
                     item={item}
                     onClick={() => setSelectedMedia(item)}
                     t={t}
-                    styles={styles}
                   />
                 </div>
               ))}
@@ -337,8 +331,7 @@ export default function Gallery() {
         <div className="fixed inset-0 z-50 bg-black/70">
           <div className="flex h-full flex-col">
             <div
-              className="border-b border-[#6f2335] bg-[#54091b] px-4 py-4 shadow-sm sm:px-6"
-              style={{ color: "#f4efe7" }}
+              className="border-b border-[#6f2335] bg-[#54091b] px-4 py-4 shadow-sm sm:px-6 text-[#f4efe7]"
             >
               <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
@@ -358,8 +351,7 @@ export default function Gallery() {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       list="gallery-title-suggestions"
-                      className="h-12 w-full rounded-full border border-[#d9cfbf] px-5 pr-12 outline-none transition focus:ring-2 focus:ring-[#f4efe7]/20"
-                      style={{ backgroundColor: styles.searchBg || "#FFFFFF", color: styles.searchText || "#54091b" }}
+                      className="h-12 w-full rounded-full border border-[#d9cfbf] px-5 pr-12 outline-none transition focus:ring-2 focus:ring-[#f4efe7]/20 bg-[#FFFFFF] text-[#54091b]"
                     />
 
                     <datalist id="gallery-title-suggestions">
@@ -372,8 +364,7 @@ export default function Gallery() {
                   <button
                     onClick={closeModal}
                     aria-label="Close gallery"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#f4efe7]/45 bg-transparent transition hover:bg-[#f4efe7]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f4efe7]/25"
-                    style={{ color: "#f4efe7" }}
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#f4efe7]/45 bg-transparent transition hover:bg-[#f4efe7]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f4efe7]/25 text-[#f4efe7]"
                   >
                     <FaTimes size={17} />
                   </button>
@@ -404,7 +395,6 @@ export default function Gallery() {
                         compact
                         onClick={() => setSelectedMedia(item)}
                         t={t}
-                        styles={styles}
                       />
                     ))}
                   </div>
@@ -425,8 +415,7 @@ export default function Gallery() {
           {hasPrev && (
             <button
               onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-              className="absolute left-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition md:flex"
-              style={{ color: styles.arrowColor || "#FFFFFF", backgroundColor: "rgba(255,255,255,0.1)" }}
+              className="absolute left-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition md:flex text-[#FFFFFF] bg-[rgba(255,255,255,0.1)]"
             >
               <FaChevronLeft size={24} />
             </button>
@@ -435,8 +424,7 @@ export default function Gallery() {
           {hasNext && (
             <button
               onClick={(e) => { e.stopPropagation(); handleNext(); }}
-              className="absolute right-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition md:flex"
-              style={{ color: styles.arrowColor || "#FFFFFF", backgroundColor: "rgba(255,255,255,0.1)" }}
+              className="absolute right-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition md:flex text-[#FFFFFF] bg-[rgba(255,255,255,0.1)]"
             >
               <FaChevronRight size={24} />
             </button>
@@ -451,8 +439,7 @@ export default function Gallery() {
                 onClick={() => handleDownload(selectedMedia)}
                 disabled={downloading}
                 aria-label="Download Media"
-                className="flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: styles.buttonBackground || "#FFFFFF", color: styles.buttonTextColor || "#0f172a" }}
+                className="flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition hover:opacity-90 disabled:opacity-50 bg-[#FFFFFF] text-[#0f172a]"
               >
                 {downloading ? <FaSpinner className="animate-spin" size={16} /> : <FaDownload size={15} />}
               </button>

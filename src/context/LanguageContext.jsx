@@ -155,6 +155,16 @@ export function LanguageProvider({ children }) {
       // If language is English, return as-is
       if (language === "en") return enText;
 
+      const STATIC_DICTIONARY = {
+        "Holy Life": "பரிசுத்த ஜீவியம்",
+        "Gospel Ministry": "சுவிசேஷ ஊழியம்",
+        "Holy Life , Gospel Ministry": "பரிசுத்த ஜீவியம் , சுவிசேஷ ஊழியம்"
+      };
+
+      if (STATIC_DICTIONARY[enText]) {
+        return STATIC_DICTIONARY[enText];
+      }
+
       // Language is Tamil
       if (typeof enText === "string" && enText.trim()) {
         if (translationCache[enText]) {

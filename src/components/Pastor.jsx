@@ -5,7 +5,6 @@ import { FaTimes } from "react-icons/fa";
 
 export default function Pastor() {
   const { t, cmsData } = useLanguage();
-  const styles = cmsData?.pastor?.styles || {};
   const [pastors, setPastors] = useState([]);
   const [searchName, setSearchName] = useState("");
   const [searchYear, setSearchYear] = useState("");
@@ -102,31 +101,31 @@ export default function Pastor() {
 
   return (
     <>
-      <section id="pastor" className="py-16" style={{ backgroundColor: styles.backgroundColor || "#5b1320" }}>
+      <section id="pastor" className="py-16 bg-[#5b1320]">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <div className="mb-6 lg:mb-8">
-            <h2 className={`${styles.sectionTitleFontSize || "text-3xl"} ${styles.sectionTitleFontWeight || "font-bold"}`} style={{ color: styles.sectionTitleColor || "#FFFFFF" }}>{t("Pastor")}</h2>
+            <h2 className="text-3xl font-bold text-[#FFFFFF]">{t("Pastor")}</h2>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-4">
-            <div className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3" style={{ backgroundColor: styles.cardBackground || "#d8cbb7" }}>
+            <div className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3 bg-[#d8cbb7]">
               {loading ? (
-                <div className={`py-10 text-center ${styles.bodyFontSize || "text-base"} font-bold`} style={{ color: styles.bodyTextColor || "#1E293B" }}>
+                <div className="py-10 text-center text-base font-bold text-[#1E293B]">
                   {t("Loading...")}
                 </div>
               ) : currentPastor ? (
                 <div className="grid items-center gap-8 md:grid-cols-2">
                   <div>
-                    <h3 className={`mb-6 ${styles.cardTitleFontSize || "text-xl"} ${styles.cardTitleFontWeight || "font-bold"}`} style={{ color: styles.cardTitleColor || "#54091b" }}>
+                    <h3 className="mb-6 text-xl font-bold text-[#54091b]">
                       {t("Current Pastor")}
                     </h3>
 
-                    <div className={`space-y-4 ${styles.bodyFontSize || "text-base"}`} style={{ color: styles.bodyTextColor || "#1E293B" }}>
+                    <div className="space-y-4 text-base text-[#1E293B]">
                       <p>
                         <strong>{t("Name")}:</strong> {currentPastor.name}
                       </p>
 
-                      <p className={styles.metadataFontSize || "text-sm"} style={{ color: styles.metadataColor || "#475569" }}>
+                      <p className="text-sm text-[#475569]">
                         <strong>{t("Role")}:</strong> {t(currentPastor.role)}
                       </p>
 

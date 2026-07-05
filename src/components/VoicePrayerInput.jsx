@@ -76,7 +76,7 @@ export default function VoicePrayerInput() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div className="p-[20px]">
       <h2>🙏 Prayer Voice Input</h2>
 
       <input
