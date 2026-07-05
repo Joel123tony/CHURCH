@@ -405,14 +405,9 @@ export default function Gallery() {
                                   onEdit={openEdit}
                                   selected={selectedSet.has(item._id)}
                                   onSelectToggle={toggleSelection}
+                                  isPinned={true}
+                                  onTogglePin={toggleGallery}
                                 />
-
-                                <button
-                                  onClick={() => toggleGallery(item._id)}
-                                  className="mt-3 w-full py-2.5 rounded-xl font-bold text-[#ee0039] bg-rose-50 hover:bg-rose-100 transition-colors border border-rose-100"
-                                >
-                                  Remove From Gallery
-                                </button>
                               </div>
                             ))}
                           </div>
@@ -443,14 +438,9 @@ export default function Gallery() {
                                   onEdit={openEdit}
                                   selected={selectedSet.has(item._id)}
                                   onSelectToggle={toggleSelection}
+                                  isPinned={false}
+                                  onTogglePin={toggleGallery}
                                 />
-
-                                <button
-                                  onClick={() => toggleGallery(item._id)}
-                                  className="mt-3 w-full py-2.5 rounded-xl font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-100"
-                                >
-                                  Pin to Homepage
-                                </button>
                               </div>
                             ))}
                           </div>

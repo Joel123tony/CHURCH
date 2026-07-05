@@ -54,7 +54,7 @@ export default function Books() {
               {cmsData?.books?.title || t("Books & Pamphlets")}
             </h2>
             {cmsData?.books?.subtitle && (
-              <p className="mt-2 text-base text-[#1E293B]">
+              <p className="mt-2 text-base text-[#F4EFE7]">
                 {cmsData.books.subtitle}
               </p>
             )}

@@ -29,6 +29,9 @@ export const uploadToCloudinary = (buffer, options = {}) => {
       {
         folder,
         resource_type,
+        type: "upload",
+        access_mode: "public",
+        upload_preset: "church_public_preset",
         ...(eager ? { eager } : {}),
         ...(transformation ? { transformation } : {}),
         ...(quality ? { quality } : {}),

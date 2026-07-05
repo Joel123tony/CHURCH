@@ -30,10 +30,17 @@ export const createBook = async (req, res) => {
       });
     }
 
-    // Upload PDF
+    // Derive a safe filename from the original upload or the title
+    const pdfOriginalName = req.files.pdfFile[0].originalname || "book.pdf";
+    const safePdfName = pdfOriginalName
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+      .replace(/\.pdf$/i, ""); // Remove .pdf temporarily
+
+    // Upload PDF — enforce resource_type: "raw" and include .pdf in public_id
     const pdfUpload = await uploadToCloudinary(req.files.pdfFile[0].buffer, {
       folder: "church-books/pdfs",
-      resource_type: "raw", // Ensure PDFs are stored correctly without image processing
+      resource_type: "raw",
+      public_id: safePdfName + "_" + Date.now() + ".pdf",
     });
 
     // Upload Cover Image
@@ -42,10 +49,15 @@ export const createBook = async (req, res) => {
       resource_type: "image",
     });
 
+    // Validate the PDF URL before saving
+    const finalPdfUrl = pdfUpload.url || pdfUpload.secure_url;
+    console.log("📄 PDF stored at:", finalPdfUrl);
+    console.log("📄 PDF public_id:", pdfUpload.public_id);
+
     const book = await Book.create({
       title,
       date: date || "",
-      pdfUrl: pdfUpload.url || pdfUpload.secure_url,
+      pdfUrl: finalPdfUrl,
       pdf_public_id: pdfUpload.public_id,
       coverImageUrl: coverUpload.url || coverUpload.secure_url,
       cover_public_id: coverUpload.public_id,
@@ -108,14 +120,22 @@ export const updateBook = async (req, res) => {
       // Update PDF if provided
       if (req.files.pdfFile && req.files.pdfFile[0]) {
         if (book.pdf_public_id) {
-          await deleteFromCloudinary(book.pdf_public_id);
+          const rType = book.pdfUrl && book.pdfUrl.includes('/raw/') ? "raw" : "image";
+          await deleteFromCloudinary(book.pdf_public_id, rType);
         }
+        const pdfOriginalName = req.files.pdfFile[0].originalname || "book.pdf";
+        const safePdfName = pdfOriginalName
+          .replace(/[^a-zA-Z0-9._-]/g, "_")
+          .replace(/\.pdf$/i, "");
+
         const pdfUpload = await uploadToCloudinary(req.files.pdfFile[0].buffer, {
           folder: "church-books/pdfs",
           resource_type: "raw",
+          public_id: safePdfName + "_" + Date.now() + ".pdf",
         });
         updatePayload.pdfUrl = pdfUpload.url || pdfUpload.secure_url;
         updatePayload.pdf_public_id = pdfUpload.public_id;
+        console.log("📄 Updated PDF stored at:", updatePayload.pdfUrl);
       }
 
       // Update Cover Image if provided
@@ -165,7 +185,8 @@ export const deleteBook = async (req, res) => {
     }
 
     if (book.pdf_public_id) {
-      await deleteFromCloudinary(book.pdf_public_id);
+      const rType = book.pdfUrl && book.pdfUrl.includes('/raw/') ? "raw" : "image";
+      await deleteFromCloudinary(book.pdf_public_id, rType);
     }
     if (book.cover_public_id) {
       await deleteFromCloudinary(book.cover_public_id);

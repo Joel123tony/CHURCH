@@ -20,7 +20,7 @@ export default function FaviconManager() {
     document.head.appendChild(favicon);
 
     document.title = isAdmin
-      ? "Church CMS Admin"
+      ? "MTC Admin"
       : "Methodist Tamil Church | Padikuppam";
   }, [location.pathname]);
 
