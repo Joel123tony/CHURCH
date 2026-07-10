@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import API from "../api/axios";
 
 export default function LivePlayer() {
   const [videoId, setVideoId] = useState(null);
@@ -7,12 +8,11 @@ export default function LivePlayer() {
   useEffect(() => {
     let mounted = true;
 
-    fetch("/api/youtube/live")
-      .then((res) => res.json())
-      .then((data) => {
+    API.get("/youtube/live")
+      .then((res) => {
         if (!mounted) return;
-        setLive(Boolean(data?.live));
-        setVideoId(data?.videoId || null);
+        setLive(Boolean(res.data?.live));
+        setVideoId(res.data?.videoId || null);
       })
       .catch(() => {
         if (!mounted) return;
