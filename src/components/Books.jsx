@@ -54,7 +54,7 @@ export default function Books() {
               {cmsData?.books?.title || t("Books & Pamphlets")}
             </h2>
             {cmsData?.books?.subtitle && (
-              <p className="mt-2 text-base text-[#F4EFE7]">
+              <p className="mt-2 text-base text-[#1E293B]">
                 {cmsData.books.subtitle}
               </p>
             )}
@@ -137,8 +137,13 @@ export default function Books() {
                         <h3 className="line-clamp-2 leading-snug text-base font-semibold !text-[#f4efe7]">
                           {book.title}
                         </h3>
+                        {book.author && (
+                          <p className="mt-1 opacity-90 text-sm font-medium text-[#f4efe7]">
+                            {book.author}
+                          </p>
+                        )}
                         {book.date && (
-                          <p className="mt-1.5 opacity-80 text-xs text-[#f4efe7]">
+                          <p className="mt-0.5 opacity-80 text-xs text-[#f4efe7]">
                             {book.date}
                           </p>
                         )}

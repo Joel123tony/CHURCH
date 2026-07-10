@@ -84,8 +84,8 @@ app.use(
 /* =========================
    BODY PARSER
 ========================= */
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "2000mb" }));
+app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 /* =========================
    DB READY FLAG (🔥 NEW FIX)
@@ -199,13 +199,18 @@ const startServer = async () => {
 
     const PORT = process.env.PORT || 5000;
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log("==================================");
       console.log("🚀 SERVER RUNNING");
       console.log(`📡 Port: ${PORT}`);
       console.log("📍 API Base: /api");
       console.log("==================================");
     });
+
+    // Prevent connection drops during long video FFmpeg compression
+    server.timeout = 10 * 60 * 1000;
+    server.keepAliveTimeout = 10 * 60 * 1000;
+    server.headersTimeout = 10 * 60 * 1000;
   } catch (err) {
     console.error("❌ DB CONNECTION FAILED:", err);
     dbReady = false;

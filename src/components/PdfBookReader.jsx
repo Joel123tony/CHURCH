@@ -22,7 +22,8 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [aspectRatio, setAspectRatio] = useState(1.414); // Default to A4 until loaded
+  const [aspectRatio, setAspectRatio] = useState(0.707); // Default to A4 portrait (width/height)
+  const [pageDims, setPageDims] = useState({ width: 595, height: 842 }); // Default A4 points
   
   // Advanced Desktop Features
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -54,10 +55,11 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
         // Dynamically calculate aspect ratio from the first page
         const firstPage = await loadedPdf.getPage(1);
         const viewport = firstPage.getViewport({ scale: 1.0 });
-        const detectedRatio = viewport.height / viewport.width;
+        const detectedRatio = viewport.width / viewport.height;
         
         if (isMounted) {
           setAspectRatio(detectedRatio);
+          setPageDims({ width: viewport.width, height: viewport.height });
           setPdf(loadedPdf);
           setNumPages(loadedPdf.numPages);
           setLoading(false);
@@ -174,30 +176,19 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
   }
 
   // Responsive size calculations dynamically matching the PDF's exact aspect ratio
-  const paddingX = isMobile ? 20 : 160; 
-  const paddingY = isMobile ? 120 : 160; // Increased for top toolbar and bottom spacing
-
-  const availableWidth = window.innerWidth - paddingX;
-  const availableHeight = window.innerHeight - paddingY;
-
   // Decide pagesToShow based on available width vs aspect ratio
   let pagesToShow = isMobile ? 1 : 2;
   if (!isMobile) {
-    const requiredTwoPageWidth = (availableHeight / aspectRatio) * 2;
+    const availableWidth = window.innerWidth - 160;
+    const availableHeight = window.innerHeight - 160;
+    const requiredTwoPageWidth = availableHeight * aspectRatio * 2;
     // If we require much more width than is available, comfortably drop to a single page
     if (requiredTwoPageWidth > availableWidth * 1.3) {
       pagesToShow = 1;
     }
   }
 
-  let bookWidth = availableWidth;
-  let bookHeight = (availableWidth / pagesToShow) * aspectRatio;
-
-  // If the calculated height exceeds available height, constrain by height instead
-  if (bookHeight > availableHeight) {
-    bookHeight = availableHeight;
-    bookWidth = (availableHeight / aspectRatio) * pagesToShow;
-  }
+  const bookRatio = aspectRatio * pagesToShow;
 
   return (
     <div ref={containerRef} className="flex flex-col h-full w-full bg-slate-900 relative overflow-hidden">
@@ -209,6 +200,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
         </h2>
         
         {/* Desktop Paging Controls */}
+        {numPages > 1 && (
         <div className="hidden md:flex items-center gap-4 bg-black/30 rounded-full px-4 py-1.5 border border-white/5 shadow-inner">
           <button 
             onClick={prevButtonClick} 
@@ -230,6 +222,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
             <FaChevronRight size={16} />
           </button>
         </div>
+        )}
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 mt-3 sm:mt-0">
           {/* Zoom Controls */}
@@ -268,6 +261,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
       <div className="flex-1 relative w-full h-full overflow-auto custom-scrollbar flex items-center justify-center bg-slate-900 pt-4 pb-20 md:pb-10">
         
         {/* Floating Side Navigation Arrows (Desktop) */}
+        {numPages > 1 && (
         <div className="absolute top-1/2 left-4 lg:left-10 z-10 -translate-y-1/2 hidden md:block">
           <button 
             onClick={prevButtonClick}
@@ -278,7 +272,9 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
             <FaChevronLeft size={20} />
           </button>
         </div>
+        )}
 
+        {numPages > 1 && (
         <div className="absolute top-1/2 right-4 lg:right-10 z-10 -translate-y-1/2 hidden md:block">
           <button 
             onClick={nextButtonClick}
@@ -289,24 +285,48 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
             <FaChevronRight size={20} />
           </button>
         </div>
+        )}
 
         {/* Zoom Transform Wrapper */}
-        <div 
-          className="relative flex items-center justify-center transition-transform duration-300 origin-center"
+        {numPages === 1 ? (
+          <div 
+            className="relative flex items-center justify-center transition-transform duration-300 origin-center shadow-2xl"
+            style={{ 
+              width: isMobile ? "100%" : "auto",
+              height: isMobile ? "auto" : "88vh",
+              aspectRatio: aspectRatio,
+              maxWidth: "100%",
+              margin: "auto",
+              transform: `scale(${zoomLevel})`
+            }}
+          >
+            <PdfPage 
+              pageNum={1} 
+              pdf={pdf} 
+              currentPage={0}
+              isCover={true} 
+            />
+          </div>
+        ) : (
+          <div 
+            className="relative flex items-center justify-center transition-transform duration-300 origin-center"
           style={{ 
-            width: `${bookWidth}px`, 
-            height: `${bookHeight}px`,
+            width: isMobile ? "100%" : "auto",
+            height: isMobile ? "auto" : `min(85vh, calc(95vw / ${bookRatio}))`,
+            aspectRatio: bookRatio,
+            maxWidth: "95vw",
+            margin: "auto",
             transform: `scale(${zoomLevel})`
           }}
         >
           <HTMLFlipBook
-            width={bookWidth}
-            height={bookHeight}
+            width={pageDims.width}
+            height={pageDims.height}
             size="stretch"
-            minWidth={300}
-            maxWidth={1600}
-            minHeight={400}
-            maxHeight={2000}
+            minWidth={100}
+            maxWidth={9999}
+            minHeight={100}
+            maxHeight={9999}
             maxShadowOpacity={0.5}
             showCover={true}
             mobileScrollSupport={true}
@@ -328,10 +348,11 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
             ))}
           </HTMLFlipBook>
         </div>
+        )}
       </div>
 
       {/* Mobile Bottom Navigation */}
-      {isMobile && (
+      {isMobile && numPages > 1 && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[360px]">
           <div className="bg-black/60 backdrop-blur-md text-white rounded-full flex items-center justify-between p-1.5 shadow-2xl border border-white/20">
             <button 

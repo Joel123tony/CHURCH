@@ -29,11 +29,7 @@ export default function UploadPanel({ onSuccess }) {
     formData.append("file", file); // MUST MATCH multer.single("file")
 
     try {
-      const res = await API.post("/upload/media", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const res = await API.post("/upload/image", formData);
 
       return res.data; // { url, public_id, type }
     } catch (err) {

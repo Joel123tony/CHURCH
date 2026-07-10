@@ -3,6 +3,7 @@ import API from "../../api/axios";
 import { toast } from "react-toastify";
 import { FaTrash, FaEdit, FaBook, FaUpload, FaImage, FaTimes, FaFilePdf, FaBookOpen, FaEye } from "react-icons/fa";
 import { useConfirm } from "../../context/ConfirmContext";
+import CompressionBadge from "../../components/CompressionBadge";
 import { useDropzone } from "react-dropzone";
 import PdfViewerModal from "../../components/PdfViewerModal";
 
@@ -38,9 +39,11 @@ export default function Books() {
   // Form State
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
+  const [author, setAuthor] = useState("");
   
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
+  const [uploadStats, setUploadStats] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   
   const [editItem, setEditItem] = useState(null);
@@ -51,11 +54,24 @@ export default function Books() {
   const pdfInputRef = useRef(null);
   
   // File Dropzone for Cover Image
-  const onDrop = useCallback((acceptedFiles) => {
+  const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
     if (file) {
-      setCoverFile(file);
-      setCoverPreview(URL.createObjectURL(file));
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder", "mtc-padikuppam/books/covers");
+
+        const res = await API.post("/upload/image", formData);
+        const data = res.data;
+
+        setCoverFile(data.url);
+        setCoverPreview(data.url);
+        setUploadStats(data);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to upload cover image");
+      }
     }
   }, []);
 
@@ -104,11 +120,13 @@ export default function Books() {
   const resetForm = () => {
     setTitle("");
     setDate("");
+    setAuthor("");
     setCoverFile(null);
     if (coverPreview && typeof coverPreview === 'string' && coverPreview.startsWith('blob:')) {
       URL.revokeObjectURL(coverPreview);
     }
     setCoverPreview(null);
+    setUploadStats(null);
     setPdfFile(null);
     setEditItem(null);
     if (pdfInputRef.current) {
@@ -121,6 +139,7 @@ export default function Books() {
     setEditItem(book);
     setTitle(book.title || "");
     setDate(book.date || "");
+    setAuthor(book.author || "");
     setCoverPreview(book.coverImageUrl || null);
     setActiveTab("add");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -142,28 +161,26 @@ export default function Books() {
       const formData = new FormData();
       formData.append("title", title);
       formData.append("date", date);
+      formData.append("author", author);
       
       if (coverFile) {
-        formData.append("coverImage", coverFile);
+        formData.append("coverImageUrl", coverFile);
       }
       if (pdfFile) {
         formData.append("pdfFile", pdfFile);
       }
 
       if (editItem) {
-        await API.put(`/books/${editItem._id}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
+        await API.put(`/books/${editItem._id}`, formData);
         toast.success("Book updated successfully");
       } else {
-        await API.post("/books", formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
+        await API.post("/books", formData);
         toast.success("Book added successfully");
       }
       
       resetForm();
       fetchBooks();
+      setUploadStats(null);
       setActiveTab("shelf");
     } catch (err) {
       console.error(err);
@@ -205,13 +222,13 @@ export default function Books() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen">
       {/* Header section */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+      <div className="admin-header-container">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#54091b] flex items-center gap-3 tracking-tight">
-            <FaBook className="text-[#ee0039]" />
+          <h1 className="admin-header-title">
+            <FaBook className="admin-header-icon" />
             Books & Pamphlets
           </h1>
-          <p className="text-slate-500 mt-1.5 text-sm font-medium">Manage your library of PDFs and visual covers.</p>
+          <p className="admin-header-desc">Manage your library of PDFs and visual covers.</p>
         </div>
       </div>
 
@@ -219,22 +236,14 @@ export default function Books() {
       <div className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
         <button
           onClick={() => setActiveTab("add")}
-          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-            activeTab === "add" 
-              ? "bg-[#ee0039] text-white shadow-md" 
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
+          className={activeTab === "add" ? "admin-tab-active" : "admin-tab-inactive"}
         >
           {editItem ? <FaEdit /> : <FaUpload />}
           {editItem ? "Edit Book" : "Add Book"}
         </button>
         <button
           onClick={() => setActiveTab("shelf")}
-          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-            activeTab === "shelf" 
-              ? "bg-[#54091b] text-white shadow-md" 
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
+          className={activeTab === "shelf" ? "admin-tab-active" : "admin-tab-inactive"}
         >
           <FaBookOpen />
           Book Shelf
@@ -246,18 +255,18 @@ export default function Books() {
         {/* ADD BOOK TAB */}
         {activeTab === "add" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
-            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-6 sm:p-8">
+            <div className="admin-card p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800">
+                  <h2 className="text-xl font-bold text-[#531B24]">
                     {editItem ? "Edit Book Details" : "Upload New Book"}
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1">Fill in the details below to publish a book.</p>
+                  <p className="text-sm text-[#651D32]/70 mt-1">Fill in the details below to publish a book.</p>
                 </div>
                 {editItem && (
                   <button 
                     onClick={() => { resetForm(); setActiveTab("shelf"); }}
-                    className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-sm font-bold flex items-center gap-2"
+                    className="admin-btn-secondary"
                   >
                     <FaTimes /> Cancel Edit
                   </button>
@@ -267,26 +276,37 @@ export default function Books() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Book Title *</label>
+                    <label className="admin-label">Book Title *</label>
                     <input
                       type="text"
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="e.g. The History of the Methodist Church"
-                      className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white"
+                      className="admin-input"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Date / Author / Subtitle (Optional)</label>
-                    <input
-                      type="text"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      placeholder="e.g. October 2024 or Rev. John Doe"
-                      className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="admin-label">Publication Date (Optional)</label>
+                      <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="admin-input text-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="admin-label">Author / Subtitle (Optional)</label>
+                      <input
+                        type="text"
+                        value={author}
+                        onChange={(e) => setAuthor(e.target.value)}
+                        placeholder="e.g. Rev. John Doe"
+                        className="admin-input text-slate-700"
+                      />
+                    </div>
                   </div>
                   
                   {/* Upload Zones Container */}
@@ -294,15 +314,15 @@ export default function Books() {
                     
                     {/* Cover Image Dropzone */}
                     <div className="space-y-2">
-                       <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">
+                       <label className="admin-label">
                           Book Cover Image {editItem ? "(Optional)" : "*"}
                         </label>
                         <div 
                           {...getRootProps()} 
-                          className={`relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[200px] overflow-hidden group ${
+                          className={`admin-upload-box group ${
                             isDragActive 
-                              ? 'border-[#ee0039] bg-[#ee0039]/5' 
-                              : coverPreview ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 hover:bg-slate-50 hover:border-slate-400'
+                              ? 'border-[#531B24] bg-[#531B24]/5' 
+                              : coverPreview ? 'border-emerald-400 bg-emerald-50' : ''
                           }`}
                         >
                           <input {...getInputProps()} />
@@ -313,11 +333,14 @@ export default function Books() {
                                 <img src={coverPreview} alt="Blur bg" className="w-full h-full object-cover" />
                               </div>
                               <div className="relative z-10 w-full flex flex-col items-center">
-                                <img 
-                                  src={coverPreview} 
-                                  alt="Cover Preview" 
-                                  className="h-28 object-contain rounded-lg shadow-md mb-3"
-                                />
+                                <div className="relative">
+                                  <CompressionBadge stats={uploadStats} />
+                                  <img 
+                                    src={coverPreview} 
+                                    alt="Cover Preview" 
+                                    className="h-28 object-contain rounded-lg shadow-md mb-3"
+                                  />
+                                </div>
                                 <span className="text-xs font-bold text-emerald-700 bg-white/80 px-3 py-1 rounded-full backdrop-blur-sm">Image Selected</span>
                               </div>
                               <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-2xl transition-opacity z-20">
@@ -326,8 +349,8 @@ export default function Books() {
                             </>
                           ) : (
                             <>
-                              <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4 group-hover:bg-[#ee0039]/10 group-hover:text-[#ee0039] transition-colors">
-                                <FaImage className="text-2xl text-slate-400 group-hover:text-[#ee0039]" />
+                              <div className="admin-upload-icon">
+                                <FaImage className="text-2xl text-slate-400 group-hover:text-[#531B24]" />
                               </div>
                               <p className="text-slate-700 font-bold">Drag & Drop Image</p>
                               <p className="text-xs text-slate-400 mt-1">or click to browse</p>
@@ -339,7 +362,7 @@ export default function Books() {
 
                     {/* PDF File Upload */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">
+                      <label className="admin-label">
                         Book PDF File {editItem ? "(Optional)" : "*"}
                       </label>
                       
@@ -406,7 +429,7 @@ export default function Books() {
                            </div>
                         </div>
                       ) : (
-                        <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all min-h-[200px] relative hover:bg-slate-50 hover:border-slate-400">
+                        <div className="admin-upload-box">
                           <input
                             type="file"
                             accept="application/pdf"
@@ -414,7 +437,7 @@ export default function Books() {
                             onChange={(e) => setPdfFile(e.target.files[0])}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                           />
-                          <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4 text-slate-400">
+                          <div className="admin-upload-icon">
                             <FaFilePdf className="text-2xl" />
                           </div>
                           <p className="text-slate-700 font-bold">Upload PDF File</p>
@@ -430,7 +453,7 @@ export default function Books() {
                   <button
                     type="submit"
                     disabled={uploading}
-                    className="px-8 py-3.5 rounded-xl text-white bg-[#ee0039] hover:bg-[#d00030] transition-colors font-bold disabled:opacity-70 flex items-center gap-2 shadow-lg shadow-[#ee0039]/30"
+                    className="admin-btn-primary disabled:opacity-70"
                   >
                     {uploading ? (
                       <>
@@ -462,7 +485,7 @@ export default function Books() {
                   placeholder="Search books by title or author..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full border-2 border-slate-100 rounded-xl py-3 pl-4 pr-10 focus:outline-none focus:border-[#54091b] focus:ring-1 focus:ring-[#54091b] transition-all"
+                  className="admin-input !bg-white focus:!bg-white"
                 />
                 {search && (
                   <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -490,7 +513,7 @@ export default function Books() {
                 <p className="text-slate-500 mt-1">Try adjusting your search or add a new book.</p>
                 <button 
                   onClick={() => setActiveTab("add")}
-                  className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition"
+                  className="admin-btn-primary mt-6 mx-auto"
                 >
                   Upload New Book
                 </button>
@@ -500,60 +523,63 @@ export default function Books() {
                 {filteredBooks.map((book, index) => (
                   <div 
                     key={book._id} 
-                    className="group flex flex-col bg-white rounded-[24px] shadow-sm hover:shadow-xl border border-slate-100 overflow-hidden transition-all duration-300 hover:-translate-y-1.5"
+                    className="group flex flex-col admin-card overflow-hidden transition-all duration-300 hover:-translate-y-1.5"
                     style={{ animationDelay: `${Math.min(index, 10) * 50}ms` }}
                   >
                     {/* Cover Area */}
                     <div className="relative aspect-[2/3] w-full bg-slate-100 overflow-hidden border-b border-slate-100">
-                      <img 
-                        src={book.coverImageUrl} 
-                        alt={book.title} 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                        loading="lazy" 
-                      />
-                      
-                      {/* Hover Actions Overlay */}
-                      <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
-                        <button
-                          onClick={() => openEdit(book)}
-                          className="w-10 h-10 rounded-full bg-white text-blue-600 flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
-                          title="Edit Details"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => deleteBook(book._id)}
-                          className="w-10 h-10 rounded-full bg-white text-red-600 flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
-                          title="Delete Book"
-                        >
-                          <FaTrash />
-                        </button>
+                      <div className="relative">
+                        <CompressionBadge stats={uploadStats} />
+                        <img 
+                          src={book.coverImageUrl} 
+                          alt={book.title} 
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                          loading="lazy" 
+                        />
                       </div>
-
-                      {/* PDF Quick Link */}
-                      <a 
-                        href={normalizePdfUrl(book.pdfUrl)} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-[#54091b] hover:bg-white transition-colors z-10"
-                        title="View PDF Document"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <FaFilePdf size={12} />
-                      </a>
                     </div>
                     
                     {/* Info Area */}
                     <div className="p-4 flex flex-col flex-grow">
                       <h3 className="font-bold text-slate-800 line-clamp-2 text-sm leading-tight" title={book.title}>{book.title}</h3>
+                      {book.author && (
+                        <p className="text-xs text-slate-500 mt-1 font-medium">{book.author}</p>
+                      )}
                       {book.date && (
-                        <p className="text-xs text-slate-500 mt-1 font-medium">{book.date}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{book.date}</p>
                       )}
                       
-                      <div className="mt-auto pt-3 border-t border-slate-50 flex items-center justify-between">
+                      <div className="mt-4 flex items-center justify-between">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-50 px-2 py-1 rounded-md">
                           {new Date(book.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
+                      </div>
+                      
+                      <div className="mt-auto pt-4 border-t border-slate-100 flex gap-2">
+                        <button
+                          onClick={() => window.open(normalizePdfUrl(book.pdfUrl), '_blank')}
+                          className="admin-btn-blue flex-1 !py-2.5 !px-2 text-xs sm:text-sm"
+                          title="View PDF Document"
+                        >
+                          <FaEye />
+                          <span className="hidden sm:inline">View</span>
+                        </button>
+                        <button
+                          onClick={() => openEdit(book)}
+                          className="admin-btn-orange flex-1 !py-2.5 !px-2 text-xs sm:text-sm"
+                          title="Edit Details"
+                        >
+                          <FaEdit />
+                          <span className="hidden sm:inline">Edit</span>
+                        </button>
+                        <button
+                          onClick={() => deleteBook(book._id)}
+                          className="admin-btn-red flex-1 !py-2.5 !px-2 text-xs sm:text-sm"
+                          title="Delete Book"
+                        >
+                          <FaTrash />
+                          <span className="hidden sm:inline">Delete</span>
+                        </button>
                       </div>
                     </div>
                   </div>

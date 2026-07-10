@@ -11,6 +11,10 @@ const bookSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    author: {
+      type: String,
+      default: "",
+    },
     pdfUrl: {
       type: String,
       required: true,

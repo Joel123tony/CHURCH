@@ -14,14 +14,14 @@ export const createBook = async (req, res) => {
       });
     }
 
-    if (!req.files.coverImage || !req.files.coverImage[0]) {
+    if (!req.files.coverImage && !req.body.coverImageUrl) {
       return res.status(400).json({
         success: false,
         message: "Cover image is required",
       });
     }
 
-    const { title, date } = req.body;
+    const { title, date, author } = req.body;
     
     if (!title) {
       return res.status(400).json({
@@ -38,16 +38,23 @@ export const createBook = async (req, res) => {
 
     // Upload PDF — enforce resource_type: "raw" and include .pdf in public_id
     const pdfUpload = await uploadToCloudinary(req.files.pdfFile[0].buffer, {
-      folder: "church-books/pdfs",
+      folder: "mtc-padikuppam/books/pdfs",
       resource_type: "raw",
       public_id: safePdfName + "_" + Date.now() + ".pdf",
     });
 
-    // Upload Cover Image
-    const coverUpload = await uploadToCloudinary(req.files.coverImage[0].buffer, {
-      folder: "church-books/covers",
-      resource_type: "image",
-    });
+    // Upload Cover Image (or use pre-uploaded URL)
+    let coverUrl = req.body.coverImageUrl;
+    let coverPublicId = req.body.cover_public_id || null;
+
+    if (req.files.coverImage && req.files.coverImage[0]) {
+      const coverUpload = await uploadToCloudinary(req.files.coverImage[0].buffer, {
+        folder: "mtc-padikuppam/books/covers",
+        resource_type: "image",
+      });
+      coverUrl = coverUpload.url || coverUpload.secure_url;
+      coverPublicId = coverUpload.public_id;
+    }
 
     // Validate the PDF URL before saving
     const finalPdfUrl = pdfUpload.url || pdfUpload.secure_url;
@@ -57,10 +64,11 @@ export const createBook = async (req, res) => {
     const book = await Book.create({
       title,
       date: date || "",
+      author: author || "",
       pdfUrl: finalPdfUrl,
       pdf_public_id: pdfUpload.public_id,
-      coverImageUrl: coverUpload.url || coverUpload.secure_url,
-      cover_public_id: coverUpload.public_id,
+      coverImageUrl: coverUrl,
+      cover_public_id: coverPublicId,
     });
 
     return res.status(201).json({
@@ -111,10 +119,11 @@ export const updateBook = async (req, res) => {
       });
     }
 
-    const { title, date } = req.body;
+    const { title, date, author } = req.body;
     const updatePayload = {};
     if (title !== undefined) updatePayload.title = title;
     if (date !== undefined) updatePayload.date = date;
+    if (author !== undefined) updatePayload.author = author;
 
     if (req.files) {
       // Update PDF if provided
@@ -129,7 +138,7 @@ export const updateBook = async (req, res) => {
           .replace(/\.pdf$/i, "");
 
         const pdfUpload = await uploadToCloudinary(req.files.pdfFile[0].buffer, {
-          folder: "church-books/pdfs",
+          folder: "mtc-padikuppam/books/pdfs",
           resource_type: "raw",
           public_id: safePdfName + "_" + Date.now() + ".pdf",
         });
@@ -144,12 +153,16 @@ export const updateBook = async (req, res) => {
           await deleteFromCloudinary(book.cover_public_id);
         }
         const coverUpload = await uploadToCloudinary(req.files.coverImage[0].buffer, {
-          folder: "church-books/covers",
+          folder: "mtc-padikuppam/books/covers",
           resource_type: "image",
         });
         updatePayload.coverImageUrl = coverUpload.url || coverUpload.secure_url;
         updatePayload.cover_public_id = coverUpload.public_id;
       }
+    }
+
+    if (req.body.coverImageUrl) {
+      updatePayload.coverImageUrl = req.body.coverImageUrl;
     }
 
     const updated = await Book.findByIdAndUpdate(req.params.id, updatePayload, {

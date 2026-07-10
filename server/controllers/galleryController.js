@@ -8,30 +8,28 @@ import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 ========================= */
 export const uploadMedia = async (req, res) => {
   try {
+
+
     if (!req.file) {
+
       return res.status(400).json({
         success: false,
         message: "File is required",
       });
     }
 
+
     const isVideo = req.file.mimetype?.startsWith("video/");
+    
+
+    // Note: uploadToCloudinary handles both local compression and Cloudinary upload
     const result = await uploadToCloudinary(req.file.buffer, {
-      folder: "church/gallery",
+      folder: isVideo ? "mtc-padikuppam/gallery/videos" : "mtc-padikuppam/gallery/images",
       resource_type: isVideo ? "video" : "image",
-      ...(isVideo
-        ? {
-          eager: [
-            {
-              format: "mp4",
-              quality: "auto",
-              video_codec: "h264",
-              bit_rate: "1200k",
-            },
-          ],
-        }
-        : {}),
     });
+    
+
+
 
     const media = await Gallery.create({
       title: req.body.title || "Untitled",
@@ -43,14 +41,27 @@ export const uploadMedia = async (req, res) => {
       url: result.optimized_url || result.url,
       public_id: result.public_id,
       clientPriority: null,
+      thumbnail: result.resource_type === "video" ? result.url.replace(/\.[^/.]+$/, ".jpg") : null,
+      folder: result.folder || null,
+      size: result.bytes || null,
+      duration: result.duration || null,
+      dimensions: result.width && result.height ? { width: result.width, height: result.height } : null,
     });
+
+
+
 
     return res.status(201).json({
       success: true,
       data: media,
+      originalSize: result.originalSize,
+      compressedSize: result.compressedSize,
+      savings: result.savings,
+      savingsPercentage: result.savingsPercentage,
+      status: result.status
     });
   } catch (err) {
-    console.error("UPLOAD ERROR:", err);
+
 
     return res.status(500).json({
       success: false,

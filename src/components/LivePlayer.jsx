@@ -33,8 +33,7 @@ export default function LivePlayer() {
             className="h-72 w-full rounded-2xl"
             src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
             title="Live Stream"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-500">

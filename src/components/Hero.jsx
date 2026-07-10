@@ -23,7 +23,8 @@ export default function Hero() {
         title: data?.title || "",
       });
     } catch (err) {
-      console.error("Hero API error:", err);
+      // Intentionally ignoring errors (e.g. ad blockers blocking /youtube route)
+      // to keep console clean as requested.
       setVideo({ videoId: "", title: "" });
     } finally {
       setLoading(false);
@@ -70,8 +71,7 @@ export default function Hero() {
                 className="absolute left-0 top-0 h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                 src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
                 title={video.title || "YouTube Video"}
-                allow="autoplay; encrypted-media; fullscreen"
-                allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               />
             )}
           </div>

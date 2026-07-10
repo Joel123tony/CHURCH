@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaCalendarAlt } from "react-icons/fa";
+import { getFallbackAvatar, handleImageError } from "../utils/avatarFallback";
 
 export default function Pastor() {
   const { t, cmsData } = useLanguage();
@@ -13,7 +14,7 @@ export default function Pastor() {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const getImage = (pastor) => pastor?.image?.url || "/placeholder.png";
+  const getImage = (pastor) => pastor?.image?.url || getFallbackAvatar();
 
   useEffect(() => {
     const fetchPastors = async () => {
@@ -84,13 +85,68 @@ export default function Pastor() {
   }, [showModal]);
 
   const searchPastors = () => {
-    const filtered = pastors.filter((p) => {
-      const nameMatch = searchName.trim()
-        ? p?.name?.toLowerCase().includes(searchName.toLowerCase())
-        : true;
+    const sName = searchName.trim().toLowerCase();
+    const sYear = searchYear.trim();
 
-      const yearText = `${p?.joinedYear || ""} ${p?.leftYear || ""}`;
-      const yearMatch = searchYear.trim() ? yearText.includes(searchYear) : true;
+    // If both empty, return all pastors
+    if (!sName && !sYear) {
+      setResults(pastors);
+      setShowModal(true);
+      return;
+    }
+
+    const filtered = pastors.filter((p) => {
+      let nameMatch = true;
+      if (sName) {
+        nameMatch = p?.name?.toLowerCase().includes(sName);
+      }
+
+      let yearMatch = true;
+      if (sYear) {
+        const queryYear = parseInt(sYear, 10);
+        if (!isNaN(queryYear)) {
+          // Safely parse start year
+          let startYear;
+          if (typeof p?.joinedYear === "number") {
+            startYear = p.joinedYear;
+          } else if (typeof p?.joinedYear === "string") {
+            startYear = parseInt(p.joinedYear, 10);
+          } else if (p?.joinedYear != null) {
+            startYear = parseInt(String(p.joinedYear), 10);
+          } else {
+            startYear = NaN;
+          }
+
+          // Safely parse end year
+          let endYear;
+          const leftVal = p?.leftYear;
+          
+          if (leftVal == null || leftVal === "") {
+            endYear = new Date().getFullYear();
+          } else if (typeof leftVal === "string") {
+            const lower = leftVal.trim().toLowerCase();
+            if (lower === "present" || lower === "current") {
+              endYear = new Date().getFullYear();
+            } else {
+              endYear = parseInt(leftVal, 10);
+            }
+          } else if (typeof leftVal === "number") {
+            endYear = leftVal;
+          } else {
+            endYear = parseInt(String(leftVal), 10);
+          }
+          
+          if (!isNaN(startYear) && !isNaN(endYear)) {
+            yearMatch = queryYear >= startYear && queryYear <= endYear;
+          } else if (!isNaN(startYear)) {
+             yearMatch = queryYear >= startYear && queryYear <= new Date().getFullYear();
+          } else {
+             yearMatch = false; 
+          }
+        } else {
+          yearMatch = false;
+        }
+      }
 
       return nameMatch && yearMatch;
     });
@@ -147,7 +203,8 @@ export default function Pastor() {
                         <img
                           src={getImage(currentPastor)}
                           alt={currentPastor.name}
-                          className="h-64 w-64 object-cover transition-transform duration-700 ease-out group-hover:scale-105 sm:h-72 sm:w-72"
+                          onError={(e) => handleImageError(e)}
+                          className="pastor-placeholder transition-transform duration-700 ease-out group-hover:scale-105"
                         />
                       </div>
                     </div>
@@ -178,6 +235,9 @@ export default function Pastor() {
                     placeholder={t("Search By Name")}
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") searchPastors();
+                    }}
                     autoComplete="off"
                     className="w-full rounded-full bg-white px-4 py-3 outline-none shadow-sm transition focus:scale-[1.01] focus:shadow-md"
                   />
@@ -201,15 +261,22 @@ export default function Pastor() {
                 </div>
 
                 <div className="relative overflow-hidden rounded-full border border-[#5b1320]/10 bg-white shadow-sm transition focus-within:shadow-md focus-within:ring-2 focus-within:ring-[#5b1320]/15">
+                  <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5b1320]/50" />
                   <input
                     type="number"
+                    min="1800"
+                    max={new Date().getFullYear()}
+                    step="1"
                     inputMode="numeric"
-                    placeholder={t("Search By Year")}
+                    placeholder={t("Select or enter a year")}
                     value={searchYear}
                     onChange={(e) =>
-                      setSearchYear(e.target.value.replace(/\D/g, ""))
+                      setSearchYear(e.target.value.replace(/\D/g, "").slice(0, 4))
                     }
-                    className="w-full appearance-none bg-transparent px-4 py-3 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") searchPastors();
+                    }}
+                    className="w-full appearance-none bg-transparent py-3 pl-11 pr-4 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                 </div>
 
@@ -255,8 +322,10 @@ export default function Pastor() {
             <div className="px-5 pb-6 pt-6 sm:px-8">
               {results.length === 0 ? (
                 <div className="py-12 text-center">
-                  <h3 className="text-3xl font-bold text-red-600">
-                    {t("No Pastor Found")}
+                  <h3 className="text-3xl font-bold text-[#5b1320]">
+                    {searchYear && !searchName
+                      ? t("No pastors served during this year.")
+                      : t("No Pastor Found")}
                   </h3>
                 </div>
               ) : (
@@ -270,7 +339,8 @@ export default function Pastor() {
                         <img
                           src={getImage(p)}
                           alt={p.name}
-                          className="h-32 w-32 object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                          onError={(e) => handleImageError(e)}
+                          className="pastor-placeholder transition-transform duration-500 ease-out group-hover:scale-105"
                         />
                       </div>
 

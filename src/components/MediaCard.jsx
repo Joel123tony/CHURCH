@@ -163,16 +163,16 @@ function MediaCard({
       {/* FULLSCREEN PREVIEW MODAL */}
       {open && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 sm:p-6 backdrop-blur-md"
           onClick={() => setOpen(false)}
         >
           <div
-            className="relative w-full max-w-6xl flex items-center justify-center"
+            className="relative flex flex-col items-center justify-center max-w-full max-h-full"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setOpen(false)}
-              className="absolute -top-12 right-0 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-colors backdrop-blur-sm"
+              className="absolute -top-12 right-0 md:-right-12 md:top-0 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-colors backdrop-blur-sm z-[110]"
               title="Close Preview"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -183,13 +183,13 @@ function MediaCard({
                 src={item.url}
                 controls
                 autoPlay
-                className="w-full max-h-[85vh] rounded-xl bg-black/50 object-contain shadow-2xl ring-1 ring-white/10"
+                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-xl bg-black object-contain shadow-2xl ring-1 ring-white/20"
               />
             ) : (
               <img
                 src={item.url}
                 alt={item.title}
-                className="w-full max-h-[85vh] rounded-xl bg-black/50 object-contain shadow-2xl ring-1 ring-white/10"
+                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-xl object-contain shadow-2xl ring-1 ring-white/20"
               />
             )}
           </div>

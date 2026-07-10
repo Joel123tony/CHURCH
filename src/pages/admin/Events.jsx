@@ -163,10 +163,10 @@ export default function Events() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen w-full">
       {/* HEADER SECTION - strictly functional, no descriptions */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+      <div className="admin-header-container">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#54091b] flex items-center gap-3 tracking-tight">
-            <FaCalendarCheck className="text-[#ee0039]" />
+          <h1 className="admin-header-title">
+            <FaCalendarCheck className="admin-header-icon" />
             Events Admin
           </h1>
         </div>
@@ -182,22 +182,14 @@ export default function Events() {
             if (activeTab !== "add") resetForm(); 
             setActiveTab("add"); 
           }}
-          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-            activeTab === "add" 
-              ? "bg-[#ee0039] text-white shadow-md" 
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
+          className={activeTab === "add" ? "admin-tab-active" : "admin-tab-inactive"}
         >
           {editId !== null ? <FaEdit /> : <FaPlus />}
           {editId !== null ? "Edit Event" : "Add Event"}
         </button>
         <button
           onClick={() => { resetForm(); setActiveTab("list"); }}
-          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-            activeTab === "list" 
-              ? "bg-[#54091b] text-white shadow-md" 
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
+          className={activeTab === "list" ? "admin-tab-active" : "admin-tab-inactive"}
         >
           <FaList />
           Events List
@@ -213,15 +205,15 @@ export default function Events() {
           {/* ADD/EDIT TAB */}
           {activeTab === "add" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-8 max-w-3xl">
+              <div className="admin-card p-6 sm:p-8 max-w-3xl">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                  <h2 className="text-xl font-bold text-slate-800">
+                  <h2 className="text-xl font-bold text-[#531B24]">
                     {editId !== null ? "Edit Event" : "Add New Event"}
                   </h2>
                   {editId !== null && (
                     <button 
                       onClick={() => { resetForm(); setActiveTab("list"); }}
-                      className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors text-sm font-bold flex items-center gap-2"
+                      className="admin-btn-secondary"
                     >
                       <FaTimes /> Cancel Edit
                     </button>
@@ -231,7 +223,7 @@ export default function Events() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 gap-6">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                      <label className="admin-label">
                         Event Title *
                       </label>
                       <input
@@ -239,14 +231,14 @@ export default function Events() {
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="e.g. Sunday Morning Service"
-                        className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+                        className="admin-input"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                      <label className="admin-label">
                         Date *
                       </label>
                       <div className="relative">
@@ -256,13 +248,13 @@ export default function Events() {
                           required
                           value={date}
                           onChange={(e) => setDate(e.target.value)}
-                          className="w-full border-2 border-slate-200 rounded-xl p-3.5 pl-11 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+                          className="admin-input pl-11"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                      <label className="admin-label">
                         Time *
                       </label>
                       <div className="relative">
@@ -272,20 +264,20 @@ export default function Events() {
                           required
                           value={time}
                           onChange={(e) => setTime(e.target.value)}
-                          className="w-full border-2 border-slate-200 rounded-xl p-3.5 pl-11 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+                          className="admin-input pl-11"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                    <label className="admin-label">
                       Venue *
                     </label>
                     <select
                       value={venue}
                       onChange={(e) => setVenue(e.target.value)}
-                      className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium appearance-none"
+                      className="admin-input appearance-none"
                     >
                       <option value="Methodist Tamil church Padikuppam">
                         Methodist Tamil church Padikuppam
@@ -296,7 +288,7 @@ export default function Events() {
 
                   {venue === "Custom" && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                      <label className="admin-label">
                         Custom Venue Details *
                       </label>
                       <input
@@ -304,7 +296,7 @@ export default function Events() {
                         value={customVenue}
                         onChange={(e) => setCustomVenue(e.target.value)}
                         placeholder="Enter full address of custom venue"
-                        className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+                        className="admin-input"
                       />
                     </div>
                   )}
@@ -312,7 +304,7 @@ export default function Events() {
                   <div className="flex justify-end pt-6 border-t border-slate-100">
                     <button
                       type="submit"
-                      className="px-8 py-3.5 rounded-xl text-white bg-[#ee0039] hover:bg-[#d00030] transition-colors font-bold flex items-center gap-2 shadow-lg shadow-[#ee0039]/30"
+                      className="admin-btn-primary"
                     >
                       {editId !== null ? <FaEdit size={14} /> : <FaPlus size={14} />}
                       {editId !== null ? "Save Changes" : "Create Event"}
@@ -337,7 +329,7 @@ export default function Events() {
                   {orderedEvents.map((eventItem, index) => (
                     <div
                       key={eventItem._id}
-                      className="animate-admin-card-in rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col"
+                      className="animate-admin-card-in admin-card p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col"
                       style={{
                         animationDelay: `${Math.min(index, 10) * 70}ms`,
                       }}
@@ -364,7 +356,7 @@ export default function Events() {
                       <div className="mt-5 flex gap-2 pt-4 border-t border-slate-100">
                         <button
                           onClick={() => handleEdit(eventItem)}
-                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-50 px-4 py-2.5 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-50"
+                          className="admin-btn-orange flex-1 !py-2.5"
                         >
                           <FaEdit />
                           Edit
@@ -372,7 +364,7 @@ export default function Events() {
 
                         <button
                           onClick={() => handleDelete(eventItem._id)}
-                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-50 px-4 py-2.5 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+                          className="admin-btn-red flex-1 !py-2.5"
                         >
                           <FaTrashAlt />
                           Delete

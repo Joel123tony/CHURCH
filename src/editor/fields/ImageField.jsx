@@ -14,11 +14,7 @@ export default function ImageField({ value, onChange }) {
     formData.append("file", file);
 
     try {
-      const res = await API.post("/upload/media", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const res = await API.post("/upload/image", formData);
       if (res.data && res.data.url) {
         onChange(res.data.url);
       }

@@ -220,3 +220,80 @@ body {
 .animate-scaleIn {
   animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Pastor Avatar Placeholder Fix */
+.pastor-card-image,
+.pastor-placeholder {
+    width: 100%;
+    height: 240px;
+    display: block;
+    object-fit: cover;
+    object-position: center;
+    background: #eef2f7;
+}
+@layer components {
+  .admin-card {
+    @apply rounded-[20px] bg-white border border-[#E8DCCB] shadow-[0_10px_30px_rgba(83,27,36,0.08)];
+  }
+
+  /* Buttons */
+  .admin-btn-primary {
+    @apply bg-[#531B24] hover:bg-[#6F2435] text-white rounded-xl px-5 py-2.5 font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[44px];
+  }
+  .admin-btn-secondary {
+    @apply bg-[#F8F4EC] border border-[#531B24] text-[#531B24] hover:bg-[#E8DCCB] rounded-xl px-5 py-2.5 font-bold transition-all flex items-center justify-center gap-2 min-h-[44px];
+  }
+  .admin-btn-green {
+    @apply bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 py-2.5 font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[44px];
+  }
+  .admin-btn-blue {
+    @apply bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2 font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[44px];
+  }
+  .admin-btn-orange {
+    @apply bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-2 font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[44px];
+  }
+  .admin-btn-red {
+    @apply bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-2 font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[44px];
+  }
+  .admin-btn-icon {
+    @apply w-11 h-11 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg shrink-0;
+  }
+
+  /* Forms */
+  .admin-input {
+    @apply w-full border-2 border-[#E8DCCB] rounded-xl p-3.5 outline-none transition-all focus:border-[#531B24] focus:bg-white focus:ring-4 focus:ring-[#531B24]/20 bg-[#F8F4EC]/30 text-slate-900;
+  }
+  .admin-label {
+    @apply block text-sm font-semibold text-[#531B24] mb-2 uppercase tracking-wide;
+  }
+  
+  /* Upload Area */
+  .admin-upload-box {
+    @apply relative border-2 border-dashed border-[#531B24]/40 rounded-[20px] p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[200px] hover:bg-[#F8F4EC] hover:border-[#531B24];
+  }
+  .admin-upload-icon {
+    @apply w-14 h-14 rounded-full bg-[#F8F4EC] text-[#531B24] flex items-center justify-center mb-4 transition-colors;
+  }
+
+  /* Tabs */
+  .admin-tab-active {
+    @apply px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 bg-[#531B24] text-white shadow-md;
+  }
+  .admin-tab-inactive {
+    @apply px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 bg-white text-[#531B24] border border-[#E8DCCB] hover:bg-[#F8F4EC];
+  }
+
+  /* Page Header */
+  .admin-header-container {
+    @apply flex flex-col gap-4 md:flex-row md:items-center justify-between bg-white p-6 rounded-[20px] shadow-[0_10px_30px_rgba(83,27,36,0.08)] border border-[#E8DCCB] mb-6;
+  }
+  .admin-header-title {
+    @apply text-2xl sm:text-3xl font-black text-[#531B24] flex items-center gap-3 tracking-tight;
+  }
+  .admin-header-icon {
+    @apply text-[#531B24];
+  }
+  .admin-header-desc {
+    @apply text-[#651D32]/70 mt-1.5 text-sm font-medium;
+  }
+}

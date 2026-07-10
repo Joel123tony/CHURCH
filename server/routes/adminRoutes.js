@@ -87,8 +87,10 @@ router.post(
       let image = null;
 
       if (req.file) {
-        const uploadResult =
-          await uploadToCloudinary(req.file.buffer);
+        const uploadResult = await uploadToCloudinary(req.file.buffer, {
+          folder: "mtc-padikuppam/pastors/profile-images",
+          resource_type: "image"
+        });
 
         image = {
           url: uploadResult.url,
@@ -139,8 +141,10 @@ router.put(
       let image = pastor.image;
 
       if (req.file) {
-        const uploadResult =
-          await uploadToCloudinary(req.file.buffer);
+        const uploadResult = await uploadToCloudinary(req.file.buffer, {
+          folder: "mtc-padikuppam/pastors/profile-images",
+          resource_type: "image"
+        });
 
         image = {
           url: uploadResult.url,

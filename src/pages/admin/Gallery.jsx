@@ -253,10 +253,10 @@ export default function Gallery() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen w-full">
       {/* HEADER SECTION - strictly functional */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+      <div className="admin-header-container">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#54091b] flex items-center gap-3 tracking-tight">
-            <FaImage className="text-[#ee0039]" />
+          <h1 className="admin-header-title">
+            <FaImage className="admin-header-icon" />
             Gallery Management
           </h1>
         </div>
@@ -269,21 +269,13 @@ export default function Gallery() {
       <div className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
         <button
           onClick={() => setActiveTab("add")}
-          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-            activeTab === "add" 
-              ? "bg-[#ee0039] text-white shadow-md" 
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
+          className={activeTab === "add" ? "admin-tab-active" : "admin-tab-inactive"}
         >
           <FaPlus /> Add Media
         </button>
         <button
           onClick={() => setActiveTab("list")}
-          className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
-            activeTab === "list" 
-              ? "bg-[#54091b] text-white shadow-md" 
-              : "text-slate-500 hover:bg-slate-100"
-          }`}
+          className={activeTab === "list" ? "admin-tab-active" : "admin-tab-inactive"}
         >
           <FaList /> Gallery List
         </button>
@@ -293,10 +285,10 @@ export default function Gallery() {
         {/* ADD TAB */}
         {activeTab === "add" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-8">
+            <div className="admin-card p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                  <FaUpload className="text-[#ee0039]" /> Upload Media
+                <h2 className="text-xl font-bold text-[#531B24] flex items-center gap-2">
+                  <FaUpload className="text-[#531B24]" /> Upload Media
                 </h2>
               </div>
               <GalleryUpload onSuccess={handleUploadSuccess} />
@@ -313,7 +305,7 @@ export default function Gallery() {
               </div>
             ) : (
               <>
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                <div className="admin-card p-6">
                   {/* SEARCH & FILTERS */}
                   <div className="relative mb-6">
                     <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -322,7 +314,7 @@ export default function Gallery() {
                       placeholder="Search gallery by title..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="w-full border-2 border-slate-200 rounded-xl p-3.5 pl-11 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+                      className="admin-input pl-11 !bg-white focus:!bg-white"
                     />
                   </div>
 
@@ -344,14 +336,14 @@ export default function Gallery() {
                         <button
                           type="button"
                           onClick={toggleSelectAllVisible}
-                          className="rounded-xl bg-white border-2 border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                          className="admin-btn-secondary !py-2"
                         >
                           {allVisibleSelected ? "Unselect All" : "Select All"}
                         </button>
                         <button
                           type="button"
                           onClick={clearSelection}
-                          className="rounded-xl bg-white border-2 border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                          className="admin-btn-secondary !py-2"
                         >
                           Clear
                         </button>
@@ -359,7 +351,7 @@ export default function Gallery() {
                           type="button"
                           onClick={bulkDeleteMedia}
                           disabled={!selectedCount}
-                          className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-red-600/20"
+                          className="admin-btn-red !py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Delete Selected
                         </button>
@@ -458,40 +450,40 @@ export default function Gallery() {
       {/* EDIT MODAL */}
       {editItem && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
-            <h2 className="text-xl font-black text-[#54091b] border-b border-slate-100 pb-4">Edit Media Details</h2>
+          <div className="admin-card w-full max-w-md p-6 sm:p-8 space-y-5 animate-in zoom-in-95 duration-200">
+            <h2 className="text-xl font-black text-[#531B24] border-b border-slate-100 pb-4">Edit Media Details</h2>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Title</label>
+              <label className="admin-label">Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Media Title"
-                className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+                className="admin-input"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Event Date</label>
+              <label className="admin-label">Event Date</label>
               <input
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className="w-full border-2 border-slate-200 rounded-xl p-3.5 focus:outline-none focus:ring-4 focus:ring-[#ee0039]/20 focus:border-[#ee0039] transition-all bg-slate-50 focus:bg-white text-slate-800 font-medium"
+                className="admin-input"
               />
             </div>
 
             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
               <button
                 onClick={() => setEditItem(null)}
-                className="px-6 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition-colors"
+                className="admin-btn-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={saveEdit}
-                className="px-6 py-3 rounded-xl bg-[#54091b] text-white font-bold hover:bg-[#3d0613] transition-colors shadow-md shadow-[#54091b]/20"
+                className="admin-btn-primary"
               >
                 Save Changes
               </button>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-const PdfPage = React.forwardRef(({ pageNum, pdf, currentPage, isCover }, ref) => {
+const PdfPage = React.forwardRef(({ pageNum, pdf, currentPage, isCover, className = "" }, ref) => {
   const canvasRef = useRef(null);
   const [rendered, setRendered] = useState(false);
   const [error, setError] = useState(false);
@@ -75,7 +75,7 @@ const PdfPage = React.forwardRef(({ pageNum, pdf, currentPage, isCover }, ref) =
   return (
     <div 
       ref={ref} 
-      className="bg-white overflow-hidden flex items-center justify-center shadow-[inset_0_0_20px_rgba(0,0,0,0.1)] relative"
+      className={`bg-white overflow-hidden flex items-center justify-center shadow-[inset_0_0_20px_rgba(0,0,0,0.1)] relative w-full h-full ${className}`}
       data-density={isCover ? "hard" : "soft"}
     >
       <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent z-10 pointer-events-none mix-blend-multiply"></div>

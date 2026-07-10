@@ -29,6 +29,31 @@ const gallerySchema = new mongoose.Schema(
       required: true,
     },
 
+    thumbnail: {
+      type: String,
+      default: null,
+    },
+
+    folder: {
+      type: String,
+      default: null,
+    },
+
+    size: {
+      type: Number,
+      default: null, // bytes
+    },
+
+    duration: {
+      type: Number,
+      default: null, // seconds for videos
+    },
+
+    dimensions: {
+      width: { type: Number, default: null },
+      height: { type: Number, default: null },
+    },
+
     /* =========================
        HOMEPAGE GALLERY SYSTEM
        null = hidden

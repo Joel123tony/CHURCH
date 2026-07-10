@@ -1,9 +1,10 @@
 import cloudinary from "../config/cloudinary.js";
+import { compressImage, compressVideo } from "./compressMedia.js";
 
 /* ================================
    SAFE CLOUDINARY UPLOAD
 ================================ */
-export const uploadToCloudinary = (buffer, options = {}) => {
+export const uploadToCloudinary = async (rawBuffer, options = {}) => {
   const normalizedOptions =
     typeof options === "string" ? { folder: options } : options || {};
 
@@ -20,18 +21,48 @@ export const uploadToCloudinary = (buffer, options = {}) => {
     ...restOptions
   } = normalizedOptions;
 
+  // Perform Local Smart Compression
+  let processedData;
+
+  try {
+    if (resource_type === "image") {
+
+      processedData = await compressImage(rawBuffer);
+
+    } else if (resource_type === "video") {
+
+      processedData = await compressVideo(rawBuffer);
+
+    } else {
+      processedData = { buffer: rawBuffer, originalSize: rawBuffer.length, compressedSize: rawBuffer.length, isCompressed: false };
+    }
+  } catch (compErr) {
+
+    // fallback to original buffer on crash
+    processedData = { buffer: rawBuffer, originalSize: rawBuffer.length, compressedSize: rawBuffer.length, isCompressed: false };
+  }
+
+  const { buffer, originalSize, compressedSize, isCompressed } = processedData;
+
+
+
   return new Promise((resolve, reject) => {
     if (!buffer) {
+
       return reject(new Error("No file buffer provided"));
     }
+
+    // Safety timeout: 5 minutes max for Cloudinary upload
+    const timeoutId = setTimeout(() => {
+      console.error("[UPLOAD TRACE] X. Cloudinary upload timed out after 5 minutes");
+      reject(new Error("Cloudinary upload timed out. Please try again."));
+    }, 5 * 60 * 1000);
+
 
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
         resource_type,
-        type: "upload",
-        access_mode: "public",
-        upload_preset: "church_public_preset",
         ...(eager ? { eager } : {}),
         ...(transformation ? { transformation } : {}),
         ...(quality ? { quality } : {}),
@@ -42,14 +73,21 @@ export const uploadToCloudinary = (buffer, options = {}) => {
         ...restOptions,
       },
       (error, result) => {
+        clearTimeout(timeoutId);
         if (error) {
-          console.error("âŒ Cloudinary Upload Error:", error);
+          console.error("[UPLOAD TRACE] X. Cloudinary stream callback Error:", error);
           return reject(error);
         }
 
         if (!result || !result.secure_url) {
+          console.error("[UPLOAD TRACE] X. Cloudinary missing secure_url in result:", result);
           return reject(new Error("Invalid Cloudinary response"));
         }
+
+        const savings = originalSize - compressedSize;
+        const savingsPercentage = originalSize > 0 ? Math.round((savings / originalSize) * 100) : 0;
+
+
 
         resolve({
           url: result.secure_url,
@@ -58,17 +96,28 @@ export const uploadToCloudinary = (buffer, options = {}) => {
             result.secure_url,
           public_id: result.public_id,
           resource_type: result.resource_type,
+          folder: result.folder || folder,
           bytes: result.bytes,
+          width: result.width,
+          height: result.height,
+          duration: result.duration,
           eager: result.eager || [],
+          originalSize,
+          compressedSize,
+          savings: Math.max(0, savings),
+          savingsPercentage: Math.max(0, savingsPercentage),
+          status: isCompressed ? "Compressed" : "Already Optimized"
         });
       }
     );
 
     // safety wrapper (prevents infinite hang)
     uploadStream.on("error", (err) => {
-      console.error("âŒ Stream Error:", err);
+      clearTimeout(timeoutId);
+      console.error("[UPLOAD TRACE] X. Stream Error event emitted:", err);
       reject(err);
     });
+
 
     uploadStream.end(buffer);
   });

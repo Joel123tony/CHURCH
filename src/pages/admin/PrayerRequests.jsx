@@ -260,15 +260,14 @@ export default function PrayerRequests() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-3 py-4 sm:px-6">
-
-      <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-lg sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen w-full">
+      <div className="admin-header-container mb-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between w-full">
           <div className="max-w-2xl">
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+            <h1 className="admin-header-title">
               Prayer Requests
             </h1>
-            <p className="mt-1 text-sm text-slate-500 sm:text-base">
+            <p className="admin-header-desc">
               Manage prayer requests, mark responses, and share translated
               messages with one clean workflow.
             </p>
@@ -326,7 +325,7 @@ export default function PrayerRequests() {
                 setShowSuggestions(false);
               }
             }}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            className="admin-input pl-11 !bg-white focus:!bg-white"
           />
 
           {showSuggestions && searchSuggestions.length > 0 && (
@@ -382,25 +381,17 @@ export default function PrayerRequests() {
         </div>
 
         <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
             <button
               onClick={() => setActiveTab("pending")}
-              className={`rounded-2xl px-5 py-2.5 font-semibold transition-colors ${
-                activeTab === "pending"
-                  ? "bg-primary text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+              className={activeTab === "pending" ? "admin-tab-active" : "admin-tab-inactive"}
             >
               Pending ({pendingCount})
             </button>
 
             <button
               onClick={() => setActiveTab("prayed")}
-              className={`rounded-2xl px-5 py-2.5 font-semibold transition-colors ${
-                activeTab === "prayed"
-                  ? "bg-primary text-white shadow"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+              className={activeTab === "prayed" ? "admin-tab-active" : "admin-tab-inactive"}
             >
               Completed ({prayedCount})
             </button>
@@ -410,7 +401,7 @@ export default function PrayerRequests() {
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={toggleSelectAllVisible}
-                className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-blue-700"
+                className="admin-btn-secondary"
               >
                 <FaCheckDouble />
                 {isAllVisibleSelected ? "Unselect All" : "Select All"}
@@ -418,7 +409,7 @@ export default function PrayerRequests() {
 
               <button
                 onClick={clearSelection}
-                className="inline-flex items-center gap-2 rounded-2xl bg-slate-500 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-slate-600"
+                className="admin-btn-red"
               >
                 <FaTrashAlt />
                 Clear
@@ -427,7 +418,7 @@ export default function PrayerRequests() {
               {selectedRequests.length > 0 && (
                 <button
                   onClick={() => setShowShareModal(true)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 font-semibold text-white transition-colors hover:bg-emerald-700"
+                  className="admin-btn-green"
                 >
                   <FaShareAlt />
                   Share Requests ({selectedRequests.length})
@@ -447,7 +438,7 @@ export default function PrayerRequests() {
           filteredRequests.map((item, index) => (
             <div
               key={item._id}
-              className="animate-prayer-card-in transform-gpu rounded-3xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-5"
+              className="animate-prayer-card-in admin-card p-4 sm:p-5 hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
               style={{
                 animationDelay: `${Math.min(index, 12) * 90}ms`,
               }}
@@ -457,7 +448,7 @@ export default function PrayerRequests() {
                   type="checkbox"
                   checked={selectedRequests.includes(item._id)}
                   onChange={() => toggleRequest(item._id)}
-                  className="mt-1 h-5 w-5 flex-shrink-0 accent-primary"
+                  className="mt-1 h-5 w-5 flex-shrink-0 accent-[#531B24] cursor-pointer"
                 />
 
                 <div className="flex-1">
@@ -486,7 +477,7 @@ export default function PrayerRequests() {
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                     <button
                       onClick={() => setSelected(item)}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-white transition-colors hover:bg-blue-700"
+                      className="admin-btn-blue flex-1 !py-2.5 !text-xs sm:text-sm"
                     >
                       <FaEye />
                       View
@@ -495,7 +486,7 @@ export default function PrayerRequests() {
                     {item.status === "pending" && (
                       <button
                         onClick={() => markPrayed(item._id)}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-white transition-colors hover:bg-emerald-700"
+                        className="admin-btn-green"
                       >
                         <FaCheckCircle />
                         Prayed
@@ -511,15 +502,15 @@ export default function PrayerRequests() {
 
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white p-5 shadow-2xl sm:p-6">
+          <div className="admin-card w-full max-w-xl p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-2xl font-bold text-slate-900">
+              <h2 className="text-2xl font-bold text-[#531B24]">
                 Prayer Request
               </h2>
 
               <button
                 onClick={() => setSelected(null)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+                className="admin-btn-icon bg-slate-100 text-slate-700 hover:bg-slate-200"
                 aria-label="Close request dialog"
               >
                 ×
@@ -561,7 +552,7 @@ export default function PrayerRequests() {
 
             <button
               onClick={() => setSelected(null)}
-              className="mt-6 rounded-2xl bg-primary px-6 py-2.5 font-semibold text-white transition-colors hover:opacity-95"
+              className="admin-btn-primary mt-6"
             >
               Close
             </button>
@@ -571,10 +562,10 @@ export default function PrayerRequests() {
 
       {showShareModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl sm:p-6">
+          <div className="admin-card w-full max-w-md p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">
+                <h2 className="text-2xl font-bold text-[#531B24]">
                   Share Prayer Requests
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
@@ -584,7 +575,7 @@ export default function PrayerRequests() {
 
               <button
                 onClick={() => setShowShareModal(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+                className="admin-btn-icon bg-slate-100 text-slate-700 hover:bg-slate-200"
                 aria-label="Close share dialog"
               >
                 ×
@@ -598,7 +589,7 @@ export default function PrayerRequests() {
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="mb-5 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="admin-input mb-5"
             >
               {SHARE_LANGUAGE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -611,7 +602,7 @@ export default function PrayerRequests() {
               <button
                 onClick={sharePrayerRequests}
                 disabled={shareBusy}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 font-semibold text-white transition-colors hover:bg-emerald-700"
+                className="admin-btn-green w-full"
               >
                 <FaWhatsapp />
                 {shareBusy ? "Translating..." : "WhatsApp Share"}
@@ -620,7 +611,7 @@ export default function PrayerRequests() {
               <button
                 onClick={copyPrayerRequests}
                 disabled={shareBusy}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+                className="admin-btn-primary w-full"
               >
                 <FaCopy />
                 {shareBusy ? "Translating..." : "Copy Request"}
@@ -628,7 +619,7 @@ export default function PrayerRequests() {
 
               <button
                 onClick={() => setShowShareModal(false)}
-                className="rounded-2xl bg-slate-500 py-3 font-semibold text-white transition-colors hover:bg-slate-600"
+                className="admin-btn-secondary w-full"
               >
                 Close
               </button>

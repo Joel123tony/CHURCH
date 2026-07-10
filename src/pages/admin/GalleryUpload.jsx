@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import imageCompression from "browser-image-compression";
 import { toast } from "react-toastify";
 import API from "../../api/axios";
+import CompressionBadge from "../../components/CompressionBadge";
 
 const formatBytes = (bytes) => {
   if (!bytes) return "0 KB";
@@ -15,43 +15,7 @@ const formatBytes = (bytes) => {
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 };
 
-const getCompressionOptions = (sizeInBytes) => {
-  const sizeInMB = sizeInBytes / (1024 * 1024);
-
-  if (sizeInMB <= 1) {
-    return {
-      maxSizeMB: 0.95,
-      maxWidthOrHeight: 1920,
-      initialQuality: 0.95,
-      useWebWorker: true,
-    };
-  }
-
-  if (sizeInMB <= 5) {
-    return {
-      maxSizeMB: 1.5,
-      maxWidthOrHeight: 2200,
-      initialQuality: 0.92,
-      useWebWorker: true,
-    };
-  }
-
-  if (sizeInMB <= 15) {
-    return {
-      maxSizeMB: 2.5,
-      maxWidthOrHeight: 2600,
-      initialQuality: 0.9,
-      useWebWorker: true,
-    };
-  }
-
-  return {
-    maxSizeMB: 4,
-    maxWidthOrHeight: 3200,
-    initialQuality: 0.88,
-    useWebWorker: true,
-  };
-};
+// Compression is now handled on the backend
 
 export default function GalleryUpload({ onSuccess }) {
   const [files, setFiles] = useState([]);
@@ -67,38 +31,18 @@ export default function GalleryUpload({ onSuccess }) {
     [files]
   );
 
-  const onDrop = useCallback(async (acceptedFiles) => {
-    const processed = await Promise.all(
-      acceptedFiles.map(async (file) => {
-        const originalSize = file.size || 0;
-
-        if (file.type.startsWith("image/")) {
-          const compressed = await imageCompression(
-            file,
-            getCompressionOptions(originalSize)
-          );
-
-          return {
-            file: compressed,
-            preview: URL.createObjectURL(compressed),
-            originalSize,
-            compressedSize: compressed.size || originalSize,
-            label:
-              compressed.size && compressed.size < originalSize
-                ? `Compressed ${formatBytes(originalSize)} → ${formatBytes(compressed.size)}`
-                : `Image ${formatBytes(originalSize)}`,
-          };
-        }
-
-        return {
-          file,
-          preview: URL.createObjectURL(file),
-          originalSize,
-          compressedSize: originalSize,
-          label: `Video ${formatBytes(originalSize)}`,
-        };
-      })
-    );
+  const onDrop = useCallback((acceptedFiles) => {
+    const processed = acceptedFiles.map((file) => {
+      const originalSize = file.size || 0;
+      const isImage = file.type.startsWith("image/");
+      
+      return {
+        file,
+        preview: URL.createObjectURL(file),
+        originalSize,
+        label: `${isImage ? "Image" : "Video"} ${formatBytes(originalSize)} (Will compress on upload)`,
+      };
+    });
 
     setFiles((prev) => [...prev, ...processed]);
     toast.info(`Added ${processed.length} file(s) to the queue`);
@@ -132,7 +76,8 @@ export default function GalleryUpload({ onSuccess }) {
       const grandTotalBytes = totalBytes || 1;
       let completedBytes = 0;
 
-      for (const item of files) {
+      for (let index = 0; index < files.length; index++) {
+        const item = files[index];
         const formData = new FormData();
         const fileBytes = item.file?.size || 0;
         const baseBytes = completedBytes;
@@ -142,9 +87,7 @@ export default function GalleryUpload({ onSuccess }) {
         formData.append("eventDate", eventDate || "");
 
         const res = await API.post("/gallery", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          timeout: 5 * 60 * 1000, // 5 minutes max per file
           onUploadProgress: (event) => {
             if (!event.total) return;
 
@@ -163,12 +106,16 @@ export default function GalleryUpload({ onSuccess }) {
           },
         });
 
-        createdItems.push(res?.data?.data);
+        const { originalSize, compressedSize, savings, savingsPercentage, status } = res.data;
+        // Keep the file in the UI but update its stats
+        setFiles(prev => prev.map((f, i) => i === index ? { ...f, compressionStats: res.data } : f));
+        
+        createdItems.push(res.data.data);
         completedBytes += fileBytes;
         setUploadProgress((completedBytes / grandTotalBytes) * 100);
       }
 
-      setFiles([]);
+      // DO NOT setFiles([]) so the badges remain visible
       setTitle("");
       setEventDate("");
       setUploadProgress(100);
@@ -200,23 +147,19 @@ export default function GalleryUpload({ onSuccess }) {
         placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="w-full border rounded-lg p-3"
+        className="admin-input"
       />
 
       <input
         type="date"
         value={eventDate}
         onChange={(e) => setEventDate(e.target.value)}
-        className="w-full border rounded-lg p-3"
+        className="admin-input"
       />
 
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-500 ${
-          isDragActive
-            ? "bg-blue-50 border-blue-400 scale-[1.01]"
-            : "bg-gray-50 hover:bg-gray-100 border-gray-200"
-        } ${uploading ? "animate-pulse" : ""}`}
+        className={`admin-upload-box ${isDragActive ? "border-[#531B24] bg-[#531B24]/5 scale-[1.01]" : ""} ${uploading ? "animate-pulse" : ""}`}
       >
         <input {...getInputProps()} />
 
@@ -278,7 +221,8 @@ export default function GalleryUpload({ onSuccess }) {
                 />
               )}
 
-              <div className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-1 text-[10px] text-white backdrop-blur-sm">
+              <CompressionBadge stats={item.compressionStats} />
+              <div className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2 py-1 text-[10px] text-white backdrop-blur-sm z-10">
                 {item.label}
               </div>
 
@@ -305,11 +249,7 @@ export default function GalleryUpload({ onSuccess }) {
       <button
         onClick={uploadAll}
         disabled={uploading}
-        className={`px-6 py-3 rounded-lg text-white transition-all duration-300 disabled:opacity-50 ${
-          uploading
-            ? "bg-gradient-to-r from-green-500 to-emerald-600 animate-pulse"
-            : "bg-green-600 hover:bg-green-700"
-        }`}
+        className={`admin-btn-primary disabled:opacity-50 ${uploading ? "animate-pulse" : ""}`}
       >
         {uploading
           ? `Uploading ${Math.round(uploadProgress)}%`
@@ -318,18 +258,19 @@ export default function GalleryUpload({ onSuccess }) {
 
       {previewFile && (
         <div
-          className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4 sm:p-6 backdrop-blur-md"
           onClick={() => setPreviewFile(null)}
         >
           <div
-            className="relative max-w-6xl w-full"
+            className="relative flex flex-col items-center justify-center max-w-full max-h-full"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setPreviewFile(null)}
-              className="absolute top-3 right-3 z-20 bg-white text-black px-3 py-1 rounded"
+              className="absolute -top-12 right-0 md:-right-12 md:top-0 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-colors backdrop-blur-sm z-[110]"
+              title="Close Preview"
             >
-              ×
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
             {previewFile.file.type.startsWith("video") ? (
@@ -337,13 +278,13 @@ export default function GalleryUpload({ onSuccess }) {
                 src={previewFile.preview}
                 controls
                 autoPlay
-                className="w-full max-h-[85vh] rounded-lg bg-black"
+                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-xl bg-black object-contain shadow-2xl ring-1 ring-white/20"
               />
             ) : (
               <img
                 src={previewFile.preview}
                 alt=""
-                className="w-full max-h-[85vh] object-contain rounded-lg"
+                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-xl object-contain shadow-2xl ring-1 ring-white/20"
               />
             )}
           </div>

@@ -14,11 +14,14 @@ const fileFilter = (req, file, cb) => {
     "video/mp4",
     "video/mov",
     "video/quicktime",
+    "video/x-msvideo", // avi
+    "video/x-matroska", // mkv
+    "video/webm",
   ];
 
   if (!allowedTypes.includes(file.mimetype)) {
     return cb(
-      new Error("Only images (JPG, PNG, WEBP) or videos (MP4, MOV) allowed"),
+      new Error("Only images (JPG, PNG, WEBP) or videos (MP4, MOV, AVI, MKV, WEBM) allowed"),
       false
     );
   }

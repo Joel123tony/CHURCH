@@ -1,6 +1,6 @@
 import express from "express";
 import upload from "../middleware/upload.js";
-import cloudinary from "../config/cloudinary.js";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 
 const router = express.Router();
 
@@ -16,28 +16,24 @@ router.post("/image", upload.single("file"), async (req, res) => {
       });
     }
 
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: "church",
-          resource_type: "auto",
-          quality: "auto:good",
-          fetch_format: "auto",
-        },
-        (error, result) => {
-          if (error) return reject(error);
-          resolve(result);
-        }
-      );
+    const isVideo = req.file.mimetype?.startsWith("video/");
+    const targetFolder = req.body.folder || "mtc-padikuppam/website/images";
 
-      stream.end(req.file.buffer);
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: targetFolder,
+      resource_type: isVideo ? "video" : "image"
     });
 
     res.status(200).json({
       success: true,
-      url: result.secure_url,
+      url: result.optimized_url || result.url,
       public_id: result.public_id,
       resource_type: result.resource_type,
+      originalSize: result.originalSize,
+      compressedSize: result.compressedSize,
+      savings: result.savings,
+      savingsPercentage: result.savingsPercentage,
+      status: result.status
     });
 
   } catch (err) {

@@ -79,8 +79,7 @@ export default function PreviewModal({ isOpen, onClose, url = "/" }) {
             src={previewUrl}
             title="Live Preview"
             className="h-full w-full border-none"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           />
         </div>
       </div>

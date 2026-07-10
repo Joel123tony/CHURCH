@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import imageCompression from "browser-image-compression";
 import {
   FaCamera,
   FaCalendarAlt,
@@ -13,10 +12,12 @@ import {
   FaTimes,
   FaTrashAlt,
   FaFileExcel,
+  FaUsers,
 } from "react-icons/fa";
 import API from "../../api/axios";
 import { ToastContainer, toast } from "react-toastify";
 import { useConfirm } from "../../context/ConfirmContext";
+import { getFallbackAvatar, handleImageError } from "../../utils/avatarFallback";
 import "react-toastify/dist/ReactToastify.css";
 
 const defaultForm = {
@@ -57,35 +58,7 @@ const formatBytes = (bytes) => {
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 };
 
-const getCompressionOptions = (sizeInBytes) => {
-  const sizeInMB = sizeInBytes / (1024 * 1024);
-
-  if (sizeInMB <= 1) {
-    return {
-      maxSizeMB: 0.9,
-      maxWidthOrHeight: 1800,
-      initialQuality: 0.95,
-      useWebWorker: true,
-    };
-  }
-
-  if (sizeInMB <= 5) {
-    return {
-      maxSizeMB: 1.5,
-      maxWidthOrHeight: 2200,
-      initialQuality: 0.92,
-      useWebWorker: true,
-    };
-  }
-
-  return {
-    maxSizeMB: 2.5,
-    maxWidthOrHeight: 2600,
-    initialQuality: 0.9,
-    useWebWorker: true,
-  };
-};
-
+// Compression is now handled on the backend
 const normalizeEducationSelection = (education) => {
   const items = Array.isArray(education)
     ? education
@@ -107,6 +80,8 @@ const normalizeEducationSelection = (education) => {
   };
 };
 
+import CompressionBadge from "../../components/CompressionBadge";
+
 export default function Pastors() {
   const confirm = useConfirm();
   const [pastors, setPastors] = useState([]);
@@ -121,6 +96,7 @@ export default function Pastors() {
   const [preview, setPreview] = useState(null);
   const [imageInfo, setImageInfo] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadStats, setUploadStats] = useState(null);
 
   const [educations, setEducations] = useState([""]);
   const [customEducation, setCustomEducation] = useState("");
@@ -207,39 +183,19 @@ export default function Pastors() {
     }
 
     try {
-      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append("file", selected);
+      formData.append("folder", "mtc-padikuppam/pastors/profile-images");
 
-      const compressed = await imageCompression(
-        selected,
-        getCompressionOptions(selected.size || 0)
-      );
+      const res = await API.post("/upload/image", formData);
+      const data = res.data;
 
-      const finalFile =
-        compressed instanceof File
-          ? compressed
-          : new File([compressed], selected.name, {
-            type: compressed.type || selected.type,
-          });
-
-      const blobUrl = URL.createObjectURL(finalFile);
-      setFile(finalFile);
-      setPreview(blobUrl);
-      setImageInfo({
-        name: finalFile.name || selected.name,
-        originalSize: selected.size || 0,
-        compressedSize: finalFile.size || selected.size || 0,
-      });
-
-      if ((finalFile.size || 0) < (selected.size || 0)) {
-        toast.success("Image compressed before upload");
-      } else {
-        toast.info("Image ready for upload");
-      }
+      setFile(data.url); // Use the URL directly for submission
+      setPreview(data.url);
+      setUploadStats(data);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to process image");
-    } finally {
-      setUploadingImage(false);
+      toast.error("Failed to upload image");
     }
   }, []);
 
@@ -254,16 +210,16 @@ export default function Pastors() {
   });
 
   const uploadImage = async () => {
-    if (!file) return "";
+    if (!file) return null;
+    
+    if (typeof file === "string") {
+      return { url: file, public_id: "" };
+    }
 
     const data = new FormData();
     data.append("file", file);
 
-    const res = await API.post("/upload/image", data, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const res = await API.post("/upload/image", data);
 
     return {
       url: res.data?.url || "",
@@ -315,11 +271,8 @@ export default function Pastors() {
         church: form.church,
         email: form.email,
         number: form.phone,
+        image: image?.url ? { url: image.url, public_id: image.public_id || "" } : null
       };
-
-      if (image?.url) {
-        payload.image = image;
-      }
 
       if (editId) {
         await API.put(`/pastors/${editId}`, payload);
@@ -331,9 +284,10 @@ export default function Pastors() {
 
       resetForm();
       fetchPastors();
+      setView("list");
     } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Operation failed");
+      console.error("Pastor submit error:", err);
+      toast.error(err?.response?.data?.message || err?.message || "Operation failed");
     } finally {
       setLoading(false);
     }
@@ -359,8 +313,8 @@ export default function Pastors() {
 
     setEducations(nextEducations);
     setCustomEducation(nextCustomEducation);
-    setFile(null);
-    setImageInfo(null);
+    setFile(p?.image?.url || null);
+    setUploadStats(null);
     setPreview(p?.image?.url || null);
     toast.info("Editing pastor");
     setView("add");
@@ -412,7 +366,7 @@ export default function Pastors() {
     }
     setFile(null);
     setPreview(null);
-    setImageInfo(null);
+    setUploadStats(null);
   };
 
   const handleExport = async () => {
@@ -436,12 +390,13 @@ export default function Pastors() {
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-3 py-4 sm:px-6">
 
-      <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-4 shadow-lg sm:p-6 md:flex-row md:items-center md:justify-between">
+      <div className="admin-header-container">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+          <h1 className="admin-header-title">
+            <FaUsers className="admin-header-icon" />
             Pastors Management
           </h1>
-          <p className="mt-1 text-sm text-slate-500 sm:text-base">
+          <p className="admin-header-desc">
             Search, edit, pin, and update pastors with a responsive admin flow.
           </p>
         </div>
@@ -459,27 +414,21 @@ export default function Pastors() {
       <div className="mb-6 flex flex-wrap gap-3">
         <button
           onClick={() => setView("add")}
-          className={`rounded-2xl px-4 py-2.5 font-semibold transition-colors ${view === "add"
-              ? "bg-green-600 text-white shadow"
-              : "bg-white text-slate-700 hover:bg-slate-100"
-            }`}
+          className={view === "add" ? "admin-tab-active" : "admin-tab-inactive"}
         >
-          Add Pastors
+          {editId ? <FaEdit /> : <FaPlus />} {editId ? "Edit Pastor" : "Add Pastor"}
         </button>
 
         <button
           onClick={() => setView("list")}
-          className={`rounded-2xl px-4 py-2.5 font-semibold transition-colors ${view === "list"
-              ? "bg-slate-800 text-white shadow"
-              : "bg-white text-slate-700 hover:bg-slate-100"
-            }`}
+          className={view === "list" ? "admin-tab-active" : "admin-tab-inactive"}
         >
-          Pastor&apos;s List
+          <FaUsers /> Pastor's List
         </button>
 
         <button
           onClick={handleExport}
-          className="rounded-2xl bg-blue-700 hover:bg-blue-800 text-white px-4 py-2.5 font-semibold transition-colors shadow flex items-center gap-2"
+          className="admin-btn-secondary ml-auto"
         >
           <FaFileExcel />
           Download Excel
@@ -494,7 +443,7 @@ export default function Pastors() {
       >
         <form
           onSubmit={handleSubmit}
-          className="rounded-3xl border border-slate-100 bg-white p-4 shadow-lg sm:p-6"
+          className="admin-card p-6 sm:p-8"
         >
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <input
@@ -534,7 +483,7 @@ export default function Pastors() {
                     placeholder="Joined Year"
                     value={form.joinedYear}
                     onChange={handleChange}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 pl-11 text-base shadow-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    className="admin-input pl-11"
                     required
                   />
                 </div>
@@ -546,7 +495,7 @@ export default function Pastors() {
                     placeholder="End Year"
                     value={form.endYear}
                     onChange={handleChange}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 pl-11 text-base shadow-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    className="admin-input pl-11"
                   />
                 </div>
               </div>
@@ -557,7 +506,7 @@ export default function Pastors() {
               placeholder="Email"
               value={form.email}
               onChange={handleChange}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="admin-input"
             />
 
             <input
@@ -565,13 +514,13 @@ export default function Pastors() {
               placeholder="Phone"
               value={form.phone}
               onChange={handleChange}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="admin-input"
             />
           </div>
 
           <div className="mt-4 space-y-4">
             <div>
-              <label className="mb-2 block font-semibold text-slate-800">
+              <label className="admin-label">
                 Educational Qualifications
               </label>
 
@@ -585,7 +534,7 @@ export default function Pastors() {
                         updated[index] = e.target.value;
                         setEducations(updated);
                       }}
-                      className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                      className="admin-input min-w-0 flex-1"
                     >
                       <option value="">Select Degree</option>
                       {educationOptions.map((option) => (
@@ -601,7 +550,7 @@ export default function Pastors() {
                         onClick={() =>
                           setEducations(educations.filter((_, i) => i !== index))
                         }
-                        className="rounded-2xl bg-red-500 px-3 text-white transition-colors hover:bg-red-600"
+                        className="admin-btn-red !px-3"
                       >
                         ×
                       </button>
@@ -615,14 +564,14 @@ export default function Pastors() {
                     placeholder="Enter custom degree"
                     value={customEducation}
                     onChange={(e) => setCustomEducation(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                    className="admin-input mt-2"
                   />
                 )}
 
                 <button
                   type="button"
                   onClick={() => setEducations([...educations, ""])}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-green-600 px-4 py-2.5 font-semibold text-white transition-colors hover:bg-green-700"
+                  className="admin-btn-secondary mt-3 w-max"
                 >
                   <FaPlus />
                   Add Additional Education
@@ -635,21 +584,18 @@ export default function Pastors() {
               placeholder="Bio"
               value={form.bio}
               onChange={handleChange}
-              className="min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="admin-input min-h-[120px]"
             />
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_0.95fr]">
               <div
                 {...getRootProps()}
-                className={`rounded-3xl border-2 border-dashed p-4 sm:p-5 transition-all duration-300 ${isDragActive
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-slate-200 bg-slate-50 hover:bg-slate-100"
-                  }`}
+                className={`admin-upload-box ${isDragActive ? "border-emerald-500 bg-emerald-50" : ""}`}
               >
                 <input {...getInputProps()} />
 
                 <div className="flex min-h-28 flex-col items-center justify-center py-1 text-center sm:min-h-32 sm:py-2">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm">
+                  <div className="admin-upload-icon">
                     <FaCloudUploadAlt className="text-xl" />
                   </div>
 
@@ -666,7 +612,7 @@ export default function Pastors() {
                     <button
                       type="button"
                       onClick={open}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
+                      className="admin-btn-primary"
                     >
                       <FaImage />
                       Choose File
@@ -678,20 +624,10 @@ export default function Pastors() {
                       Compressing image...
                     </p>
                   )}
-
-                  {imageInfo && (
-                    <div className="mt-3 max-w-sm rounded-2xl bg-white/90 px-4 py-3 text-left text-sm text-slate-600 shadow-sm">
-                      <p className="font-semibold text-slate-800">{imageInfo.name}</p>
-                      <p className="mt-1">
-                        {formatBytes(imageInfo.originalSize)} →{" "}
-                        {formatBytes(imageInfo.compressedSize)}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+              <div className="admin-card p-3 sm:p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-slate-800 sm:text-base">
                     Image Preview
@@ -701,7 +637,7 @@ export default function Pastors() {
                     <button
                       type="button"
                       onClick={clearSelectedImage}
-                      className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-3 py-2 text-xs text-white transition-colors hover:bg-red-600 sm:text-sm"
+                      className="admin-btn-red"
                     >
                       <FaTimes />
                       Remove
@@ -711,11 +647,15 @@ export default function Pastors() {
 
                 <div className="mt-3 overflow-hidden rounded-2xl bg-slate-100">
                   {preview ? (
-                    <img
-                      src={preview}
-                      alt="Pastor preview"
-                      className="h-40 w-full object-cover sm:h-44"
-                    />
+                    <div className="relative">
+                      <CompressionBadge stats={uploadStats} />
+                      <img
+                        src={preview}
+                        alt="Pastor preview"
+                        onError={(e) => handleImageError(e)}
+                        className="h-40 w-full object-cover sm:h-44"
+                      />
+                    </div>
                   ) : (
                     <div className="flex h-40 items-center justify-center text-slate-400 sm:h-44">
                       <div className="text-center">
@@ -731,8 +671,7 @@ export default function Pastors() {
 
           <button
             type="submit"
-            className={`mt-6 w-full rounded-2xl px-5 py-3 font-semibold text-white transition-colors sm:w-auto ${editId ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"
-              }`}
+            className="admin-btn-primary mt-6 w-full sm:w-auto"
           >
             {editId ? "Update Pastor" : "Add Pastor"}
           </button>
@@ -747,17 +686,17 @@ export default function Pastors() {
             {filteredPastors.map((p, index) => (
               <div
                 key={p?._id}
-                className={`animate-admin-card-in overflow-hidden rounded-3xl border-2 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${p?.isCurrent ? "border-green-500" : "border-transparent"
-                  }`}
+                className={`animate-admin-card-in overflow-hidden admin-card transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${p?.isCurrent ? "border-green-500" : ""}`}
                 style={{
                   animationDelay: `${Math.min(index, 10) * 70}ms`,
                 }}
               >
                 <div className="relative">
                   <img
-                    src={p?.image?.url || "/default.png"}
+                    src={p?.image?.url || getFallbackAvatar()}
                     alt={p?.name}
-                    className="h-52 w-full object-cover"
+                    onError={(e) => handleImageError(e)}
+                    className="pastor-placeholder h-52 w-full object-cover"
                   />
 
                   {p?.isCurrent && (
@@ -788,7 +727,7 @@ export default function Pastors() {
                   <div className="flex flex-wrap gap-2 pt-2">
                     <button
                       onClick={() => setSelectedPastor(p)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700"
+                      className="admin-btn-blue flex-1 !py-2.5 !text-xs sm:text-sm"
                     >
                       <FaEye />
                       View
@@ -796,7 +735,7 @@ export default function Pastors() {
 
                     <button
                       onClick={() => handleEdit(p)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm text-white transition-colors hover:bg-amber-600"
+                      className="admin-btn-orange flex-1 !py-2.5 !text-xs sm:text-sm"
                     >
                       <FaEdit />
                       Edit
@@ -804,7 +743,7 @@ export default function Pastors() {
 
                     <button
                       onClick={() => handleDelete(p._id)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700"
+                      className="admin-btn-red flex-1 !py-2.5 !text-xs sm:text-sm"
                     >
                       <FaTrashAlt />
                       Delete
@@ -813,7 +752,7 @@ export default function Pastors() {
                     {!p?.isCurrent && (
                       <button
                         onClick={() => setCurrentPastor(p._id)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2 text-sm text-white transition-colors hover:bg-green-700"
+                        className="admin-btn-green w-full mt-2 !py-2 !text-xs"
                       >
                         <FaStar />
                         Pastor Now
@@ -828,17 +767,18 @@ export default function Pastors() {
       )}
       {selectedPastor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+          <div className="admin-card max-h-[90vh] w-full max-w-3xl overflow-y-auto">
             <div className="relative">
               <img
-                src={selectedPastor?.image?.url || "/default.png"}
+                src={selectedPastor?.image?.url || getFallbackAvatar()}
                 alt={selectedPastor?.name}
-                className="h-72 w-full object-cover sm:h-80"
+                onError={(e) => handleImageError(e)}
+                className="pastor-placeholder h-72 w-full object-cover sm:h-80"
               />
 
               <button
                 onClick={() => setSelectedPastor(null)}
-                className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black"
+                className="admin-btn-icon absolute right-4 top-4 bg-white/90 text-slate-700 hover:bg-white"
                 aria-label="Close pastor details"
               >
                 ×
