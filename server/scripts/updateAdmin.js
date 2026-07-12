@@ -18,7 +18,7 @@ const updateAdmin = async () => {
       { role: "admin" },
       {
         email: newEmail,
-        passwordHash: hashedPassword,
+        password: hashedPassword,
       }
     );
 

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import API from "../../api/axios";
 import { FaUpload, FaSpinner, FaTrashAlt } from "react-icons/fa";
+import { useAlert } from "../../context/ConfirmContext";
 
 export default function ImageField({ value, onChange }) {
   const [uploading, setUploading] = useState(false);
+  const alert = useAlert();
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -20,7 +22,11 @@ export default function ImageField({ value, onChange }) {
       }
     } catch (err) {
       console.error("Cloudinary upload failed:", err);
-      alert("Failed to upload image. Please try again.");
+      alert({
+        title: "❌ Upload Failed",
+        message: "Failed to upload image. Please try again.",
+        buttonText: "Try Again"
+      });
     } finally {
       setUploading(false);
     }

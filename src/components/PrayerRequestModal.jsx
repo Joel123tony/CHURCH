@@ -1,6 +1,7 @@
 import { useState } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
+import { useAlert } from "../context/ConfirmContext";
 
 export default function PrayerRequestModal({ isOpen, onClose }) {
   const { t } = useLanguage();
@@ -9,6 +10,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
   const [request, setRequest] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const alert = useAlert();
 
   if (!isOpen) return null;
 
@@ -35,7 +37,11 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
       }, 2000);
     } catch (err) {
       console.error("Prayer submit error:", err);
-      alert("Failed to submit prayer request");
+      alert({
+        title: "❌ Submit Failed",
+        message: "Failed to submit prayer request. Please try again.",
+        buttonText: "OK"
+      });
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import API from "../../api/axios";
+import { useAlert } from "../../context/ConfirmContext";
 
 export default function UploadPanel({ onSuccess }) {
   const [file, setFile] = useState(null);
@@ -7,6 +8,7 @@ export default function UploadPanel({ onSuccess }) {
   const [joinedYear, setJoinedYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
+  const alert = useAlert();
 
   /* ================= FILE CHANGE ================= */
   const handleFileChange = (e) => {
@@ -21,7 +23,11 @@ export default function UploadPanel({ onSuccess }) {
   /* ================= UPLOAD TO BACKEND (FIXED ROUTE) ================= */
   const uploadToCloudinary = async () => {
     if (!file) {
-      alert("Please select a file");
+      alert({
+        title: "❌ Missing File",
+        message: "Please select a file to upload.",
+        buttonText: "OK"
+      });
       return null;
     }
 
@@ -34,7 +40,11 @@ export default function UploadPanel({ onSuccess }) {
       return res.data; // { url, public_id, type }
     } catch (err) {
       console.log("Upload error:", err.response?.data || err.message);
-      alert("Upload failed");
+      alert({
+        title: "❌ Upload Failed",
+        message: "Failed to upload image to the server.",
+        buttonText: "Try Again"
+      });
       return null;
     }
   };
@@ -71,11 +81,19 @@ export default function UploadPanel({ onSuccess }) {
       setName("");
       setJoinedYear("");
 
-      alert("Pastor uploaded successfully!");
+      alert({
+        title: "✅ Success",
+        message: "Pastor uploaded successfully!",
+        buttonText: "OK"
+      });
 
     } catch (err) {
       console.log("Submit error:", err.response?.data || err.message);
-      alert("Failed to save pastor");
+      alert({
+        title: "❌ Save Failed",
+        message: "Failed to save pastor to database.",
+        buttonText: "Try Again"
+      });
     } finally {
       setLoading(false);
     }

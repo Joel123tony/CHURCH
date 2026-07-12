@@ -10,8 +10,19 @@ export default function YoutubeSection() {
   const loadVideos = async () => {
     try {
       const res = await API.get("/youtube/latest");
+      console.log("Fetched videos:", res.data);
       const data = Array.isArray(res.data) ? res.data : [];
-      setVideos(data.slice(0, 4));
+      const newVideos = data.slice(0, 4);
+      setVideos(prev =>
+        newVideos.map(video => {
+          const prevVideo = prev.find(v => (v.id && v.id === video.id) || (v.videoId && v.videoId === video.videoId));
+          return {
+            ...prevVideo,
+            ...video,
+            title: video.title || video.snippet?.title || prevVideo?.title || "No Title"
+          };
+        })
+      );
     } catch (err) {
       console.error("YouTube Error:", err);
       setVideos([]);
@@ -23,6 +34,12 @@ export default function YoutubeSection() {
   useEffect(() => {
     void loadVideos();
   }, []);
+
+  const getBestThumbnail = (video) => {
+    const t = video.snippet?.thumbnails;
+    if (!t) return video.thumbnail;
+    return t.maxres?.url || t.standard?.url || t.high?.url || t.medium?.url || video.thumbnail;
+  };
 
   return (
     <section id="Youtube" className="py-16 bg-[#54091b]">
@@ -44,46 +61,63 @@ export default function YoutubeSection() {
           <div className="text-center text-white/70">{t("youtube.noVideos")}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {videos.map((video) => (
-              <a
-                key={video.videoId || video.title}
-                href={
-                  video.videoId
-                    ? `https://www.youtube.com/watch?v=${video.videoId}`
-                    : "https://www.youtube.com/@MethodistChurchPadikuppam"
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group"
-              >
-                <div className="rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 bg-[#F4EFE7]">
-                  <div className="relative overflow-hidden">
+            {videos.map((video, index) => {
+              const isLive = video.snippet?.liveBroadcastContent === 'live';
+              return (
+                <a
+                  key={video.videoId || video.title}
+                  href={
+                    video.videoId
+                      ? `https://www.youtube.com/watch?v=${video.videoId}`
+                      : "https://www.youtube.com/@MethodistChurchPadikuppam"
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="youtube-card block"
+                  style={{ animationDelay: `${index * 80}ms` }}
+                >
+                  <div className="youtube-thumbnail">
                     <img
-                      src={video.thumbnail}
+                      src={getBestThumbnail(video)}
                       alt={video.title}
-                      className="w-full h-56 object-cover group-hover:scale-105 transition duration-300"
+                      loading="lazy"
                       onError={(e) => {
                         if (video.videoId) {
                           e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
                         }
                       }}
                     />
+                    
+                    {/* Play Button Overlay */}
+                    <div className="youtube-play-btn">
+                      <svg className="youtube-play-icon" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+
+                    {/* Live Badge */}
+                    {isLive && (
+                      <div className="youtube-live-badge">
+                        <span className="youtube-live-dot"></span>
+                        LIVE
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4">
-                    <h3 className="line-clamp-2 text-base font-semibold !text-[#531B24]">
+                    <div className="youtube-title !text-[#531B24]" role="heading" aria-level="3">
                       {video.title}
-                    </h3>
+                    </div>
 
                     {video.publishedAt && (
-                      <p className="mt-2 text-sm text-[#54091b]">
+                      <p className="mt-2 text-sm text-[#54091b]/80 font-medium">
                         {new Date(video.publishedAt).toLocaleDateString()}
                       </p>
                     )}
                   </div>
-                </div>
-              </a>
-            ))}
+                </a>
+              );
+            })}
           </div>
         )}
       </div>

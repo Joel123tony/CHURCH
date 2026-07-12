@@ -1,14 +1,33 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import API from "../api/axios";
 import PdfViewerModal from "./PdfViewerModal";
-import { FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaSearch, FaChevronLeft, FaChevronRight, FaTimes, FaCalendarAlt, FaFilePdf } from "react-icons/fa";
 import { useLanguage } from "../context/LanguageContext";
+
+const MONTHS = [
+  { value: "", label: "All Months" },
+  { value: "1", label: "January" },
+  { value: "2", label: "February" },
+  { value: "3", label: "March" },
+  { value: "4", label: "April" },
+  { value: "5", label: "May" },
+  { value: "6", label: "June" },
+  { value: "7", label: "July" },
+  { value: "8", label: "August" },
+  { value: "9", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+];
 
 export default function Books() {
   const { t, cmsData } = useLanguage();
 
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState(null);
   const scrollContainerRef = useRef(null);
@@ -27,20 +46,68 @@ export default function Books() {
     fetchBooks();
   }, []);
 
-  const filteredBooks = books.filter((book) =>
-    book.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    books.forEach(book => {
+      if (book.date) {
+        const y = new Date(book.date).getFullYear();
+        if (!isNaN(y)) years.add(y);
+      }
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [books]);
+
+  const filteredBooks = useMemo(() => {
+    return books.filter((book) => {
+      const titleMatch = book.title.toLowerCase().includes(search.toLowerCase());
+      
+      let monthMatch = true;
+      let yearMatch = true;
+      
+      if (selectedMonth || selectedYear) {
+        if (!book.date) {
+          monthMatch = !selectedMonth;
+          yearMatch = !selectedYear;
+        } else {
+          const d = new Date(book.date);
+          const m = d.getMonth() + 1;
+          const y = d.getFullYear();
+          
+          if (selectedMonth) {
+            monthMatch = (m === parseInt(selectedMonth));
+          }
+          if (selectedYear) {
+            yearMatch = (y === parseInt(selectedYear));
+          }
+        }
+      }
+      
+      return titleMatch && monthMatch && yearMatch;
+    });
+  }, [books, search, selectedMonth, selectedYear]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setSelectedMonth("");
+    setSelectedYear("");
+  };
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
     }
   };
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const options = { year: 'numeric', month: 'long' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   return (
@@ -48,7 +115,7 @@ export default function Books() {
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
 
         {/* Header Section */}
-        <div className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div className="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
           <div>
             <h2 className="text-3xl font-bold text-[#54091b]">
               {cmsData?.books?.title || t("Books & Pamphlets")}
@@ -60,51 +127,105 @@ export default function Books() {
             )}
           </div>
 
-          {/* Search Bar aligned to top-right on desktop */}
-          <div className="w-full md:w-[280px] lg:w-[320px] relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FaSearch className="text-sm text-[#94A3B8]" />
-            </div>
-            <input
-              type="text"
-              className="w-full border border-gray-200 rounded-lg py-2 pl-9 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-[#ee0039]/50 transition shadow-sm h-10 bg-[#FFFFFF] text-[#1E293B]"
-              placeholder={cmsData?.books?.searchPlaceholder || t("Search by title...")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {filteredBooks.length > 0 && (
-              <div className="absolute inset-y-0 right-0 pr-1.5 flex items-center pointer-events-none">
-                <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-                  {filteredBooks.length} {t("Books")}
-                </span>
+          {/* Modern Filter Bar */}
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full xl:w-auto">
+            
+            {/* Search */}
+            <div className="relative w-full sm:w-48 md:w-56">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaSearch className="text-sm text-[#94A3B8]" />
               </div>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#D4AF37] transition shadow-sm bg-white text-[#1E293B]"
+                placeholder={t("Search Books...")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Month Picker */}
+            <div className="relative w-full sm:w-36">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#D4AF37] transition shadow-sm bg-white text-[#1E293B] appearance-none cursor-pointer"
+              >
+                {MONTHS.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <FaCalendarAlt className="text-xs text-[#94A3B8]" />
+              </div>
+            </div>
+
+            {/* Year Picker */}
+            <div className="relative w-full sm:w-32">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#D4AF37] transition shadow-sm bg-white text-[#1E293B] appearance-none cursor-pointer"
+              >
+                <option value="">All Years</option>
+                {availableYears.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <FaCalendarAlt className="text-xs text-[#94A3B8]" />
+              </div>
+            </div>
+
+            {/* Clear Filters */}
+            {(search || selectedMonth || selectedYear) && (
+              <button
+                onClick={clearFilters}
+                className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-[#54091b] bg-[#54091b]/10 hover:bg-[#54091b]/20 rounded-xl transition flex items-center justify-center gap-2"
+              >
+                <FaTimes className="text-xs" />
+                {t("Clear")}
+              </button>
             )}
+            
           </div>
         </div>
 
         {/* Books Container */}
-        <div className="relative group/container">
+        <div className="relative group/container mt-4">
           {loading ? (
-            <div className="flex justify-center items-center h-40">
-              <div className="w-8 h-8 border-4 border-[#ee0039] border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex justify-center items-center h-64">
+              <div className="w-10 h-10 border-4 border-[#54091b] border-t-[#D4AF37] rounded-full animate-spin"></div>
             </div>
           ) : filteredBooks.length === 0 ? (
-            <div className="text-center py-10 text-sm font-medium opacity-80 text-[#1E293B]">
-              {cmsData?.books?.emptyStateMessage || t("No books found matching your search.")}
+            <div className="flex flex-col items-center justify-center py-20 text-center bg-white/50 rounded-3xl border border-gray-100 shadow-sm">
+              <span className="text-5xl mb-4">📚</span>
+              <h3 className="text-xl font-bold text-[#54091b] mb-2">{t("No books found")}</h3>
+              <p className="text-sm font-medium opacity-80 text-[#1E293B]">
+                {t("Try selecting another month, year, or clearing your filters.")}
+              </p>
+              {(search || selectedMonth || selectedYear) && (
+                <button
+                  onClick={clearFilters}
+                  className="mt-6 px-6 py-2 bg-[#54091b] text-[#F6EFE3] rounded-full font-medium hover:bg-[#5f0a1e] hover:shadow-lg transition-all duration-300"
+                >
+                  {t("Clear Filters")}
+                </button>
+              )}
             </div>
           ) : (
-            <>
+            <div className="relative px-2 sm:px-12 md:px-16">
               {/* Navigation Arrows (Desktop) */}
               <button
                 onClick={scrollLeft}
-                className="absolute left-[-20px] top-1/2 -translate-y-1/2 z-10 hidden md:flex items-center justify-center w-12 h-12 rounded-full bg-white/90 backdrop-blur shadow-lg border border-gray-100 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white text-[#54091b]"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[#F6EFE3] text-[#54091b] shadow-xl border border-gray-200 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white"
               >
                 <FaChevronLeft className="pr-1 text-lg" />
               </button>
 
               <button
                 onClick={scrollRight}
-                className="absolute right-[-20px] top-1/2 -translate-y-1/2 z-10 hidden md:flex items-center justify-center w-12 h-12 rounded-full bg-white/90 backdrop-blur shadow-lg border border-gray-100 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white text-[#54091b]"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[#F6EFE3] text-[#54091b] shadow-xl border border-gray-200 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white"
               >
                 <FaChevronRight className="pl-1 text-lg" />
               </button>
@@ -112,47 +233,66 @@ export default function Books() {
               {/* Horizontal Scroll Area */}
               <div
                 ref={scrollContainerRef}
-                className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 snap-x snap-mandatory hide-scrollbar -mx-6 px-6 md:mx-0 md:px-0 scroll-smooth"
+                className="flex overflow-x-auto gap-5 sm:gap-6 pb-8 pt-4 snap-x snap-mandatory hide-scrollbar scroll-smooth"
               >
                 {filteredBooks.map((book) => (
                   <div
                     key={book._id}
                     onClick={() => setSelectedBook(book)}
-                    className="snap-start shrink-0 w-[85vw] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer"
+                    className="snap-center shrink-0 w-[85vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)] cursor-pointer"
                   >
-                    {/* Book Card matching YouTube card style */}
+                    {/* Premium Book Card */}
                     <div
-                      className="rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] border border-gray-100 flex flex-col h-full bg-[#F4EFE7]"
+                      className="group/card rounded-[20px] overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#D4AF37]/20 transition-all duration-300 hover:-translate-y-2 hover:border-[#D4AF37]/50 border border-gray-100 flex flex-col h-full bg-[#F4EFE7] relative"
                     >
-                      <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
+                      {/* Inner border glow effect */}
+                      <div className="absolute inset-0 rounded-[20px] ring-2 ring-transparent group-hover/card:ring-[#D4AF37]/50 transition-all duration-300 z-20 pointer-events-none"></div>
+                      
+                      <div className="relative aspect-[3/4] overflow-hidden bg-gray-200 shadow-inner">
                         <img
                           src={book.coverImageUrl}
                           alt={book.title}
                           loading="lazy"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500 ease-out"
                         />
+                        {/* Subtle overlay for better depth */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
                       </div>
 
-                      <div className="p-3 sm:p-4 flex-1 flex flex-col bg-[#54091b]">
-                        <h3 className="line-clamp-2 leading-snug text-base font-semibold !text-[#f4efe7]">
+                      {/* Glass-style Footer */}
+                      <div className="p-4 sm:p-5 flex-1 flex flex-col bg-[#54091b]/95 backdrop-blur-sm group-hover/card:bg-[#5f0a1e] transition-colors duration-300 relative z-10 border-t border-[#D4AF37]/10">
+                        <div 
+                          role="heading" 
+                          aria-level="3"
+                          className="line-clamp-2 book-title"
+                        >
                           {book.title}
-                        </h3>
+                        </div>
+                        
                         {book.author && (
-                          <p className="mt-1 opacity-90 text-sm font-medium text-[#f4efe7]">
+                          <p className="mt-1.5 opacity-90 text-sm font-medium text-[#F6EFE3]">
                             {book.author}
                           </p>
                         )}
-                        {book.date && (
-                          <p className="mt-0.5 opacity-80 text-xs text-[#f4efe7]">
-                            {book.date}
-                          </p>
-                        )}
+                        
+                        <div className="mt-auto pt-4 flex items-center justify-between text-xs sm:text-sm font-medium">
+                          {book.date ? (
+                            <span className="flex items-center text-[#D4AF37]/90">
+                              <span className="mr-1.5">📅</span> {formatDate(book.date)}
+                            </span>
+                          ) : (
+                            <span></span>
+                          )}
+                          <span className="flex items-center text-[#F6EFE3]/80 bg-[#F6EFE3]/10 px-2 py-1 rounded-md">
+                            <FaFilePdf className="mr-1.5 text-xs text-[#D4AF37]" /> PDF
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

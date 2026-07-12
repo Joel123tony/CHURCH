@@ -14,7 +14,7 @@ import VersionHistory from "../versioning/VersionHistory";
 // API & Context
 import { getBlock, saveBlock } from "../../services/api";
 import { useLanguage } from "../../context/LanguageContext";
-import { useConfirm } from "../../context/ConfirmContext";
+import { useConfirm, useAlert } from "../../context/ConfirmContext";
 
 // Icons
 import {
@@ -84,6 +84,7 @@ function StatusBadge({ status }) {
 // ─── Component ─────────────────────────────────────────────────────
 export default function AdvancedWebEditor() {
   const confirm = useConfirm();
+  const alert = useAlert();
 
   const [selectedSection, setSelectedSection] = useState("hero");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -172,10 +173,18 @@ export default function AdvancedWebEditor() {
       }
 
       setSaveStatus("Published");
-      alert("✅ Changes published successfully.");
+      alert({
+        title: "✅ Success",
+        message: "Changes published successfully.",
+        buttonText: "OK"
+      });
     } catch (err) {
       setSaveStatus("Publish Failed");
-      alert("Publish Failed. Please try again.");
+      alert({
+        title: "❌ Publish Failed",
+        message: "Publish Failed. Please try again.",
+        buttonText: "Try Again"
+      });
     } finally {
       setLoading(false);
     }

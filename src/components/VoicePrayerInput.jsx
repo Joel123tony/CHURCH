@@ -1,10 +1,13 @@
 import { useState, useRef } from "react";
 import axios from "../api/axios";
+import { useAlert } from "../context/ConfirmContext";
 
 export default function VoicePrayerInput() {
   const [name, setName] = useState("");
   const [request, setRequest] = useState("");
+  const [request, setRequest] = useState("");
   const [listening, setListening] = useState(false);
+  const alert = useAlert();
 
   const recognitionRef = useRef(null);
 
@@ -14,7 +17,11 @@ export default function VoicePrayerInput() {
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Voice input not supported in this browser");
+      alert({
+        title: "❌ Not Supported",
+        message: "Voice input is not supported in this browser.",
+        buttonText: "OK"
+      });
       return;
     }
 
@@ -71,7 +78,11 @@ export default function VoicePrayerInput() {
 
     const res = await axios.post("/prayer/format", payload);
 
-    alert("Prayer submitted successfully!");
+    alert({
+      title: "✅ Success",
+      message: "Prayer submitted successfully!",
+      buttonText: "OK"
+    });
     console.log(res.data);
   };
 
