@@ -45,6 +45,7 @@ export default function Login() {
     try {
       setLoading(true);
 
+      console.log('🔎 Login request payload', { email: cleanEmail, password: '[REDACTED]' });
       const res = await API.post("/auth/login", {
         email: cleanEmail,
         password,
@@ -78,6 +79,8 @@ export default function Login() {
 
     } catch (err) {
       console.error("LOGIN ERROR", err);
+      const message = err?.response?.data?.message || "Login failed";
+      setError(message);
       
       setError(
         err?.response?.data?.message ||

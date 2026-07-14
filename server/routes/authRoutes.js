@@ -14,19 +14,29 @@ const router = express.Router();
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const normalizedEmail = String(email ?? "").trim().toLowerCase();
+    
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
 
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
+      console.warn(`LOGIN ATTEMPT: Admin not found for email ${normalizedEmail}`);
       return res.status(400).json({
-        message: "Invalid email"
+        message: "Admin not found"
       });
     }
 
     const storedPassword = user.password || user.passwordHash;
 
     if (!storedPassword) {
+      console.warn(`LOGIN ATTEMPT: No password stored in DB for ${normalizedEmail}`);
       return res.status(400).json({
         message: "Invalid credentials (no password found in DB)"
       });
@@ -35,6 +45,7 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, storedPassword);
 
     if (!isMatch) {
+      console.warn(`LOGIN ATTEMPT: Incorrect password for user ${normalizedEmail}`);
       return res.status(400).json({
         message: "Invalid password"
       });
@@ -51,6 +62,8 @@ router.post("/login", async (req, res) => {
       }
     );
 
+    console.log(`LOGIN SUCCESS: User ${normalizedEmail} logged in`);
+
     return res.json({
       token,
       user
@@ -60,7 +73,7 @@ router.post("/login", async (req, res) => {
     console.error("LOGIN ERROR:", err);
 
     return res.status(500).json({
-      error: err.message
+      message: "Internal server error"
     });
   }
 });
@@ -168,16 +181,26 @@ router.post("/forgot-password", async (req, res) => {
                 Use the One-Time Password (OTP) below to continue.
               </p>
 
-              <!-- OTP Box -->
+              <!-- OTP Box with Click-to-Copy -->
               <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 300px; margin: 0 auto;">
                 <tr>
-                  <td align="center" style="background-color: #F8F3EA; border: 2px dashed #D4AF37; border-radius: 10px; padding: 20px;">
-                    <span style="font-family: monospace; font-size: 38px; font-weight: bold; color: #5D1324; letter-spacing: 8px; display: block;">
+                  <td align="center" 
+                      onclick="navigator.clipboard.writeText('${otp}').then(() => { var msg = document.getElementById('copy-msg'); msg.style.display = 'block'; setTimeout(() => { msg.style.display = 'none'; }, 2000); })"
+                      style="background-color: #F8F3EA; border: 2px dashed #D4AF37; border-radius: 10px; padding: 20px; cursor: pointer; transition: background-color 0.3s ease; user-select: all; -webkit-user-select: all;"
+                      onmouseover="this.style.backgroundColor='#F3E5AB'"
+                      onmouseout="this.style.backgroundColor='#F8F3EA'">
+                    <span style="font-family: monospace; font-size: 38px; font-weight: bold; color: #5D1324; letter-spacing: 8px; display: block; pointer-events: none;">
                       ${otp}
                     </span>
+                    <p style="margin: 8px 0 0 0; font-size: 12px; color: #8C7323; pointer-events: none;">← Click this OTP to copy</p>
                   </td>
                 </tr>
               </table>
+
+              <!-- Copy Success Message -->
+              <div id="copy-msg" style="display: none; text-align: center; margin-top: 15px; color: #28a745; font-weight: bold; font-size: 14px;">
+                ✓ OTP Copied
+              </div>
 
               <!-- Expiry Notice -->
               <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 25px;">

@@ -26,18 +26,21 @@ const seedAdmin = async () => {
     });
     console.log("✅ MongoDB Connected");
 
-    const adminCount = await User.countDocuments({ role: "admin" });
+    const adminEmails = ["methodistchurch1975@gmail.com", "1234eruk1637@gmail.com"];
     
-    if (adminCount === 0) {
-      const defaultPassword = await bcrypt.hash("admin123", 10);
-      await User.create({
-        email: "admin@church.com",
-        password: defaultPassword,
-        role: "admin",
-      });
-      console.log("✅ Seeded default admin (admin@church.com / admin123)");
-    } else {
-      console.log(`✅ Admin users already exist (Count: ${adminCount}). Skipping seeding.`);
+    for (const email of adminEmails) {
+      const exists = await User.findOne({ email });
+      if (!exists) {
+        const defaultPassword = await bcrypt.hash("admin123", 10);
+        await User.create({
+          email,
+          password: defaultPassword,
+          role: "admin",
+        });
+        console.log(`✅ Seeded admin: ${email}`);
+      } else {
+        console.log(`✅ Admin already exists: ${email}`);
+      }
     }
 
     process.exit(0);

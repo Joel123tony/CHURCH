@@ -120,7 +120,7 @@ export default function Pastor() {
           // Safely parse end year
           let endYear;
           const leftVal = p?.leftYear;
-          
+
           if (leftVal == null || leftVal === "") {
             endYear = new Date().getFullYear();
           } else if (typeof leftVal === "string") {
@@ -135,13 +135,13 @@ export default function Pastor() {
           } else {
             endYear = parseInt(String(leftVal), 10);
           }
-          
+
           if (!isNaN(startYear) && !isNaN(endYear)) {
             yearMatch = queryYear >= startYear && queryYear <= endYear;
           } else if (!isNaN(startYear)) {
-             yearMatch = queryYear >= startYear && queryYear <= new Date().getFullYear();
+            yearMatch = queryYear >= startYear && queryYear <= new Date().getFullYear();
           } else {
-             yearMatch = false; 
+            yearMatch = false;
           }
         } else {
           yearMatch = false;
@@ -300,8 +300,8 @@ export default function Pastor() {
         >
           <div
             className={`relative max-h-[80vh] w-full max-w-4xl overflow-y-auto rounded-[28px] border border-white/40 bg-[#d8cbb7] shadow-2xl transition-all duration-300 ease-out ${modalVisible
-                ? "translate-y-0 scale-100 opacity-100"
-                : "translate-y-3 scale-95 opacity-0"
+              ? "translate-y-0 scale-100 opacity-100"
+              : "translate-y-3 scale-95 opacity-0"
               }`}
             onClick={(e) => e.stopPropagation()}
           >

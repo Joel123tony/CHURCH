@@ -13,7 +13,7 @@ import pastorRoutes from "./routes/pastor.routes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
-import youtubeRoutes from "./routes/youtubeRoutes.js";   // ✅ ADD THIS
+import youtubeRoutes from "./routes/youtubeRoutes.js";
 
 const envPath = fs.existsSync(path.join(process.cwd(), "server", ".env"))
   ? path.join(process.cwd(), "server", ".env")
@@ -48,7 +48,7 @@ app.use("/api/gallery", galleryRoutes);
 /* EVENTS */
 app.use("/api/events", eventRoutes);
 
-/* YOUTUBE ✅ FIXED */
+/* YOUTUBE */
 app.use("/api/youtube", youtubeRoutes);
 
 /* =========================
