@@ -3,7 +3,7 @@ import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function Hero() {
-  const { t, cmsData } = useLanguage();
+  const { t } = useLanguage();
 
   const [video, setVideo] = useState({
     videoId: "",

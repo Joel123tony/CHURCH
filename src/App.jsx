@@ -4,7 +4,6 @@ import { LanguageProvider } from "./context/LanguageContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FaviconManager from "./components/FaviconManager";
-import EditorTest from "./pages/EditorTest";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -16,10 +15,11 @@ const Pastors = lazy(() => import("./pages/admin/Pastors"));
 const Events = lazy(() => import("./pages/admin/Events"));
 const Gallery = lazy(() => import("./pages/admin/Gallery"));
 const Messages = lazy(() => import("./pages/admin/Messages"));
-const WebEditor = lazy(() => import("./pages/admin/WebEditor"));
 const PrayerRequests = lazy(() => import("./pages/admin/PrayerRequests"));
 const PastorMessage = lazy(() => import("./pages/admin/PastorMessage"));
 const Books = lazy(() => import("./pages/admin/Books"));
+const Settings = lazy(() => import("./pages/admin/Settings"));
+const Donations = lazy(() => import("./pages/admin/Donations"));
 
 
 const PageLoader = () => (
@@ -61,8 +61,6 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/gallery" element={<ClientGallery />} />
 
-              <Route path="/editor-test" element={<EditorTest />} />
-
               <Route path="/admin/login" element={<Login />} />
 
               <Route
@@ -81,8 +79,9 @@ export default function App() {
                 <Route path="books" element={<Books />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="prayer-requests" element={<PrayerRequests />} />
-                <Route path="web-editor" element={<WebEditor />} />
                 <Route path="pastor-message" element={<PastorMessage />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="donations" element={<Donations />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

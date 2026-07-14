@@ -21,7 +21,7 @@ const MONTHS = [
 ];
 
 export default function Books() {
-  const { t, cmsData } = useLanguage();
+  const { t } = useLanguage();
 
   const [books, setBooks] = useState([]);
   const [search, setSearch] = useState("");
@@ -118,13 +118,9 @@ export default function Books() {
         <div className="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
           <div>
             <h2 className="text-3xl font-bold text-[#54091b]">
-              {cmsData?.books?.title || t("Books & Pamphlets")}
+              {t("Books & Pamphlets")}
             </h2>
-            {cmsData?.books?.subtitle && (
-              <p className="mt-2 text-base text-[#1E293B]">
-                {cmsData.books.subtitle}
-              </p>
-            )}
+            
           </div>
 
           {/* Modern Filter Bar */}

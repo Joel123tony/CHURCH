@@ -5,7 +5,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { FaFire, FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 
 export default function Events() {
-  const { t, cmsData } = useLanguage();
+  const { t } = useLanguage();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 

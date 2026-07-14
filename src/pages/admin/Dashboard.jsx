@@ -6,6 +6,8 @@ import {
   FaChurch,
   FaImages,
   FaPrayingHands,
+  FaCommentDots,
+  FaBookOpen,
 } from "react-icons/fa";
 
 export default function Dashboard() {
@@ -46,10 +48,22 @@ export default function Dashboard() {
       iconWrap: "bg-sky-100 text-sky-700",
     },
     {
-      label: "Pending Prayer Requests",
+      label: "Prayer Requests",
       value: stats?.counts?.prayerRequests,
       icon: FaPrayingHands,
       iconWrap: "bg-rose-100 text-rose-700",
+    },
+    {
+      label: "Pastor Messages",
+      value: stats?.counts?.pastorMessages,
+      icon: FaCommentDots,
+      iconWrap: "bg-purple-100 text-purple-700",
+    },
+    {
+      label: "Books",
+      value: stats?.counts?.books,
+      icon: FaBookOpen,
+      iconWrap: "bg-teal-100 text-teal-700",
     },
   ];
 
@@ -70,19 +84,19 @@ export default function Dashboard() {
       </div>
 
       {stats?.counts && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {cards.map((card, index) => {
             const Icon = card.icon;
 
             return (
               <div
                 key={card.label}
-                className="animate-admin-card-in rounded-3xl border border-slate-100 bg-white p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="group animate-admin-card-in rounded-3xl border border-slate-100 bg-white p-4 shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-[6px] hover:scale-[1.02] hover:shadow-2xl"
                 style={{ animationDelay: `${index * 70}ms` }}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-500">{card.label}</p>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${card.iconWrap}`}>
+                  <p className="text-sm font-medium text-slate-500 leading-tight">{card.label}</p>
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 ease-in-out group-hover:rotate-6 group-hover:scale-110 ${card.iconWrap}`}>
                     <Icon />
                   </div>
                 </div>

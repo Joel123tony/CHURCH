@@ -1,14 +1,14 @@
 import { useLanguage } from "../context/LanguageContext";
 
 export default function History() {
-  const { t, cmsData } = useLanguage();
+  const { t } = useLanguage();
 
-  const imgSrcOverride = cmsData?.history?.image;
+  const imgSrcOverride = null;
   const imgSrc = imgSrcOverride
     ? imgSrcOverride
     : "https://res.cloudinary.com/dhqc0n23k/image/upload/v1781002196/church_wfthtv.png";
 
-  const cmsContentText = cmsData?.history?.content;
+  const cmsContentText = null;
   const cmsContent = cmsContentText ? t(cmsContentText) : null;
   const hasCmsContent = !!cmsContent;
 
@@ -25,7 +25,7 @@ export default function History() {
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="pt-16 lg:pt-24">
           <h2 className="mb-6 lg:mb-8 text-3xl font-bold text-[#54091b]">
-            {cmsData?.history?.title ? t(cmsData.history.title) : t("Church History")}
+            {t("Church History")}
           </h2>
         </div>
 

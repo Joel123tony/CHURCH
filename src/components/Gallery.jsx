@@ -106,7 +106,7 @@ function GalleryTile({ item, onClick, compact = false, t }) {
 }
 
 export default function Gallery() {
-  const { t, cmsData } = useLanguage();
+  const { t } = useLanguage();
   const [featuredMedia, setFeaturedMedia] = useState([]);
   const [allMedia, setAllMedia] = useState([]);
   const [loading, setLoading] = useState(true);

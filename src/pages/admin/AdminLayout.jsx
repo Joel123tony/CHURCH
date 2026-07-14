@@ -1,22 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  FaBars,
-  FaCalendarAlt,
-  FaClock,
-  FaGlobe,
-  FaHome,
-  FaPhotoVideo,
-  FaPrayingHands,
-  FaSignOutAlt,
-  FaTimes,
-  FaUserShield,
-  FaUsers,
-  FaComments,
-  FaBook,
-} from "react-icons/fa";
+  Menu,
+  CalendarDays,
+  Clock,
+  LayoutDashboard,
+  Images,
+  HandHeart,
+  LogOut,
+  X,
+  ShieldCheck,
+  Users,
+  MessageSquare,
+  BookOpen,
+  Globe,
+  HeartHandshake
+} from "lucide-react";
 
 export default function AdminLayout() {
   const [user, setUser] = useState(null);
@@ -74,24 +75,20 @@ export default function AdminLayout() {
     {
       title: "MAIN",
       links: [
-        { to: "/admin/dashboard", label: "Dashboard", icon: FaHome, end: true },
+        { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
+        { to: "/admin/settings", label: "Settings", icon: ShieldCheck },
       ],
     },
     {
       title: "CONTENT",
       links: [
-        { to: "/admin/pastors", label: "Pastors", icon: FaUsers },
-        { to: "/admin/events", label: "Events", icon: FaCalendarAlt },
-        { to: "/admin/gallery", label: "Gallery", icon: FaPhotoVideo },
-        { to: "/admin/prayer-requests", label: "Prayer Requests", icon: FaPrayingHands },
-        { to: "/admin/pastor-message", label: "Pastor's Message", icon: FaComments },
-        { to: "/admin/books", label: "Books", icon: FaBook },
-      ],
-    },
-    {
-      title: "CMS",
-      links: [
-        { to: "/admin/web-editor", label: "Web Editor", icon: FaGlobe },
+        { to: "/admin/pastors", label: "Pastors", icon: Users },
+        { to: "/admin/events", label: "Events", icon: CalendarDays },
+        { to: "/admin/gallery", label: "Gallery", icon: Images },
+        { to: "/admin/prayer-requests", label: "Prayer Requests", icon: HandHeart },
+        { to: "/admin/pastor-message", label: "Pastor Messages", icon: MessageSquare },
+        { to: "/admin/books", label: "Books", icon: BookOpen },
+        { to: "/admin/donations", label: "Donations", icon: HeartHandshake },
       ],
     }
   ];
@@ -102,7 +99,7 @@ export default function AdminLayout() {
       {menuOpen && (
         <div
           onClick={() => setMenuOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity md:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/40 transition-opacity md:hidden"
         />
       )}
 
@@ -110,36 +107,35 @@ export default function AdminLayout() {
       <aside
         className={`
           fixed left-0 top-0 z-50 flex h-full w-[260px] flex-col overflow-hidden
-          bg-gradient-to-b from-[#520a1a] via-[#5d1020] to-[#430816]
-          shadow-xl transition-transform duration-300 ease-in-out
+          bg-[#531B24] transition-transform duration-200 ease-in-out
           ${menuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
         {/* Compact Admin Card */}
-        <div className="border-b border-white/10 p-4">
+        <div className="p-5">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EFBF04]/15 text-[#EFBF04] ring-1 ring-[#EFBF04]/30 shadow-inner">
-                <FaUserShield className="text-lg" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#EFBF04]/10 text-[#EFBF04]">
+                <ShieldCheck className="h-5 w-5" strokeWidth={2} />
               </div>
               <div className="min-w-0">
-                <h1 className="truncate text-base font-bold text-[#EFBF04] leading-tight">MTC Admin</h1>
-                <p className="truncate text-[11px] text-white/70">{user?.name || "Administrator"}</p>
+                <h1 className="truncate text-[15px] font-bold text-white tracking-wide leading-tight">MTC Admin</h1>
+                <p className="truncate text-[12px] font-medium text-white/50">{user?.name || "Administrator"}</p>
               </div>
             </div>
             <button
               onClick={() => setMenuOpen(false)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white transition md:hidden"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-white/60 hover:bg-white/10 hover:text-white transition-colors md:hidden"
               aria-label="Close menu"
             >
-              <FaTimes />
+              <X className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
 
-          <div className="mt-4 flex flex-col gap-1.5 rounded-lg bg-black/20 px-3 py-2 text-white/80 border border-white/5">
-            <div className="flex items-center gap-2">
-              <FaCalendarAlt className="text-xs text-[#EFBF04]" />
-              <span className="text-xs font-medium tracking-wide">
+          <div className="mt-5 flex flex-col gap-2 rounded-2xl bg-black/10 px-4 py-3 text-white/80">
+            <div className="flex items-center gap-2.5">
+              <CalendarDays className="h-3.5 w-3.5 text-[#EFBF04]" strokeWidth={2} />
+              <span className="text-[11px] font-medium tracking-wide">
                 {currentTime.toLocaleDateString("en-IN", {
                   weekday: "short",
                   day: "2-digit",
@@ -148,9 +144,9 @@ export default function AdminLayout() {
                 })}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <FaClock className="text-xs text-[#EFBF04]" />
-              <span className="text-xs font-medium tracking-wide">
+            <div className="flex items-center gap-2.5">
+              <Clock className="h-3.5 w-3.5 text-[#EFBF04]" strokeWidth={2} />
+              <span className="text-[11px] font-medium tracking-wide">
                 {currentTime.toLocaleTimeString("en-IN", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -162,14 +158,14 @@ export default function AdminLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 admin-scrollbar">
-          <div className="flex flex-col gap-6">
+        <nav className="flex-1 overflow-y-auto px-4 py-2 admin-scrollbar">
+          <div className="flex flex-col gap-7">
             {navSections.map((section) => (
-              <div key={section.title} className="flex flex-col gap-1.5">
-                <h2 className="px-3 text-[10px] font-bold uppercase tracking-widest text-white/40">
+              <div key={section.title} className="flex flex-col gap-2">
+                <h2 className="px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
                   {section.title}
                 </h2>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                   {section.links.map((link) => (
                     <NavLink
                       key={link.to}
@@ -177,17 +173,20 @@ export default function AdminLayout() {
                       end={link.end}
                       onClick={() => setMenuOpen(false)}
                       className={({ isActive }) =>
-                        `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                        `group relative flex items-center gap-3.5 rounded-2xl px-3 py-3 text-[13.5px] font-medium tracking-wide transition-colors duration-200 ${
                           isActive
-                            ? "bg-[#ee0039] text-white shadow-md"
-                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                            ? "bg-white/10 text-white"
+                            : "text-white/60 hover:bg-white/5 hover:text-white"
                         }`
                       }
                     >
-                      <link.icon className={`text-[15px] transition-transform duration-200 group-hover:scale-110 ${
-                        window.location.pathname === link.to ? "text-white" : "text-white/60"
-                      }`} />
-                      <span>{link.label}</span>
+                      {({ isActive }) => (
+                        <>
+                          <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-1/2 w-[3px] rounded-r-full bg-[#EFBF04] transition-opacity duration-200 ${isActive ? 'opacity-100' : 'opacity-0'}`} />
+                          <link.icon className={`h-5 w-5 shrink-0 transition-colors duration-200 ${isActive ? "text-[#EFBF04]" : "text-white/40 group-hover:text-white/80"}`} strokeWidth={2} />
+                          <span>{link.label}</span>
+                        </>
+                      )}
                     </NavLink>
                   ))}
                 </div>
@@ -196,13 +195,23 @@ export default function AdminLayout() {
           </div>
         </nav>
 
-        {/* Logout */}
-        <div className="border-t border-white/10 p-3">
+        {/* Bottom Actions */}
+        <div className="border-t border-white/5 p-4 flex flex-col gap-2">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex w-full items-center gap-3.5 rounded-2xl border border-[#F4EFE7]/15 bg-transparent px-4 py-3 text-[13.5px] font-medium tracking-wide text-[#F4EFE7] transition-colors duration-200 hover:bg-white/5"
+          >
+            <Globe className="h-5 w-5 shrink-0 text-[#F4EFE7]/70 group-hover:text-[#F4EFE7]" strokeWidth={2} />
+            <span>View MTC Padikuppam</span>
+          </a>
+
           <button
             onClick={logout}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-all hover:bg-red-500/10 hover:text-red-400"
+            className="group flex w-full items-center gap-3.5 rounded-2xl bg-transparent px-4 py-3 text-[13.5px] font-medium tracking-wide text-white/60 transition-colors duration-200 hover:bg-red-500/10 hover:text-red-400"
           >
-            <FaSignOutAlt className="text-[15px] transition-transform duration-200 group-hover:scale-110" />
+            <LogOut className="h-5 w-5 shrink-0 transition-colors duration-200 group-hover:text-red-400" strokeWidth={2} />
             <span>Logout</span>
           </button>
         </div>
@@ -210,29 +219,27 @@ export default function AdminLayout() {
 
       {/* Main Content Area */}
       <div
-        className={`min-h-screen flex-1 flex flex-col transition-[filter,transform] duration-300 md:ml-[260px] ${
-          menuOpen ? "pointer-events-none select-none blur-[2px] md:pointer-events-auto md:blur-0" : ""
+        className={`min-h-screen flex-1 flex flex-col transition-transform duration-200 md:ml-[260px] ${
+          menuOpen ? "pointer-events-none select-none" : ""
         }`}
       >
         {/* Mobile Header */}
-        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur md:hidden">
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm md:hidden">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMenuOpen(true)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-[#54091b] transition hover:bg-slate-200 active:scale-95"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-[#531B24] transition-colors hover:bg-slate-200"
               aria-label="Open menu"
             >
-              <FaBars className="text-lg" />
+              <Menu className="h-5 w-5" strokeWidth={2} />
             </button>
-            <h1 className="text-base font-bold text-[#54091b]">MTC Admin</h1>
+            <h1 className="text-base font-bold text-[#531B24]">MTC Admin</h1>
           </div>
         </div>
 
         {/* Page Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div key={location.pathname} className="animate-admin-page-enter">
-            <Outlet />
-          </div>
+          <Outlet />
         </main>
       </div>
 

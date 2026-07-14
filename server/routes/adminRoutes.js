@@ -4,6 +4,8 @@ import Sermon from "../models/Sermon.js";
 import Event from "../models/Event.js";
 import Gallery from "../models/Gallery.js";
 import PrayerRequest from "../models/PrayerRequest.js";
+import Book from "../models/Book.js";
+import ContentBlock from "../models/ContentBlock.js";
 
 import upload from "../middleware/upload.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
@@ -20,6 +22,8 @@ router.get("/dashboard", async (req, res) => {
       eventsCount,
       galleryCount,
       prayerCount,
+      booksCount,
+      pastorMessagesBlock
     ] = await Promise.all([
       Pastor.countDocuments(),
       Event.countDocuments(),
@@ -27,7 +31,11 @@ router.get("/dashboard", async (req, res) => {
       PrayerRequest.countDocuments({
         status: "pending",
       }),
+      Book.countDocuments(),
+      ContentBlock.findOne({ identifier: "pastor-messages" })
     ]);
+
+    const pastorMessagesCount = pastorMessagesBlock?.data?.messages?.length || 0;
 
     res.status(200).json({
       success: true,
@@ -41,6 +49,8 @@ router.get("/dashboard", async (req, res) => {
         events: eventsCount,
         gallery: galleryCount,
         prayerRequests: prayerCount,
+        books: booksCount,
+        pastorMessages: pastorMessagesCount,
       },
     });
   } catch (err) {

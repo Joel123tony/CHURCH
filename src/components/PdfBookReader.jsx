@@ -211,11 +211,11 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
             <FaChevronLeft size={16} />
           </button>
           <div className="text-white text-sm font-bold tracking-widest px-2">
-            {currentPage + 1} / {numPages}
+            {currentPage + 1} / {numPages % 2 !== 0 ? numPages + 1 : numPages}
           </div>
           <button 
             onClick={nextButtonClick} 
-            disabled={currentPage >= numPages - (isMobile ? 1 : pagesToShow)} 
+            disabled={currentPage >= (numPages % 2 !== 0 ? numPages + 1 : numPages) - (isMobile ? 1 : pagesToShow)} 
             className="text-white/70 hover:text-white disabled:opacity-30 transition"
             title="Next Page"
           >
@@ -278,7 +278,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
         <div className="absolute top-1/2 right-4 lg:right-10 z-10 -translate-y-1/2 hidden md:block">
           <button 
             onClick={nextButtonClick}
-            disabled={currentPage >= numPages - (isMobile ? 1 : pagesToShow)}
+            disabled={currentPage >= (numPages % 2 !== 0 ? numPages + 1 : numPages) - (isMobile ? 1 : pagesToShow)}
             className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
             title="Next Page"
           >
@@ -343,9 +343,16 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
                 pageNum={i + 1} 
                 pdf={pdf} 
                 currentPage={currentPage}
-                isCover={i === 0 || i === numPages - 1} 
+                isCover={i === 0 || (i === numPages - 1 && numPages % 2 === 0)} 
               />
             ))}
+            {numPages % 2 !== 0 && (
+              <div 
+                key="blank-back-cover"
+                className="bg-white overflow-hidden relative w-full h-full"
+                data-density="hard"
+              ></div>
+            )}
           </HTMLFlipBook>
         </div>
         )}
@@ -365,12 +372,12 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
             </button>
             
             <div className="text-sm font-bold tracking-widest px-4 truncate">
-              {currentPage + 1} / {numPages}
+              {currentPage + 1} / {numPages % 2 !== 0 ? numPages + 1 : numPages}
             </div>
             
             <button 
               onClick={nextButtonClick}
-              disabled={currentPage >= numPages - 1}
+              disabled={currentPage >= (numPages % 2 !== 0 ? numPages + 1 : numPages) - 1}
               className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-white/20 active:bg-white/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
               aria-label="Next Page"
             >

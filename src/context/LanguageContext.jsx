@@ -1,10 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { getBlock } from "../services/api";
 import API from "../api/axios";
 
 const LanguageContext = createContext(null);
-
-
 
 // ─── localStorage cache helpers ────────────────────────────────────
 const CACHE_KEY = "mtc-translations";
@@ -38,9 +35,6 @@ export function LanguageProvider({ children }) {
     return saved === "ta" ? "ta" : "en";
   });
 
-  const [cmsData, setCmsData] = useState({});
-  const [previewData, setPreviewData] = useState({});
-
   const [translationCache, setTranslationCache] = useState(() => loadCachedTranslations());
   const [translating, setTranslating] = useState(false);
   
@@ -54,46 +48,6 @@ export function LanguageProvider({ children }) {
     window.localStorage.setItem("site-language", language);
     document.documentElement.lang = language;
   }, [language]);
-
-  // ── Load CMS blocks ───────────────────────────────────────────
-  useEffect(() => {
-    const loadCms = async () => {
-      try {
-        const sections = ["hero", "history", "contact", "footer"];
-        const loaded = {};
-        for (const sec of sections) {
-          try {
-            const res = await getBlock(sec);
-            if (res && res.data) {
-              const data = res.data;
-              if (sec === "hero") {
-                if (data.heading) loaded["hero.heading"] = data.heading;
-                if (data.subheading) loaded["hero.description"] = data.subheading;
-              } else if (sec === "history") {
-                if (data.title) loaded["history.title"] = data.title;
-                if (data.content) loaded["history.content"] = data.content;
-                if (data.imageUrl) loaded["history.image"] = data.imageUrl;
-              } else if (sec === "contact") {
-                if (data.email) loaded["contact.emailUs"] = data.email;
-                if (data.phone) loaded["contact.phone"] = data.phone;
-                if (data.description) loaded["contact.description"] = data.description;
-              } else if (sec === "footer") {
-                if (data.copyright) loaded["footer.copyright"] = data.copyright;
-              }
-            }
-          } catch (e) {
-            console.warn(`CMS key ${sec} could not be loaded`, e);
-          }
-        }
-        setCmsData(loaded);
-      } catch (err) {
-        console.error("Error loading initial CMS data", err);
-      }
-    };
-    loadCms();
-  }, []);
-
-
 
   // ── Flush the pending translation queue ─────────────────────────
   const flushPendingTranslations = useCallback(async () => {
@@ -137,20 +91,7 @@ export function LanguageProvider({ children }) {
     const t = (key) => {
       if (!key) return "";
 
-      // Resolve the English source text
-      const enText = (() => {
-        // 1. Preview overrides
-        if (previewData?.[key] !== undefined && previewData[key] !== "") {
-          return previewData[key];
-        }
-        // 2. CMS data
-        if (cmsData?.[key] !== undefined && cmsData[key] !== "") {
-          return cmsData[key];
-        }
-
-        // 3. Literal string fallback (no dictionaries)
-        return key; 
-      })();
+      const enText = key;
 
       // If language is English, return as-is
       if (language === "en") return enText;
@@ -194,12 +135,8 @@ export function LanguageProvider({ children }) {
         setLanguage((current) => (current === "en" ? "ta" : "en")),
       t,
       translating,
-      previewData,
-      setPreviewData,
-      cmsData,
-      setCmsData,
     };
-  }, [language, previewData, cmsData, translationCache, translating, flushPendingTranslations]);
+  }, [language, translationCache, translating, flushPendingTranslations]);
 
   return (
     <LanguageContext.Provider value={value}>

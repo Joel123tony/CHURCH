@@ -3,7 +3,7 @@ import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function YoutubeSection() {
-  const { t, cmsData } = useLanguage();
+  const { t } = useLanguage();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,13 +46,9 @@ export default function YoutubeSection() {
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="mb-6 lg:mb-8">
           <h2 className="text-3xl font-bold text-white">
-            {cmsData?.youtube?.title || t("youtube")}
+            {t("youtube")}
           </h2>
-          {cmsData?.youtube?.subtitle && (
-            <p className="mt-2 text-base text-white/80">
-              {cmsData.youtube.subtitle}
-            </p>
-          )}
+          
         </div>
 
         {loading ? (

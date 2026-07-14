@@ -5,7 +5,7 @@ import { FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { getFallbackAvatar, handleImageError } from "../utils/avatarFallback";
 
 export default function Pastor() {
-  const { t, cmsData } = useLanguage();
+  const { t } = useLanguage();
   const [pastors, setPastors] = useState([]);
   const [searchName, setSearchName] = useState("");
   const [searchYear, setSearchYear] = useState("");

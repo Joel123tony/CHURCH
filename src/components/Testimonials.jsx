@@ -81,7 +81,7 @@ export default function Testimonials() {
   const [data, setData] = useState({ messages: [] });
   const [loading, setLoading] = useState(true);
   const { ref: sectionRef, visible } = useSectionReveal();
-  const { t, cmsData } = useLanguage();
+  const { t } = useLanguage();
 
   useEffect(() => {
     getBlock("pastor-messages")
@@ -114,13 +114,9 @@ export default function Testimonials() {
         {/* ── Heading ── */}
         <div className="mb-6 lg:mb-8">
           <h2 className="text-3xl font-bold text-[#54091b]">
-            {cmsData?.testimonials?.title || t("Pastor's Message")}
+            {t("Pastor's Message")}
           </h2>
-          {cmsData?.testimonials?.subtitle && (
-            <p className="mt-2 text-base text-[#1E293B]">
-              {cmsData.testimonials.subtitle}
-            </p>
-          )}
+          
         </div>
 
         {/* ── Content area ── */}
