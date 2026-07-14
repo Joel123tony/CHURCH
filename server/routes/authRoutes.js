@@ -136,14 +136,91 @@ router.post("/forgot-password", async (req, res) => {
 
       // 6. Send Email
       const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #531B24; text-align: center;">Methodist Tamil Church Admin</h2>
-          <p>You requested to reset your password. Use the following One-Time Password (OTP) to proceed.</p>
-          <div style="background-color: #f4efe7; padding: 15px; text-align: center; border-radius: 8px; margin: 20px 0;">
-            <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #531B24;">${otp}</span>
-          </div>
-          <p style="color: #666; font-size: 14px;">This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Reset Verification Code</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f4f4f4;">
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f4; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <!-- Main Email Container -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background-color: #5D1324; padding: 30px 20px;">
+              <h1 style="color: #F8F3EA; margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 1px;">Methodist Tamil Church</h1>
+              <p style="color: #D4AF37; margin: 5px 0 0 0; font-size: 14px;">Padikuppam</p>
+              <p style="color: #F8F3EA; margin: 5px 0 0 0; font-size: 12px; opacity: 0.9;">Church Administration Portal</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td align="center" style="padding: 40px 30px;">
+              <h2 style="color: #5D1324; margin: 0 0 15px 0; font-size: 20px;">Password Reset Request</h2>
+              <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5; margin: 0 0 25px 0; text-align: center;">
+                We received a request to reset the password for your Church Administration account.<br><br>
+                Use the One-Time Password (OTP) below to continue.
+              </p>
+
+              <!-- OTP Box -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 300px; margin: 0 auto;">
+                <tr>
+                  <td align="center" style="background-color: #F8F3EA; border: 2px dashed #D4AF37; border-radius: 10px; padding: 20px;">
+                    <span style="font-family: monospace; font-size: 38px; font-weight: bold; color: #5D1324; letter-spacing: 8px; display: block;">
+                      ${otp}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Expiry Notice -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 25px;">
+                <tr>
+                  <td align="center">
+                    <p style="background-color: #FDF9E8; color: #8C7323; padding: 12px 20px; border-radius: 6px; font-size: 14px; margin: 0; font-weight: bold; border: 1px solid #F3E5AB;">
+                      This verification code expires in 10 minutes.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Security Notice -->
+              <p style="color: #666666; font-size: 13px; line-height: 1.5; margin: 30px 0 0 0; text-align: center; border-top: 1px solid #eeeeee; padding-top: 20px;">
+                If you did not request a password reset, please ignore this email.<br>
+                Your password will remain unchanged.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color: #F8F3EA; padding: 25px 20px; border-top: 1px solid #e5e5e5;">
+              <p style="color: #5D1324; font-size: 14px; font-weight: bold; margin: 0 0 5px 0;">Methodist Tamil Church</p>
+              <p style="color: #666666; font-size: 12px; margin: 0 0 5px 0; line-height: 1.5;">
+                Padikuppam, Mogappair East<br>
+                Chennai – 600107
+              </p>
+              <a href="mailto:methodistchurch1975@gmail.com" style="color: #D4AF37; font-size: 12px; text-decoration: none; font-weight: bold;">methodistchurch1975@gmail.com</a>
+              
+              <p style="color: #999999; font-size: 11px; margin: 20px 0 0 0;">
+                This is an automated email.<br>
+                Please do not reply to this message.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
       `;
       console.log("Forgot Password Request:", normalizedEmail);
       console.log("Generated OTP:", otp);
