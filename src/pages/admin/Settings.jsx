@@ -41,7 +41,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-3xl w-full p-3 sm:p-4 lg:p-5">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#531B24]">Settings</h1>

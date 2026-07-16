@@ -251,7 +251,7 @@ export default function Gallery() {
   );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen w-full">
+    <div className="p-3 sm:p-4 lg:p-5 bg-slate-50 min-h-screen w-full">
       {/* HEADER SECTION - strictly functional */}
       <div className="admin-header-container">
         <div>
@@ -266,7 +266,7 @@ export default function Gallery() {
       </div>
 
       {/* TABS NAVIGATION */}
-      <div className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
+      <div className="flex items-center gap-2 mb-4 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
         <button
           onClick={() => setActiveTab("add")}
           className={activeTab === "add" ? "admin-tab-active" : "admin-tab-inactive"}
@@ -285,8 +285,8 @@ export default function Gallery() {
         {/* ADD TAB */}
         {activeTab === "add" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="admin-card p-6 sm:p-8">
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+            <div className="admin-card">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-[#531B24] flex items-center gap-2">
                   <FaUpload className="text-[#531B24]" /> Upload Media
                 </h2>
@@ -298,16 +298,16 @@ export default function Gallery() {
 
         {/* LIST TAB */}
         {activeTab === "list" && (
-          <div className="animate-in fade-in slide-in-from-right-8 duration-500 space-y-6">
+          <div className="animate-in fade-in slide-in-from-right-8 duration-500 space-y-4">
             {loading ? (
               <div className="flex h-64 items-center justify-center">
                 <p className="text-slate-500 font-medium">Loading gallery...</p>
               </div>
             ) : (
               <>
-                <div className="admin-card p-6">
+                <div className="admin-card">
                   {/* SEARCH & FILTERS */}
-                  <div className="relative mb-6">
+                  <div className="relative mb-4">
                     <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
@@ -320,7 +320,7 @@ export default function Gallery() {
 
                   {/* BULK ACTIONS */}
                   {filteredMedia.length > 0 && (
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4">
                       <div className="text-sm font-bold text-slate-600">
                         {selectedCount > 0 ? (
                           <span className="text-[#ee0039]">
@@ -380,7 +380,7 @@ export default function Gallery() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {pinnedMedia.map((item, index) => (
                               <div
                                 key={item._id}
@@ -417,7 +417,7 @@ export default function Gallery() {
                             </p>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {regularMedia.map((item, index) => (
                               <div
                                 key={item._id}
@@ -450,7 +450,7 @@ export default function Gallery() {
       {/* EDIT MODAL */}
       {editItem && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="admin-card w-full max-w-md p-6 sm:p-8 space-y-5 animate-in zoom-in-95 duration-200">
+          <div className="admin-card w-full max-w-md space-y-4 animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col overflow-y-auto">
             <h2 className="text-xl font-black text-[#531B24] border-b border-slate-100 pb-4">Edit Media Details</h2>
 
             <div>

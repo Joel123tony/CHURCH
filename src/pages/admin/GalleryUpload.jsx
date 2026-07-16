@@ -141,7 +141,7 @@ export default function GalleryUpload({ onSuccess }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <input
         type="text"
         placeholder="Title"

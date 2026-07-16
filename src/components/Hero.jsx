@@ -18,14 +18,21 @@ export default function Hero() {
       const res = await API.get("/youtube");
       const data = res?.data || {};
 
-      setVideo({
-        videoId: data?.videoId || "",
-        title: data?.title || "",
+      setVideo((prev) => {
+        const newVideoId = data?.videoId || "";
+        const newTitle = data?.title || "";
+        if (prev.videoId === newVideoId && prev.title === newTitle) {
+          return prev;
+        }
+        return { videoId: newVideoId, title: newTitle };
       });
     } catch (err) {
       // Intentionally ignoring errors (e.g. ad blockers blocking /youtube route)
       // to keep console clean as requested.
-      setVideo({ videoId: "", title: "" });
+      setVideo((prev) => {
+        if (prev.videoId === "" && prev.title === "") return prev;
+        return { videoId: "", title: "" };
+      });
     } finally {
       setLoading(false);
     }

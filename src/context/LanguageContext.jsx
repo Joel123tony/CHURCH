@@ -36,7 +36,6 @@ export function LanguageProvider({ children }) {
   });
 
   const [translationCache, setTranslationCache] = useState(() => loadCachedTranslations());
-  const [translating, setTranslating] = useState(false);
   
   // Dynamic queue for strings that need translation
   const pendingQueue = useRef(new Set());
@@ -56,7 +55,6 @@ export function LanguageProvider({ children }) {
     
     // Clear the queue immediately so we don't double-fetch
     pendingQueue.current.clear();
-    setTranslating(true);
 
     try {
       const res = await API.post("/translate", {
@@ -71,8 +69,10 @@ export function LanguageProvider({ children }) {
         const next = { ...prev };
         let changed = false;
         for (let i = 0; i < queue.length; i++) {
-          if (translations[i] && translations[i] !== queue[i] && next[queue[i]] !== translations[i]) {
-            next[queue[i]] = translations[i];
+          // Cache the result or fallback to English to prevent infinite refetch loops
+          const trans = translations[i] || queue[i];
+          if (next[queue[i]] !== trans) {
+            next[queue[i]] = trans;
             changed = true;
           }
         }
@@ -81,8 +81,6 @@ export function LanguageProvider({ children }) {
       });
     } catch (err) {
       console.error("Dynamic translation failed:", err);
-    } finally {
-      setTranslating(false);
     }
   }, []);
 
@@ -134,9 +132,8 @@ export function LanguageProvider({ children }) {
       toggleLanguage: () =>
         setLanguage((current) => (current === "en" ? "ta" : "en")),
       t,
-      translating,
     };
-  }, [language, translationCache, translating, flushPendingTranslations]);
+  }, [language, translationCache, flushPendingTranslations]);
 
   return (
     <LanguageContext.Provider value={value}>

@@ -161,7 +161,7 @@ export default function Events() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-slate-50 min-h-screen w-full">
+    <div className="p-3 sm:p-4 lg:p-5 bg-slate-50 min-h-screen w-full">
       {/* HEADER SECTION - strictly functional, no descriptions */}
       <div className="admin-header-container">
         <div>
@@ -176,7 +176,7 @@ export default function Events() {
       </div>
 
       {/* TABS NAVIGATION */}
-      <div className="flex items-center gap-2 mb-6 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
+      <div className="flex items-center gap-2 mb-4 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
         <button
           onClick={() => { 
             if (activeTab !== "add") resetForm(); 
@@ -205,8 +205,8 @@ export default function Events() {
           {/* ADD/EDIT TAB */}
           {activeTab === "add" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="admin-card p-6 sm:p-8 max-w-3xl">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <div className="admin-card max-w-4xl">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
                   <h2 className="text-xl font-bold text-[#531B24]">
                     {editId !== null ? "Edit Event" : "Add New Event"}
                   </h2>
@@ -220,8 +220,8 @@ export default function Events() {
                   )}
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
                       <label className="admin-label">
                         Event Title *
@@ -236,7 +236,7 @@ export default function Events() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="admin-label">
                         Date *
@@ -301,7 +301,7 @@ export default function Events() {
                     </div>
                   )}
 
-                  <div className="flex justify-end pt-6 border-t border-slate-100">
+                  <div className="flex justify-end pt-4 border-t border-slate-100">
                     <button
                       type="submit"
                       className="admin-btn-primary"
@@ -329,7 +329,7 @@ export default function Events() {
                   {orderedEvents.map((eventItem, index) => (
                     <div
                       key={eventItem._id}
-                      className="animate-admin-card-in admin-card p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col"
+                      className="animate-admin-card-in admin-card transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col"
                       style={{
                         animationDelay: `${Math.min(index, 10) * 70}ms`,
                       }}

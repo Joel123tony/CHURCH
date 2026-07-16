@@ -19,13 +19,8 @@ import {
   HeartHandshake
 } from "lucide-react";
 
-export default function AdminLayout() {
-  const [user, setUser] = useState(null);
+const AdminClock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -34,6 +29,40 @@ export default function AdminLayout() {
 
     return () => clearInterval(timer);
   }, []);
+
+  return (
+    <div className="mt-5 flex flex-col gap-2 rounded-2xl bg-black/10 px-4 py-3 text-white/80">
+      <div className="flex items-center gap-2.5">
+        <CalendarDays className="h-3.5 w-3.5 text-[#EFBF04]" strokeWidth={2} />
+        <span className="text-[11px] font-medium tracking-wide">
+          {currentTime.toLocaleDateString("en-IN", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
+      </div>
+      <div className="flex items-center gap-2.5">
+        <Clock className="h-3.5 w-3.5 text-[#EFBF04]" strokeWidth={2} />
+        <span className="text-[11px] font-medium tracking-wide">
+          {currentTime.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+export default function AdminLayout() {
+  const [user, setUser] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -132,29 +161,7 @@ export default function AdminLayout() {
             </button>
           </div>
 
-          <div className="mt-5 flex flex-col gap-2 rounded-2xl bg-black/10 px-4 py-3 text-white/80">
-            <div className="flex items-center gap-2.5">
-              <CalendarDays className="h-3.5 w-3.5 text-[#EFBF04]" strokeWidth={2} />
-              <span className="text-[11px] font-medium tracking-wide">
-                {currentTime.toLocaleDateString("en-IN", {
-                  weekday: "short",
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <Clock className="h-3.5 w-3.5 text-[#EFBF04]" strokeWidth={2} />
-              <span className="text-[11px] font-medium tracking-wide">
-                {currentTime.toLocaleTimeString("en-IN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                })}
-              </span>
-            </div>
-          </div>
+          <AdminClock />
         </div>
 
         {/* Navigation */}
@@ -238,7 +245,7 @@ export default function AdminLayout() {
         </div>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 w-full relative">
           <Outlet />
         </main>
       </div>

@@ -157,7 +157,7 @@ export default function Donations() {
   };
 
   const StatCard = ({ title, value, icon: Icon, colorClass, isMoney = false }) => (
-    <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
+    <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm transition-all hover:shadow-md">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{title}</p>
@@ -190,7 +190,7 @@ export default function Donations() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 w-full h-full p-3 sm:p-4 lg:p-5 min-h-screen bg-slate-50">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -244,7 +244,7 @@ export default function Donations() {
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         
         {/* Advanced Filters */}
-        <div className="border-b border-slate-200 p-4 bg-slate-50/50 space-y-4">
+        <div className="border-b border-slate-200 p-4 bg-slate-50/50 space-y-3">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
             
             {/* Search */}

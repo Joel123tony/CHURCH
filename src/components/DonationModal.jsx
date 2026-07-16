@@ -31,9 +31,10 @@ export default function DonationModal({ isOpen, onClose }) {
   const [status, setStatus] = useState("idle"); // 'idle', 'success', 'error'
   const [transactionData, setTransactionData] = useState(null);
 
-  // Reset state when opened
+  // Reset state when opened and preload Razorpay script
   useEffect(() => {
     if (isOpen) {
+      loadRazorpayScript(); // Preload to avoid async delay in submit handler
       setAmount(500);
       setCustomAmount("");
       setName("");
@@ -44,6 +45,20 @@ export default function DonationModal({ isOpen, onClose }) {
       setTransactionData(null);
     }
   }, [isOpen]);
+
+  // Global error handlers for debugging mobile issues
+  useEffect(() => {
+    const handleRejection = (e) => console.error("Unhandled Rejection:", e.reason);
+    const handleError = (e) => console.error("Global Error:", e.error);
+    
+    window.addEventListener("unhandledrejection", handleRejection);
+    window.addEventListener("error", handleError);
+    
+    return () => {
+      window.removeEventListener("unhandledrejection", handleRejection);
+      window.removeEventListener("error", handleError);
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -75,12 +90,14 @@ export default function DonationModal({ isOpen, onClose }) {
     setError("");
 
     try {
-      // 1. Load Razorpay script
-      const res = await loadRazorpayScript();
-      if (!res) {
-        setError("Razorpay SDK failed to load. Are you offline?");
-        setLoading(false);
-        return;
+      // 1. Ensure Razorpay is loaded (usually preloaded by useEffect)
+      if (!window.Razorpay) {
+        const res = await loadRazorpayScript();
+        if (!res) {
+          setError("Razorpay SDK failed to load. Are you offline?");
+          setLoading(false);
+          return;
+        }
       }
 
       // 2. Create Order on Backend
@@ -93,14 +110,14 @@ export default function DonationModal({ isOpen, onClose }) {
 
       const order = orderRes.data;
 
-      // 3. Open Razorpay Checkout
+      // 3. Open Razorpay Checkout immediately after order creation
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "YOUR_TEST_KEY", // Falls back to test key if env not set
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_mockkey", // Falls back to a mock test key if env not set
         amount: order.amount,
-        currency: order.currency,
+        currency: order.currency || "INR",
         name: "Methodist Tamil Church",
         description: "Donation to Support Our Ministry",
-        image: "/mtc-logo.png", // Assuming logo is in public
+        image: window.location.origin + "/mtc-logo.png",
         order_id: order.id,
         handler: async function (response) {
           try {
@@ -126,9 +143,9 @@ export default function DonationModal({ isOpen, onClose }) {
           }
         },
         prefill: {
-          name: name || "",
-          email: email || "",
-          contact: phone || "",
+          ...(name && { name }),
+          ...(email && { email }),
+          ...(phone && { contact: phone }),
         },
         theme: {
           color: "#531B24", // Church maroon
@@ -138,7 +155,7 @@ export default function DonationModal({ isOpen, onClose }) {
       const paymentObject = new window.Razorpay(options);
       
       paymentObject.on("payment.failed", function (response) {
-        console.error(response.error);
+        console.error("Payment Failed:", response.error);
         setStatus("error");
       });
 

@@ -388,7 +388,7 @@ export default function Pastors() {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl px-3 py-4 sm:px-6">
+    <div className="mx-auto min-h-screen max-w-6xl p-3 sm:p-4 lg:p-5">
 
       <div className="admin-header-container">
         <div>
@@ -411,7 +411,7 @@ export default function Pastors() {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div className="mb-4 flex flex-wrap gap-2">
         <button
           onClick={() => setView("add")}
           className={view === "add" ? "admin-tab-active" : "admin-tab-inactive"}
@@ -437,15 +437,15 @@ export default function Pastors() {
 
       <div
         className={`overflow-hidden transition-all duration-500 ${view === "add"
-            ? "max-h-[5000px] opacity-100 mb-6"
+            ? "max-h-[5000px] opacity-100 mb-4"
             : "max-h-0 opacity-0 mb-0"
           }`}
       >
         <form
           onSubmit={handleSubmit}
-          className="admin-card p-6 sm:p-8"
+          className="admin-card"
         >
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             <input
               name="name"
               placeholder="Name"
@@ -475,7 +475,7 @@ export default function Pastors() {
                 Service Period
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="relative">
                   <FaCalendarAlt className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -518,7 +518,7 @@ export default function Pastors() {
             />
           </div>
 
-          <div className="mt-4 space-y-4">
+          <div className="mt-3 space-y-3">
             <div>
               <label className="admin-label">
                 Educational Qualifications
@@ -587,7 +587,7 @@ export default function Pastors() {
               className="admin-input min-h-[120px]"
             />
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.05fr_0.95fr]">
               <div
                 {...getRootProps()}
                 className={`admin-upload-box ${isDragActive ? "border-emerald-500 bg-emerald-50" : ""}`}
@@ -671,7 +671,7 @@ export default function Pastors() {
 
           <button
             type="submit"
-            className="admin-btn-primary mt-6 w-full sm:w-auto"
+            className="admin-btn-primary mt-4 w-full sm:w-auto"
           >
             {editId ? "Update Pastor" : "Add Pastor"}
           </button>
@@ -682,7 +682,7 @@ export default function Pastors() {
         loading ? (
           <p className="text-center text-slate-500">Loading...</p>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredPastors.map((p, index) => (
               <div
                 key={p?._id}

@@ -289,15 +289,15 @@ export default function PrayerRequests() {
 
   return (
     <div className="min-h-[calc(100vh-64px)] w-full bg-[#FCFBF9] font-sans text-slate-800">
-      <div className="mx-auto max-w-[1400px] p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-[1400px] p-3 sm:p-4 lg:p-5">
         
         {/* Header Section */}
-        <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <h1 className="text-3xl lg:text-4xl font-bold text-[#531B24] tracking-tight">
+            <h1 className="text-2xl lg:text-3xl font-bold text-[#531B24] tracking-tight">
               Prayer Requests
             </h1>
-            <p className="mt-2 text-sm lg:text-base font-medium text-slate-500">
+            <p className="mt-1 text-sm font-medium text-slate-500">
               Manage prayer requests, mark responses, and share translated messages with one clean workflow.
             </p>
           </div>
@@ -325,7 +325,7 @@ export default function PrayerRequests() {
         </div>
 
         {/* Toolbar */}
-        <div className="relative z-20 mb-6 flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative z-20 mb-4 flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           
           {/* Segmented Tabs */}
           <div className="flex rounded-xl bg-slate-100 p-1 w-full lg:w-auto">
@@ -451,7 +451,7 @@ export default function PrayerRequests() {
             filteredRequests.map((item, index) => (
               <div
                 key={item._id}
-                className={`animate-prayer-card-in group relative flex flex-col gap-4 rounded-[18px] border border-slate-100 bg-white p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] lg:flex-row lg:items-center ${
+                className={`animate-prayer-card-in group relative flex flex-col gap-3 rounded-[18px] border border-slate-100 bg-white p-4 sm:p-5 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] lg:flex-row lg:items-center ${
                   selectedRequests.includes(item._id) ? "ring-2 ring-[#531B24]/50" : ""
                 }`}
                 style={{ animationDelay: `${Math.min(index, 12) * 40}ms` }}
@@ -502,7 +502,7 @@ export default function PrayerRequests() {
                   <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap">
                     <button
                       onClick={() => setSelected(item)}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 sm:flex-none"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 min-h-[42px] text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 sm:flex-none"
                     >
                       <FaEye />
                       <span className="whitespace-nowrap">View Details</span>
@@ -511,13 +511,13 @@ export default function PrayerRequests() {
                     {item.status === "pending" ? (
                       <button
                         onClick={() => markPrayed(item._id)}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#531B24] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#3f141b] hover:shadow-md sm:flex-none"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#531B24] px-4 py-2 min-h-[42px] text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#3f141b] hover:shadow-md sm:flex-none"
                       >
                         <FaCheck />
                         <span className="whitespace-nowrap">Mark Prayed</span>
                       </button>
                     ) : (
-                      <div className="flex flex-1 cursor-default items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400 sm:flex-none border border-transparent">
+                      <div className="flex flex-1 cursor-default items-center justify-center gap-2 rounded-xl bg-slate-100 px-4 py-2 min-h-[42px] text-sm font-semibold text-slate-400 sm:flex-none border border-transparent">
                         <FaCheckDouble />
                         <span className="whitespace-nowrap">Completed</span>
                       </div>
@@ -565,7 +565,7 @@ export default function PrayerRequests() {
       {/* View Request Modal */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm transition-all animate-in fade-in duration-200">
-          <div className="w-full max-w-xl overflow-hidden rounded-[24px] bg-white shadow-2xl transition-all animate-in zoom-in-95 duration-200">
+          <div className="flex max-h-[90vh] flex-col w-full max-w-xl overflow-hidden rounded-[24px] bg-white shadow-2xl transition-all animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 p-6">
               <h2 className="text-2xl font-bold text-slate-800">
                 Request Details
@@ -579,7 +579,7 @@ export default function PrayerRequests() {
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="overflow-y-auto p-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Name</p>
@@ -624,7 +624,7 @@ export default function PrayerRequests() {
       {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm transition-all animate-in fade-in duration-200">
-          <div className="w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-2xl transition-all animate-in zoom-in-95 duration-200">
+          <div className="flex max-h-[90vh] flex-col w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-2xl transition-all animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 p-6">
               <div>
                 <h2 className="text-2xl font-bold text-slate-800">Share Requests</h2>
@@ -641,7 +641,7 @@ export default function PrayerRequests() {
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="overflow-y-auto p-6">
               <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Translation Language
               </label>
