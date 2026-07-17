@@ -57,20 +57,34 @@ export default function Donations() {
   }, [search, filterStatus, sortBy, startDate, endDate, minAmount, maxAmount]);
 
   const fetchData = async () => {
+    console.log("[DEBUG] fetchData started on device. User Agent:", navigator.userAgent);
+    const token = localStorage.getItem("token");
+    console.log("[DEBUG] Current localStorage token:", token ? "Exists (hidden for security)" : "Missing");
+
     try {
       setLoading(true);
+      console.log("[DEBUG] Initiating API requests to /donations and /donations/stats");
+      
       const [donationsRes, statsRes] = await Promise.all([
         API.get("/donations"),
         API.get("/donations/stats")
       ]);
       
+      console.log("[DEBUG] API Response Successful");
+      console.log("[DEBUG] Donations data length:", donationsRes.data?.length);
+      console.log("[DEBUG] Stats data:", statsRes.data);
+      
       setDonations(donationsRes.data);
       setStats(statsRes.data);
+      
+      console.log("[DEBUG] State updated successfully");
     } catch (err) {
-      console.error(err);
+      console.error("[DEBUG] API Error in fetchData:", err);
+      console.error("[DEBUG] Error response details:", err.response?.status, err.response?.data);
       toast.error("Failed to fetch donation data.");
     } finally {
       setLoading(false);
+      console.log("[DEBUG] Loading state set to false");
     }
   };
 
