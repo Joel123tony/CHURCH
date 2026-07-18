@@ -1,21 +1,17 @@
 import React, { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import History from "../components/History";
 import Events from "../components/Events";
 import Gallery from "../components/Gallery";
 import Pastor from "../components/Pastor";
 import YoutubeSection from "../components/YoutubeSection";
-import Contact from "../components/Contact";
-import Footer from "../components/Footer";
 import Testimonials from "../components/Testimonials";
-import Books from "../components/Books";
 import { useLanguage } from "../context/LanguageContext";
 import { getBlock } from "../services/api";
 
 export default function Home() {
   const { t } = useLanguage();
-  const [sectionOrder, setSectionOrder] = useState(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"]);
+  const [sectionOrder, setSectionOrder] = useState(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
   const [sectionData, setSectionData] = useState({});
 
   useEffect(() => {
@@ -32,7 +28,7 @@ export default function Home() {
 
         if (loadedArray && loadedArray.length > 0) {
           // Always enforce correct relative order for all known middle sections
-          const defaultMiddle = ["history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact"];
+          const defaultMiddle = ["history", "events", "gallery", "pastor", "testimonials", "youtube"];
 
           // Build the final middle by: keep loaded sections in their saved order,
           // then inject any missing ones at their canonical position.
@@ -70,27 +66,29 @@ export default function Home() {
             }
           });
 
-          setSectionOrder(["hero", ...finalMiddle, "footer"]);
+          setSectionOrder(["hero", ...finalMiddle]);
         } else {
-          setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"]);
+          setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
         }
       } catch (err) {
         console.warn("Failed to load section order, using defaults.", err);
-        setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"]);
+        setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
       }
 
-      // Fetch styles/content for all sections
+      // Fetch styles/content for all sections concurrently
       try {
-        const sections = ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube", "books", "contact", "footer"];
+        const sections = ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"];
         const fetched = {};
-        for (const sec of sections) {
-          try {
-            const res = await getBlock(sec);
-            if (res && res.data) {
-              fetched[sec] = res.data;
-            }
-          } catch (e) { }
-        }
+        
+        const promises = sections.map((sec) => getBlock(sec).catch(() => null));
+        const results = await Promise.all(promises);
+
+        results.forEach((res, index) => {
+          if (res && res.data) {
+            fetched[sections[index]] = res.data;
+          }
+        });
+        
         setSectionData(fetched);
       } catch (err) {
         console.warn("Failed to load CMS section data styles", err);
@@ -175,15 +173,6 @@ export default function Home() {
       case "youtube":
         component = <YoutubeSection />;
         break;
-      case "books":
-        component = <Books />;
-        break;
-      case "contact":
-        component = <Contact />;
-        break;
-      case "footer":
-        component = <Footer />;
-        break;
       default:
         return null;
     }
@@ -201,16 +190,12 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-[#F4EFE7]">
-      <Navbar />
+    <>
+      <h1 className="bg-[#F4EFE7] text-2xl font-bold text-center py-10 text-[#5b1320]">
+        {t("Holy Life , Gospel Ministry")}
+      </h1>
 
-      <main>
-        <h1 className="bg-[#F4EFE7] text-2xl font-bold text-center py-10 text-[#5b1320]">
-          {t("Holy Life , Gospel Ministry")}
-        </h1>
-
-        {renderLayout()}
-      </main>
-    </div>
+      {renderLayout()}
+    </>
   );
 }

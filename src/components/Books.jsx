@@ -133,7 +133,7 @@ export default function Books() {
               </div>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-xl py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#D4AF37] transition shadow-sm bg-white text-[#1E293B]"
+                className="w-full bg-white border-2 border-[#E8DCCB] rounded-2xl py-3 pl-10 pr-4 text-base focus:outline-none focus:border-[#54091b] transition-all shadow-sm text-slate-900 placeholder-slate-400 font-medium"
                 placeholder={t("Search Books...")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -145,7 +145,7 @@ export default function Books() {
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#D4AF37] transition shadow-sm bg-white text-[#1E293B] appearance-none cursor-pointer"
+                className="w-full bg-white border-2 border-[#E8DCCB] rounded-2xl py-3 px-4 text-base focus:outline-none focus:border-[#54091b] transition-all shadow-sm text-slate-900 appearance-none cursor-pointer font-medium"
               >
                 {MONTHS.map(m => (
                   <option key={m.value} value={m.value}>{m.label}</option>
@@ -161,7 +161,7 @@ export default function Books() {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#D4AF37] transition shadow-sm bg-white text-[#1E293B] appearance-none cursor-pointer"
+                className="w-full bg-white border-2 border-[#E8DCCB] rounded-2xl py-3 px-4 text-base focus:outline-none focus:border-[#54091b] transition-all shadow-sm text-slate-900 appearance-none cursor-pointer font-medium"
               >
                 <option value="">All Years</option>
                 {availableYears.map(y => (
@@ -177,9 +177,9 @@ export default function Books() {
             {(search || selectedMonth || selectedYear) && (
               <button
                 onClick={clearFilters}
-                className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-[#54091b] bg-[#54091b]/10 hover:bg-[#54091b]/20 rounded-xl transition flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 text-base font-bold text-[#54091b] bg-white border-2 border-[#E8DCCB] hover:bg-[#F8F4EC] rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
               >
-                <FaTimes className="text-xs" />
+                <FaTimes className="text-sm" />
                 {t("Clear")}
               </button>
             )}
@@ -229,7 +229,7 @@ export default function Books() {
               {/* Horizontal Scroll Area */}
               <div
                 ref={scrollContainerRef}
-                className="flex overflow-x-auto gap-5 sm:gap-6 pb-8 pt-4 snap-x snap-mandatory hide-scrollbar scroll-smooth"
+                className="flex overflow-x-auto gap-5 sm:gap-6 pb-8 pt-4 snap-x snap-mandatory resources-scrollbar scroll-smooth"
               >
                 {filteredBooks.map((book) => (
                   <div
@@ -239,7 +239,7 @@ export default function Books() {
                   >
                     {/* Premium Book Card */}
                     <div
-                      className="group/card rounded-[20px] overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#D4AF37]/20 transition-all duration-300 hover:-translate-y-2 hover:border-[#D4AF37]/50 border border-gray-100 flex flex-col h-full bg-[#F4EFE7] relative"
+                      className="group/card rounded-[20px] overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_30px_-4px_rgba(84,9,27,0.15)] transition-all duration-300 hover:-translate-y-1.5 border border-[#E8DCCB] flex flex-col h-full bg-[#F4EFE7] relative"
                     >
                       {/* Inner border glow effect */}
                       <div className="absolute inset-0 rounded-[20px] ring-2 ring-transparent group-hover/card:ring-[#D4AF37]/50 transition-all duration-300 z-20 pointer-events-none"></div>

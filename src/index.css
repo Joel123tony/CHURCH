@@ -8,8 +8,13 @@
   box-sizing: border-box;
 }
 
+:root {
+  --navbar-height: 80px;
+}
+
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--navbar-height);
 }
 
 section {
@@ -43,6 +48,30 @@ body {
 
 .admin-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, rgba(239, 191, 4, 1), rgba(238, 0, 57, 1));
+}
+
+/* Resources Scrollbar (Thin, Maroon Thumb, Cream Track, Gold Hover) */
+.resources-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #54091b #F4EFE7;
+}
+
+.resources-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.resources-scrollbar::-webkit-scrollbar-track {
+  background: #F4EFE7;
+  border-radius: 999px;
+}
+
+.resources-scrollbar::-webkit-scrollbar-thumb {
+  background: #54091b;
+  border-radius: 999px;
+}
+
+.resources-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #D4AF37;
 }
 
 .container-custom {

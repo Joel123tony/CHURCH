@@ -1,6 +1,8 @@
 import axios from "axios";
+import { getCached, setCached } from "../utils/cache.js";
 
 const CHANNEL_ID = process.env.CHANNEL_ID;
+const CACHE_KEY = "youtube_latest";
 
 const YT_BASE = "https://www.googleapis.com/youtube/v3/search";
 
@@ -75,6 +77,11 @@ const getLatestVideo = async (apiKey) => {
 ========================= */
 export const getCurrentVideo = async (req, res) => {
   try {
+    const cachedData = getCached(CACHE_KEY);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
     const apiKey = process.env.YOUTUBE_API_KEY;
 
     if (!apiKey || !CHANNEL_ID) {
@@ -94,12 +101,16 @@ export const getCurrentVideo = async (req, res) => {
 
     const selected = liveVideo || latestVideo;
 
-    return res.json({
+    const responsePayload = {
       success: true,
       isLive: !!liveVideo,
       videoId: selected?.videoId || null,
       title: selected?.title || "No video found",
-    });
+    };
+
+    setCached(CACHE_KEY, responsePayload, 120); // Cache for 2 minutes to save quota
+
+    return res.json(responsePayload);
   } catch (error) {
     console.error("Controller Crash:", error.message);
 

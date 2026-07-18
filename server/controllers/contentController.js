@@ -1,27 +1,45 @@
 import ContentBlock from "../models/ContentBlock.js";
+import { getCached, setCached, clearCache } from "../utils/cache.js";
 
 // GET CMS BLOCK
 export const getBlock = async (req, res) => {
-  const block = await ContentBlock.findOne({
-    key: req.params.key
-  });
+  try {
+    const cacheKey = `content_${req.params.key}`;
+    const cachedData = getCached(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
 
-  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-  res.set("Pragma", "no-cache");
-  res.set("Expires", "0");
+    const block = await ContentBlock.findOne({
+      key: req.params.key
+    }).lean();
 
-  res.json(block || { key: req.params.key, data: {} });
+    const responseData = block || { key: req.params.key, data: {} };
+    setCached(cacheKey, responseData, 60);
+
+    return res.json(responseData);
+  } catch (err) {
+    console.error("getBlock ERROR:", err);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
 };
 
 // SAVE CMS BLOCK
 export const saveBlock = async (req, res) => {
-  const { key, data } = req.body;
+  try {
+    const { key, data } = req.body;
 
-  const updated = await ContentBlock.findOneAndUpdate(
-    { key },
-    { key, data, updatedAt: new Date() },
-    { upsert: true, new: true }
-  );
+    const updated = await ContentBlock.findOneAndUpdate(
+      { key },
+      { key, data, updatedAt: new Date() },
+      { upsert: true, new: true, lean: true }
+    );
 
-  res.json(updated);
+    clearCache(`content_${key}`);
+
+    res.json(updated);
+  } catch (err) {
+    console.error("saveBlock ERROR:", err);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
 };

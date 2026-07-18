@@ -1,9 +1,13 @@
 import Event from "../models/Event.js";
+import { getCached, setCached, clearCache } from "../utils/cache.js";
+
+const CACHE_KEY = "events_all";
 
 /* CREATE */
 export const createEvent = async (req, res) => {
   try {
     const event = await Event.create(req.body);
+    clearCache(CACHE_KEY);
 
     return res.status(201).json({
       success: true,
@@ -20,7 +24,13 @@ export const createEvent = async (req, res) => {
 /* GET ALL (sorted by date ASC) */
 export const getEvents = async (req, res) => {
   try {
-    const events = await Event.find().sort({ date: 1 });
+    const cachedData = getCached(CACHE_KEY);
+    if (cachedData) {
+      return res.json({ success: true, data: cachedData });
+    }
+
+    const events = await Event.find().sort({ date: 1 }).lean();
+    setCached(CACHE_KEY, events, 60);
 
     res.json({
       success: true,
@@ -40,7 +50,7 @@ export const updateEvent = async (req, res) => {
     const event = await Event.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true }
+      { new: true, lean: true }
     );
 
     if (!event) {
@@ -49,6 +59,8 @@ export const updateEvent = async (req, res) => {
         message: "Event not found",
       });
     }
+
+    clearCache(CACHE_KEY);
 
     res.json({
       success: true,
@@ -73,6 +85,8 @@ export const deleteEvent = async (req, res) => {
         message: "Event not found",
       });
     }
+
+    clearCache(CACHE_KEY);
 
     res.json({
       success: true,

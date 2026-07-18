@@ -1,6 +1,9 @@
 import Book from "../models/Book.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
+import { getCached, setCached, clearCache } from "../utils/cache.js";
+
+const CACHE_KEY = "books_all";
 
 /* =========================
   CREATE BOOK
@@ -70,6 +73,8 @@ export const createBook = async (req, res) => {
       coverImageUrl: coverUrl,
       cover_public_id: coverPublicId,
     });
+    
+    clearCache(CACHE_KEY);
 
     return res.status(201).json({
       success: true,
@@ -89,7 +94,14 @@ export const createBook = async (req, res) => {
 ========================= */
 export const getBooks = async (req, res) => {
   try {
-    const books = await Book.find().sort({ createdAt: -1 });
+    const cachedData = getCached(CACHE_KEY);
+    if (cachedData) {
+      return res.json({ success: true, books: cachedData });
+    }
+
+    const books = await Book.find().sort({ createdAt: -1 }).lean();
+    
+    setCached(CACHE_KEY, books, 60);
 
     return res.json({
       success: true,
@@ -168,7 +180,10 @@ export const updateBook = async (req, res) => {
     const updated = await Book.findByIdAndUpdate(req.params.id, updatePayload, {
       new: true,
       runValidators: true,
+      lean: true
     });
+
+    clearCache(CACHE_KEY);
 
     return res.json({
       success: true,
@@ -206,6 +221,8 @@ export const deleteBook = async (req, res) => {
     }
 
     await Book.deleteOne({ _id: req.params.id });
+
+    clearCache(CACHE_KEY);
 
     return res.json({
       success: true,

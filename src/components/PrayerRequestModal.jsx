@@ -12,7 +12,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const alert = useAlert();
-  
+
   const nameInputRef = useRef(null);
 
   // Prevent scrolling when modal is open and focus first input
@@ -88,7 +88,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
       onClick={(e) => {
         if (e.target === e.currentTarget && !loading) {
@@ -97,7 +97,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
       }}
     >
       <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl animate-scaleIn">
-        
+
         {/* Close Button */}
         {!loading && (
           <button

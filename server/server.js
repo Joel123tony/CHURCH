@@ -30,7 +30,12 @@ import contentRoutes from "./routes/content.routes.js";
 import translateRoutes from "./routes/translate.routes.js";
 import bookRoutes from "./routes/bookRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
+import songRoutes from "./routes/songRoutes.js";
+import compression from "compression";
+
 const app = express();
+
+app.use(compression());
 
 /* =========================
    TRUST PROXY (Render safe)
@@ -89,38 +94,19 @@ app.use(express.json({ limit: "2000mb" }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 /* =========================
-   DB READY FLAG (🔥 NEW FIX)
-========================= */
-let dbReady = false;
-
-/* =========================
-   HEALTH CHECK (UPDATED)
-========================= */
-/* =========================
-   TRANSLATE (no DB required)
+   TRANSLATE & SONGS (no DB required)
 ========================= */
 app.use("/api/translate", translateRoutes);
+app.use("/api/songs", songRoutes);
+
+import mongoose from "mongoose";
 
 app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "🚀 API running",
-    db: dbReady ? "connected" : "not-ready",
+    db: mongoose.connection.readyState === 1 ? "connected" : "not-ready",
   });
-});
-
-/* =========================
-   DB GUARD MIDDLEWARE (🔥 NEW FIX)
-   prevents Pastor 500 crash spam
-========================= */
-app.use((req, res, next) => {
-  if (!dbReady) {
-    return res.status(503).json({
-      success: false,
-      message: "Database not ready yet. Try again in a few seconds.",
-    });
-  }
-  next();
 });
 
 /* =========================
@@ -197,8 +183,6 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    dbReady = true; // 🔥 IMPORTANT FIX
-
     const PORT = process.env.PORT || 5000;
 
     const server = app.listen(PORT, () => {
@@ -215,8 +199,7 @@ const startServer = async () => {
     server.headersTimeout = 10 * 60 * 1000;
   } catch (err) {
     console.error("❌ DB CONNECTION FAILED:", err);
-    dbReady = false;
-    process.exit(1);
+    // Do NOT exit process so non-DB routes keep working
   }
 };
 

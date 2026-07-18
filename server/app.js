@@ -14,6 +14,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
+import songRoutes from "./routes/songRoutes.js";
 
 const envPath = fs.existsSync(path.join(process.cwd(), "server", ".env"))
   ? path.join(process.cwd(), "server", ".env")
@@ -50,6 +51,9 @@ app.use("/api/events", eventRoutes);
 
 /* YOUTUBE */
 app.use("/api/youtube", youtubeRoutes);
+
+/* SONGS */
+app.use("/api/songs", songRoutes);
 
 /* =========================
    EXPORT

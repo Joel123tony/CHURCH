@@ -2,6 +2,9 @@ import Gallery from "../models/Gallery.js";
 import { isValidObjectId } from "mongoose";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
+import { getCached, setCached, clearCache } from "../utils/cache.js";
+
+const CACHE_KEY = "gallery_client";
 
 /* =========================
    UPLOAD MEDIA
@@ -49,7 +52,7 @@ export const uploadMedia = async (req, res) => {
     });
 
 
-
+    clearCache(CACHE_KEY);
 
     return res.status(201).json({
       success: true,
@@ -98,6 +101,11 @@ export const getClientMedia = async (
   res
 ) => {
   try {
+    const cachedData = getCached(CACHE_KEY);
+    if (cachedData) {
+      return res.json({ success: true, data: cachedData });
+    }
+
     const media = await Gallery.find({
       clientPriority: {
         $ne: null,
@@ -106,7 +114,10 @@ export const getClientMedia = async (
       .sort({
         clientPriority: 1,
       })
-      .limit(4);
+      .limit(4)
+      .lean();
+
+    setCached(CACHE_KEY, media, 60);
 
     return res.json({
       success: true,
@@ -148,6 +159,8 @@ export const updateMedia = async (
       });
     }
 
+    clearCache(CACHE_KEY);
+
     return res.json({
       success: true,
       data: media,
@@ -186,6 +199,8 @@ export const deleteMedia = async (
     );
 
     await media.deleteOne();
+
+    clearCache(CACHE_KEY);
 
     return res.json({
       success: true,
@@ -246,6 +261,8 @@ export const bulkDeleteMedia = async (
       _id: { $in: mediaList.map((item) => item._id) },
     });
 
+    clearCache(CACHE_KEY);
+
     return res.json({
       success: true,
       message: "Selected media deleted successfully",
@@ -287,6 +304,7 @@ export const toggleClientGallery =
         media.clientPriority = null;
 
         await media.save();
+        clearCache(CACHE_KEY);
 
         return res.json({
           success: true,
@@ -329,6 +347,7 @@ export const toggleClientGallery =
       media.clientPriority = slot;
 
       await media.save();
+      clearCache(CACHE_KEY);
 
       return res.json({
         success: true,

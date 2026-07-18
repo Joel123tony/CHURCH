@@ -2,6 +2,9 @@ import Pastor from "../models/Pastor.js";
 import ExcelJS from "exceljs";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
+import { getCached, setCached, clearCache } from "../utils/cache.js";
+
+const CACHE_KEY = "pastors_public";
 
 const EMPTY_IMAGE = {
   url: "",
@@ -235,6 +238,8 @@ export const createPastor = async (req, res) => {
     console.log("[PASTOR] CREATE PAYLOAD", pastorPayload);
 
     const pastor = await Pastor.create(pastorPayload);
+    
+    clearCache(CACHE_KEY);
 
     return res.status(201).json({
       success: true,
@@ -272,9 +277,16 @@ export const getAllPastors = async (req, res) => {
 ========================= */
 export const getPublicPastors = async (req, res) => {
   try {
+    const cachedData = getCached(CACHE_KEY);
+    if (cachedData) {
+      return res.json({ success: true, pastors: cachedData });
+    }
+
     const pastors = await Pastor.find({
       $or: [{ active: true }, { active: { $exists: false } }],
-    }).sort({ joinedYear: -1 });
+    }).sort({ joinedYear: -1 }).lean();
+
+    setCached(CACHE_KEY, pastors, 60);
 
     return res.json({
       success: true,
@@ -369,7 +381,10 @@ export const updatePastor = async (req, res) => {
     const updated = await Pastor.findByIdAndUpdate(req.params.id, updatePayload, {
       new: true,
       runValidators: true,
+      lean: true
     });
+
+    clearCache(CACHE_KEY);
 
     return res.json({
       success: true,
@@ -400,6 +415,8 @@ export const deletePastor = async (req, res) => {
     }
 
     await Pastor.deleteOne({ _id: req.params.id });
+
+    clearCache(CACHE_KEY);
 
     return res.json({
       success: true,

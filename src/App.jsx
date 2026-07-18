@@ -8,6 +8,11 @@ import FaviconManager from "./components/FaviconManager";
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
 const ClientGallery = lazy(() => import("./pages/ClientGallery"));
+const Bible = lazy(() => import("./pages/Bible"));
+const Songs = lazy(() => import("./pages/Songs"));
+const SongDetails = lazy(() => import("./pages/SongDetails"));
+const BooksPage = lazy(() => import("./pages/BooksPage"));
+const MainLayout = lazy(() => import("./components/MainLayout"));
 
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -58,10 +63,16 @@ export default function App() {
 
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/gallery" element={<ClientGallery />} />
-
               <Route path="/admin/login" element={<Login />} />
+
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/gallery" element={<ClientGallery />} />
+                <Route path="/bible" element={<Bible />} />
+                <Route path="/songs" element={<Songs />} />
+                <Route path="/songs/:id" element={<SongDetails />} />
+                <Route path="/books" element={<BooksPage />} />
+              </Route>
 
               <Route
                 path="/admin"
