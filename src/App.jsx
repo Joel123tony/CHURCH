@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LanguageProvider } from "./context/LanguageContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FaviconManager from "./components/FaviconManager";
 
@@ -26,6 +27,7 @@ const Books = lazy(() => import("./pages/admin/Books"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Donations = lazy(() => import("./pages/admin/Donations"));
 const AdminSongs = lazy(() => import("./pages/admin/AdminSongs"));
+const AdminFailedImports = lazy(() => import("./pages/admin/AdminFailedImports"));
 
 
 const PageLoader = () => (
@@ -58,8 +60,9 @@ const PageLoader = () => (
 export default function App() {
   return (
     <LanguageProvider>
-      <ConfirmProvider>
-        <BrowserRouter>
+      <ThemeProvider>
+        <ConfirmProvider>
+          <BrowserRouter>
           <FaviconManager />
 
           <Suspense fallback={<PageLoader />}>
@@ -95,13 +98,15 @@ export default function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="donations" element={<Donations />} />
                 <Route path="songs" element={<AdminSongs />} />
+                <Route path="songs/failed" element={<AdminFailedImports />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
-        </BrowserRouter>
-      </ConfirmProvider>
+          </BrowserRouter>
+        </ConfirmProvider>
+      </ThemeProvider>
     </LanguageProvider>
   );
 }

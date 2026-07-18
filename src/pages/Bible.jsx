@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, memo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { useTheme } from "../context/ThemeContext";
 import {
   ChevronLeft, ChevronRight, Search, Moon, Sun,
   ZoomIn, ZoomOut, BookOpen, Copy, Check, ChevronDown, Minus, Plus, RotateCcw
@@ -16,7 +17,6 @@ const getBookName = (bookEn, lang) => {
   return lang === "ta" ? (tamilBookNames[bookEn] || bookEn) : bookEn;
 };
 
-// Helper for highlighting text
 const highlightText = (text, query) => {
   if (!query) return text;
   const parts = text.split(new RegExp(`(${query})`, 'gi'));
@@ -27,19 +27,20 @@ const highlightText = (text, query) => {
   );
 };
 
-// Memoized Verse Component
-const VerseItem = memo(({ verseNum, text, zoomLevel, isDark, onCopy, copiedVerse, searchQuery, isHighlighted }) => {
-  const baseFontSize = 22;
-  const fontSize = baseFontSize * (zoomLevel / 100);
+const MOBILE_FONT_SIZES = [15, 17, 19, 21, 23];
+
+const VerseItem = memo(({ verseNum, text, zoomLevel, fontIndex, isDark, onCopy, copiedVerse, searchQuery, isHighlighted, isMobile }) => {
+  const fontSize = isMobile ? MOBILE_FONT_SIZES[fontIndex] : 22 * (zoomLevel / 100);
+  const verseNumSize = isMobile ? 12 : Math.max(12, fontSize * 0.65);
 
   return (
     <div id={`verse-${verseNum}`} className={`flex group relative px-2 py-4 sm:px-4 sm:py-6 rounded-2xl transition-all duration-300 ${isDark ? 'hover:bg-gray-800' : 'hover:bg-white'} ${isHighlighted ? (isDark ? 'bg-gray-800/80 shadow-md ring-1 ring-[#D4AF37]/50' : 'bg-white shadow-md ring-1 ring-[#D4AF37]/50') : ''}`}>
-      <span className={`w-10 sm:w-14 flex-shrink-0 font-bold select-none pt-[0.3em] transition-colors ${isDark ? "text-[#D4AF37]" : "text-[#D4AF37]"}`} style={{ fontSize: `${Math.max(12, fontSize * 0.65)}px` }}>
+      <span className={`w-10 sm:w-14 flex-shrink-0 font-bold select-none pt-[0.3em] transition-colors ${isDark ? "text-[#D4AF37]" : "text-[#D4AF37]"}`} style={{ fontSize: `${verseNumSize}px` }}>
         {verseNum}
       </span>
       <p
-        className={`flex-grow font-serif tracking-wide transition-all duration-300 ease-out ${isDark ? 'text-gray-100' : 'text-[#1E293B]'}`}
-        style={{ fontSize: `${fontSize}px`, lineHeight: 1.95 }}
+        className={`flex-grow font-serif tracking-wide transition-all duration-200 ease-out ${isDark ? 'text-gray-100' : 'text-[#1E293B]'}`}
+        style={{ fontSize: `${fontSize}px`, lineHeight: isMobile ? 1.8 : 1.95 }}
       >
         {highlightText(text, searchQuery)}
       </p>
@@ -58,7 +59,6 @@ const VerseItem = memo(({ verseNum, text, zoomLevel, isDark, onCopy, copiedVerse
   );
 });
 
-// Custom Dropdown Component (Using Portal to escape overflow constraints)
 const CustomSelect = ({ value, options, onChange, isDark, label, minWidth = "160px" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyles, setDropdownStyles] = useState({});
@@ -110,11 +110,11 @@ const CustomSelect = ({ value, options, onChange, isDark, label, minWidth = "160
   const selectedLabel = options.find(o => o.value === value)?.label || value;
 
   return (
-    <div style={{ minWidth }}>
+    <div className="w-full">
       <button
         ref={buttonRef}
         onClick={toggleDropdown}
-        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border-2 transition-all duration-200 font-bold text-sm outline-none shadow-sm ${isDark
+        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border-2 transition-all duration-200 font-bold text-sm outline-none shadow-sm min-h-[44px] ${isDark
             ? 'bg-gray-800 border-gray-700 text-gray-200 hover:border-gray-600 focus:border-[#D4AF37]'
             : 'bg-[#F4EFE7] border-[#54091b]/20 text-[#54091b] hover:border-[#54091b]/50 focus:border-[#54091b]'
           } ${isOpen ? (isDark ? 'border-[#D4AF37]' : 'border-[#54091b] ring-2 ring-[#54091b]/10') : ''}`}
@@ -137,7 +137,7 @@ const CustomSelect = ({ value, options, onChange, isDark, label, minWidth = "160
                   onChange(opt.value);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${value === opt.value
+                className={`w-full text-left px-4 py-3 min-h-[44px] text-sm font-medium transition-colors ${value === opt.value
                     ? (isDark ? 'bg-gray-700 text-[#D4AF37] font-bold' : 'bg-[#54091b] text-[#F6EFE3]')
                     : (isDark ? 'text-gray-300 hover:bg-gray-700/50' : 'text-[#54091b]/80 hover:bg-[#54091b]/10 hover:text-[#54091b]')
                   }`}
@@ -156,8 +156,7 @@ const CustomSelect = ({ value, options, onChange, isDark, label, minWidth = "160
 export default function Bible() {
   const { t } = useLanguage();
 
-  // State
-  const [language, setLanguage] = useState("ta"); // 'ta' or 'en'
+  const [language, setLanguage] = useState("ta");
   const [fullBibleData, setFullBibleData] = useState({ en: null, ta: null });
   const [loading, setLoading] = useState(true);
 
@@ -165,15 +164,34 @@ export default function Bible() {
   const [selectedChapter, setSelectedChapter] = useState("1");
 
   const [searchInput, setSearchInput] = useState("");
-  const [searchQuery, setSearchQuery] = useState(""); // Submitted query
+  const [searchQuery, setSearchQuery] = useState("");
   const [zoomLevel, setZoomLevel] = useState(100);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // Mobile Font Size State (1 = Normal/17px)
+  const [fontIndex, setFontIndex] = useState(() => {
+    const saved = localStorage.getItem("bible_mobile_font_index");
+    return saved !== null ? parseInt(saved, 10) : 1;
+  });
+
+  const { isDarkMode, toggleTheme } = useTheme();
   const [copiedVerse, setCopiedVerse] = useState(null);
   const [chapterLoading, setChapterLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const contentRef = useRef(null);
+  const chipsScrollRef = useRef(null);
 
-  // Fetch Bible Data Once
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("bible_mobile_font_index", fontIndex.toString());
+  }, [fontIndex]);
+
   useEffect(() => {
     const fetchBibles = async () => {
       setLoading(true);
@@ -201,12 +219,10 @@ export default function Bible() {
     fetchBibles();
   }, []);
 
-  // Derived Active Data
   const bibleData = fullBibleData[language];
   const hasData = bibleData !== null;
 
   const booksList = useMemo(() => hasData ? Object.keys(bibleData) : [], [bibleData, hasData]);
-
   const chaptersList = useMemo(() => {
     if (!hasData || !bibleData[selectedBook]) return [];
     return Object.keys(bibleData[selectedBook]).sort((a, b) => parseInt(a) - parseInt(b));
@@ -217,7 +233,6 @@ export default function Bible() {
     return bibleData[selectedBook][selectedChapter];
   }, [bibleData, selectedBook, selectedChapter, hasData]);
 
-  // Debounce search input to query
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput);
@@ -225,7 +240,6 @@ export default function Bible() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Handle Search Submission (Enter key)
   const handleSearchSubmit = (e) => {
     if (e.key === 'Enter') {
       setSearchQuery(searchInput);
@@ -235,7 +249,6 @@ export default function Bible() {
     }
   };
 
-  // Find first match in current chapter and scroll
   useEffect(() => {
     if (searchQuery && !chapterLoading) {
       const query = searchQuery.toLowerCase();
@@ -252,7 +265,7 @@ export default function Bible() {
         setTimeout(() => {
           const el = document.getElementById(`verse-${firstMatchVerse}`);
           if (el) {
-            const y = el.getBoundingClientRect().top + window.pageYOffset - 180; // Offset for sticky header
+            const y = el.getBoundingClientRect().top + window.pageYOffset - 180;
             window.scrollTo({ top: y, behavior: 'smooth' });
           }
         }, 100);
@@ -260,22 +273,28 @@ export default function Bible() {
     }
   }, [searchQuery, currentVerses, chapterLoading]);
 
-
-  // Handlers
   const handleChapterChange = useCallback((newChapter) => {
     setChapterLoading(true);
     setTimeout(() => {
       setSelectedChapter(newChapter);
       setChapterLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Auto-scroll the chip into view on mobile
+      if (isMobile && chipsScrollRef.current) {
+         const btn = document.getElementById(`chip-ch-${newChapter}`);
+         if (btn) {
+            btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+         }
+      }
     }, 150);
-  }, []);
+  }, [isMobile]);
 
   const handleBookChange = useCallback((newBook) => {
     setSelectedBook(newBook);
-    const chaps = Object.keys(bibleData[newBook] || {}).sort((a, b) => parseInt(a) - parseInt(b));
+    const chaps = Object.keys(fullBibleData[language][newBook] || {}).sort((a, b) => parseInt(a) - parseInt(b));
     handleChapterChange(chaps[0] || "1");
-  }, [bibleData, handleChapterChange]);
+  }, [fullBibleData, language, handleChapterChange]);
 
   const handleNextChapter = useCallback(() => {
     const currentIndex = chaptersList.indexOf(selectedChapter);
@@ -337,11 +356,9 @@ export default function Bible() {
     setTimeout(() => setCopiedVerse(null), 2000);
   }, [selectedBook, selectedChapter, language]);
 
-  // Dropdown options mappings
   const bookOptions = useMemo(() => booksList.map(b => ({ value: b, label: getBookName(b, language) })), [booksList, language]);
   const chapterOptions = useMemo(() => chaptersList.map(c => ({ value: c, label: `${t("Chapter")} ${c}` })), [chaptersList, t]);
 
-  // Styling helpers
   const isDark = isDarkMode;
   const bgMain = isDark ? "bg-[#0f172a]" : "bg-[#F8F4EC]";
   const bgToolbar = isDark ? "bg-[#1e293b]/95 backdrop-blur-md" : "bg-white/95 backdrop-blur-md shadow-sm";
@@ -349,144 +366,164 @@ export default function Bible() {
 
   return (
     <div className={`min-h-[calc(100vh-80px)] flex flex-col transition-colors duration-500 ${bgMain}`}>
+      
+      {/* 
+        Sticky Desktop Toolbar 
+      */}
+      <div className={`hidden md:block ${bgToolbar} border-b ${borderCol} sticky top-[var(--navbar-height)] z-40 transition-colors duration-500`}>
+        <div className="max-w-5xl mx-auto px-4 py-3 sm:py-4 flex flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-[200px]">
+              <CustomSelect value={selectedBook} options={bookOptions} onChange={handleBookChange} isDark={isDark} />
+            </div>
+            <div className="w-[140px]">
+              <CustomSelect value={selectedChapter} options={chapterOptions} onChange={handleChapterChange} isDark={isDark} />
+            </div>
+          </div>
+          <div className="flex items-center gap-4 flex-1 justify-end">
+            <div className="relative w-64 shrink-0 group">
+              <Search size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-gray-400 group-focus-within:text-[#D4AF37]' : 'text-[#54091b]/50 group-focus-within:text-[#54091b]'}`} />
+              <input
+                type="text"
+                placeholder={t("Search in chapter...")}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchSubmit}
+                className={`w-full pl-10 pr-3 py-2.5 rounded-xl border-2 transition-all text-sm font-medium outline-none min-h-[44px] ${isDark
+                    ? 'border-gray-700 bg-gray-800 text-white focus:border-[#D4AF37]'
+                    : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] focus:border-[#54091b] focus:bg-white placeholder-[#54091b]/40'
+                  }`}
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 shrink-0">
+              <div className={`flex items-center gap-1 p-1.5 rounded-xl shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
+                <button onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))} className={`p-1.5 rounded-lg transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Decrease zoom"><Minus size={16} /></button>
+                <span className={`text-xs font-bold w-12 text-center select-none ${isDark ? 'text-gray-300' : 'text-[#54091b]'}`}>{zoomLevel}%</span>
+                <button onClick={() => setZoomLevel(prev => Math.min(200, prev + 10))} className={`p-1.5 rounded-lg transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Increase zoom"><Plus size={16} /></button>
+                <div className={`w-px h-5 mx-1 ${isDark ? 'bg-gray-700' : 'bg-[#54091b]/20'}`}></div>
+                <button onClick={() => setZoomLevel(100)} className={`p-1.5 rounded-lg transition-colors flex items-center justify-center gap-1 min-h-[32px] min-w-[32px] ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Reset zoom"><RotateCcw size={14} /></button>
+              </div>
+              <div className={`flex items-center rounded-xl p-1 shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
+                <button onClick={() => setLanguage("ta")} className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 text-center min-h-[32px] ${language === "ta" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-[#54091b]/60 hover:text-[#54091b]')}`}>தமிழ்</button>
+                <button onClick={() => setLanguage("en")} className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 text-center min-h-[32px] ${language === "en" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-[#54091b]/60 hover:text-[#54091b]')}`}>EN</button>
+              </div>
+              <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-colors border-2 shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center ${isDark ? 'border-gray-700 bg-gray-800 text-yellow-400 hover:border-gray-600' : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] hover:border-[#54091b]/30'}`} title="Toggle Theme">{isDark ? <Sun size={18} /> : <Moon size={18} />}</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 
-        Sticky Compact Toolbar 
+        Sticky Mobile Toolbar 
       */}
-      <div className={`${bgToolbar} border-b ${borderCol} sticky top-[var(--navbar-height)] z-40 transition-colors duration-500`}>
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4 overflow-x-auto overflow-y-hidden resources-scrollbar">
+      <div className={`md:hidden ${bgToolbar} sticky top-[var(--navbar-height)] z-40 px-4 py-3 border-b ${borderCol} flex flex-col gap-3 shadow-[0_4px_10px_rgba(0,0,0,0.05)]`}>
+        
+        {/* Row 1: Book Selector & Chapter Header */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <CustomSelect value={selectedBook} options={bookOptions} onChange={handleBookChange} isDark={isDark} />
+          </div>
+          <div className={`font-black text-lg whitespace-nowrap px-1 ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
+             {t("Chapter")} {selectedChapter}
+          </div>
+        </div>
 
-          {/* Navigation Controls */}
-          <div className="flex items-center gap-3 shrink-0">
-            <CustomSelect
-              value={selectedBook}
-              options={bookOptions}
-              onChange={handleBookChange}
-              isDark={isDark}
-              minWidth="180px"
-            />
-            <CustomSelect
-              value={selectedChapter}
-              options={chapterOptions}
-              onChange={handleChapterChange}
-              isDark={isDark}
-              minWidth="120px"
-            />
+        {/* Row 2: Search */}
+        <div className="relative w-full group">
+          <Search size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-gray-400 group-focus-within:text-[#D4AF37]' : 'text-[#54091b]/50 group-focus-within:text-[#54091b]'}`} />
+          <input
+            type="text"
+            placeholder={t("Search in chapter...")}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleSearchSubmit}
+            className={`w-full pl-10 pr-3 py-2 min-h-[44px] rounded-xl border-2 transition-all text-[16px] font-medium outline-none ${isDark
+                ? 'border-gray-700 bg-gray-800 text-white focus:border-[#D4AF37]'
+                : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] focus:border-[#54091b] focus:bg-white placeholder-[#54091b]/40'
+              }`}
+          />
+        </div>
+
+        {/* Row 3: Action Controls */}
+        <div className="flex items-center justify-between gap-3">
+          <button 
+            onClick={toggleTheme} 
+            aria-label="Toggle Theme"
+            className={`p-2.5 rounded-xl transition-colors border-2 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center ${isDark ? 'border-gray-700 bg-gray-800 text-yellow-400 hover:border-gray-600' : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] hover:border-[#54091b]/30'}`}
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          
+          <div className={`flex flex-1 items-center rounded-xl p-1 min-h-[44px] ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
+            <button aria-label="Switch to Tamil" onClick={() => setLanguage("ta")} className={`flex-1 px-2 py-2 text-xs font-bold rounded-lg transition-all duration-300 text-center ${language === "ta" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400' : 'text-[#54091b]/60')}`}>தமிழ்</button>
+            <button aria-label="Switch to English" onClick={() => setLanguage("en")} className={`flex-1 px-2 py-2 text-xs font-bold rounded-lg transition-all duration-300 text-center ${language === "en" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400' : 'text-[#54091b]/60')}`}>EN</button>
           </div>
 
-          {/* Search Input */}
-          <div className="relative w-64 shrink-0 group">
-            <Search size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${isDark ? 'text-gray-400 group-focus-within:text-[#D4AF37]' : 'text-[#54091b]/50 group-focus-within:text-[#54091b]'}`} />
-            <input
-              type="text"
-              placeholder={t("Search in chapter...")}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={handleSearchSubmit}
-              className={`w-full pl-10 pr-3 py-2.5 rounded-xl border-2 transition-all text-sm font-medium outline-none ${isDark
-                  ? 'border-gray-700 bg-gray-800 text-white focus:border-[#D4AF37]'
-                  : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] focus:border-[#54091b] focus:bg-white placeholder-[#54091b]/40'
-                }`}
-            />
+          <div className={`flex flex-1 items-center rounded-xl p-1 min-h-[44px] ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
+            <button aria-label="Decrease font size" onClick={() => setFontIndex(Math.max(0, fontIndex - 1))} disabled={fontIndex === 0} className={`flex-1 px-2 py-2 text-sm font-bold rounded-lg transition-all text-center flex justify-center items-center gap-1 ${isDark ? 'text-gray-300 hover:bg-gray-700 disabled:opacity-30' : 'text-[#54091b] hover:bg-white/50 disabled:opacity-30'}`}>A−</button>
+            <div className={`w-px h-4 ${isDark ? 'bg-gray-700' : 'bg-[#54091b]/20'}`}></div>
+            <button aria-label="Increase font size" onClick={() => setFontIndex(Math.min(4, fontIndex + 1))} disabled={fontIndex === 4} className={`flex-1 px-2 py-2 text-sm font-bold rounded-lg transition-all text-center flex justify-center items-center gap-1 ${isDark ? 'text-gray-300 hover:bg-gray-700 disabled:opacity-30' : 'text-[#54091b] hover:bg-white/50 disabled:opacity-30'}`}>A+</button>
           </div>
+        </div>
 
-          {/* Zoom Controls */}
-          <div className={`flex items-center gap-1 p-1.5 rounded-xl shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
-            <button
-              onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))}
-              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`}
-              title="Decrease zoom"
+        {/* Row 4: Chapter Chips */}
+        <div ref={chipsScrollRef} className="flex items-center gap-2 overflow-x-auto resources-scrollbar pb-1 pt-1 -mx-4 px-4 scroll-smooth">
+          {chaptersList.map(c => (
+            <button 
+              key={c}
+              id={`chip-ch-${c}`}
+              onClick={() => handleChapterChange(c)}
+              className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${selectedChapter === c ? (isDark ? 'bg-[#D4AF37] text-gray-900 shadow-md' : 'bg-[#54091b] text-white shadow-md') : (isDark ? 'border border-gray-700 text-gray-300 bg-gray-800' : 'border border-[#54091b]/20 text-[#54091b] bg-[#F4EFE7]')}`}
             >
-              <Minus size={16} />
+              {c}
             </button>
-            <span className={`text-xs font-bold w-12 text-center select-none ${isDark ? 'text-gray-300' : 'text-[#54091b]'}`}>
-              {zoomLevel}%
-            </span>
-            <button
-              onClick={() => setZoomLevel(prev => Math.min(200, prev + 10))}
-              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`}
-              title="Increase zoom"
-            >
-              <Plus size={16} />
-            </button>
-            <div className={`w-px h-5 mx-1 ${isDark ? 'bg-gray-700' : 'bg-[#54091b]/20'}`}></div>
-            <button
-              onClick={() => setZoomLevel(100)}
-              className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`}
-              title="Reset zoom"
-            >
-              <RotateCcw size={14} />
-            </button>
-          </div>
-
-          {/* Language & Theme */}
-          <div className="flex items-center gap-3 shrink-0 ml-auto">
-            <div className={`flex items-center rounded-xl p-1 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
-              <button
-                onClick={() => setLanguage("ta")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 ${language === "ta" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-[#54091b]/60 hover:text-[#54091b]')}`}
-              >
-                தமிழ்
-              </button>
-              <button
-                onClick={() => setLanguage("en")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 ${language === "en" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-[#54091b]/60 hover:text-[#54091b]')}`}
-              >
-                EN
-              </button>
-            </div>
-
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`p-2.5 rounded-xl transition-colors border-2 ${isDark ? 'border-gray-700 bg-gray-800 text-yellow-400 hover:border-gray-600' : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] hover:border-[#54091b]/30'}`}
-              title="Toggle Theme"
-            >
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
       {/* Main Reading Area */}
       <div ref={contentRef} className="flex-grow scroll-smooth">
-        <div className="max-w-3xl mx-auto px-5 py-12 sm:py-20">
+        <div className="max-w-3xl mx-auto px-4 md:px-5 py-6 md:py-12 sm:py-20">
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 opacity-0 animate-fade-in delay-200">
               <div className={`w-10 h-10 border-3 border-[#54091b]/10 border-t-[#D4AF37] rounded-full animate-spin`}></div>
             </div>
           ) : (
-            /* Reading View */
             <div className={`pb-24 transition-opacity duration-300 ${chapterLoading ? 'opacity-0' : 'opacity-100'}`}>
-              <div className="text-center mb-20 animate-fade-in">
-                <h2 className={`text-4xl sm:text-5xl font-black tracking-tight ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
-                  {getBookName(selectedBook, language)} <span className="opacity-50 mx-2">|</span> {selectedChapter}
+              <div className="text-center mb-8 md:mb-12 sm:mb-20 animate-fade-in hidden md:block">
+                <h2 className={`font-black tracking-tight flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4 ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
+                  <span className="text-[24px] sm:text-5xl">{getBookName(selectedBook, language)}</span>
+                  <span className="hidden sm:inline opacity-50">|</span>
+                  <span className="text-[18px] sm:text-5xl opacity-80 sm:opacity-100">{t("Chapter")} {selectedChapter}</span>
                 </h2>
-                <div className={`h-1.5 w-20 bg-[#D4AF37] mx-auto mt-8 rounded-full`}></div>
+                <div className={`h-1 sm:h-1.5 w-16 sm:w-20 bg-[#D4AF37] mx-auto mt-6 sm:mt-8 rounded-full`}></div>
               </div>
 
-              <div className="space-y-2 animate-fade-in-up">
+              <div className="space-y-4 md:space-y-2 sm:space-y-2 animate-fade-in-up mt-4 md:mt-0">
                 {Object.entries(currentVerses).map(([verseNum, text]) => (
                   <VerseItem
                     key={verseNum}
                     verseNum={verseNum}
                     text={text}
                     zoomLevel={zoomLevel}
+                    fontIndex={fontIndex}
                     isDark={isDark}
                     onCopy={copyToClipboard}
                     copiedVerse={copiedVerse}
                     searchQuery={searchQuery}
                     isHighlighted={searchQuery && text.toLowerCase().includes(searchQuery.toLowerCase())}
+                    isMobile={isMobile}
                   />
                 ))}
               </div>
 
               {/* Bottom Navigation */}
-              <div className={`flex flex-col sm:flex-row justify-between items-center gap-4 mt-24 pt-12 border-t ${borderCol}`}>
+              <div className={`flex flex-col sm:flex-row justify-between items-center gap-4 mt-16 md:mt-24 pt-8 md:pt-12 border-t ${borderCol}`}>
                 {getPrevLabel() ? (
                   <button
                     onClick={handlePrevChapter}
-                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold text-sm transition-all duration-300 ${isDark
+                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 min-h-[44px] rounded-2xl font-bold text-sm transition-all duration-300 ${isDark
                         ? 'bg-gray-800 hover:bg-gray-700 text-white border-2 border-gray-700'
                         : 'bg-white hover:bg-[#F4EFE7] text-[#54091b] border-2 border-[#E8DCCB] hover:border-[#54091b]/30 hover:shadow-md'
                       }`}
@@ -494,12 +531,12 @@ export default function Bible() {
                     <ChevronLeft size={18} />
                     {getPrevLabel()}
                   </button>
-                ) : <div />}
+                ) : <div className="hidden sm:block" />}
 
                 {getNextLabel() ? (
                   <button
                     onClick={handleNextChapter}
-                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold text-sm transition-all duration-300 ${isDark
+                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 min-h-[44px] rounded-2xl font-bold text-sm transition-all duration-300 ${isDark
                         ? 'bg-gray-800 hover:bg-gray-700 text-white border-2 border-gray-700'
                         : 'bg-white hover:bg-[#F4EFE7] text-[#54091b] border-2 border-[#E8DCCB] hover:border-[#54091b]/30 hover:shadow-md'
                       }`}
@@ -507,7 +544,7 @@ export default function Bible() {
                     {getNextLabel()}
                     <ChevronRight size={18} />
                   </button>
-                ) : <div />}
+                ) : <div className="hidden sm:block" />}
               </div>
             </div>
           )}

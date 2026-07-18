@@ -1,11 +1,26 @@
 import * as wtcProvider from "./worldTamilChristians.js";
 import * as tcsProvider from "./tamilChristianSongs.js";
+import * as tcwProvider from "./tamilChristianWorship.js";
+import * as tcProvider from "./tamilChristianCom.js";
 
 // Ordered by priority
 export const providers = [
-    { name: "World Tamil Christians", provider: wtcProvider },
-    { name: "TamilChristianSongs.in", provider: tcsProvider }
+    { name: "World Tamil Christians", provider: wtcProvider, domain: "worldtamilchristians.com" },
+    { name: "TamilChristianSongs.in", provider: tcsProvider, domain: "tamilchristiansongs.in" },
+    { name: "TamilChristianWorship", provider: tcwProvider, domain: "tamilchristianworship.com" },
+    { name: "TamilChristian.com", provider: tcProvider, domain: "tamilchristian.com" }
 ];
+
+export const detectProvider = (url) => {
+    if (!url) return null;
+    const lowerUrl = url.toLowerCase();
+    for (const p of providers) {
+        if (p.domain && lowerUrl.includes(p.domain)) {
+            return p;
+        }
+    }
+    return null;
+};
 
 export const searchOnlineSources = async (query) => {
     if (!query || query.length < 3) return null;

@@ -75,9 +75,24 @@ const songSchema = new mongoose.Schema(
       enum: ["success", "failed"],
       default: "success",
     },
+    failReason: {
+      type: String,
+    },
+    httpStatus: {
+      type: Number,
+    },
     lyricsLength: {
       type: Number,
     },
+    status: {
+      type: String,
+      enum: ["pending", "processing", "completed", "failed"],
+      default: "completed",
+    },
+    isPublished: {
+      type: Boolean,
+      default: true,
+    }
   },
   { timestamps: true }
 );

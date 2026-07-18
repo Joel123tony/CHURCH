@@ -1,33 +1,41 @@
 import * as cheerio from "cheerio";
 
-const containsTamil = (text) => /[\u0B80-\u0BFF]/.test(text);
-
 const cleanTitle = (rawTitle) => {
-    let title = rawTitle.replace(/[a-zA-Z]/g, '')
-                        .replace(/[^\u0B80-\u0BFF0-9\s]/g, ' ')
+    let title = rawTitle.replace(/[^\w\s\u0B80-\u0BFF]/g, ' ')
                         .replace(/\s+/g, ' ').trim();
     return title || rawTitle; 
 };
 
-const finalValidationFailKeywords = [
-    "home", "blog", "faith score", "god medias", "save", "see more"
-];
-
-const blacklistKeywords = [
-    "home", "blog", "god medias", "save", "saved", "removed", "faith score", 
-    "see more", "related", "advertisement", "share", "tags", "category",
-    "leave a reply", "song lyrics", "comments", "posted on", "you may also like"
-];
-
-const finalStopKeywords = [
-    "lyrics in english", "english lyrics", "key takeaways", 
-    "estimated reading time", "related songs"
+const blacklistRegexes = [
+    /^(home|blog|category|categories|tags|author)(\s*[»:\-|/]\s*.*)?$/i,
+    /^(previous|next)[\s:»\-|>]+.*$/i,
+    /^.*[\s:»\-|<]+(previous|next)$/i,
+    /estimated reading time/i,
+    /faith score/i,
+    /save\s*saved\s*removed/i,
+    /^\s*save\s*$/i,
+    /^\s*saved\s*$/i,
+    /^\s*removed\s*$/i,
+    /^see more$/i,
+    /^related( songs| posts)?/i,
+    /^key takeaways$/i,
+    /advertisement/i,
+    /^share( this)?(:)?/i,
+    /leave a reply/i,
+    /^comments?$/i,
+    /^posted on/i,
+    /^download( now| here| pdf| ppt)?$/i,
+    /you may also like/i,
+    /^song lyrics$/i,
+    /^english lyrics$/i,
+    /^tamil lyrics$/i,
+    /^lyrics in english$/i
 ];
 
 export const extractLyricsFromHtml = (html, sourceUrl = "") => {
     const $ = cheerio.load(html);
     
-    let rawTitle = $('h1').text().trim() || $('h1.entry-title').text().trim();
+    let rawTitle = $('h1').first().text().trim() || $('h1.entry-title').first().text().trim();
     
     let titleEnglish = "";
     let titleTamil = "";
@@ -44,97 +52,78 @@ export const extractLyricsFromHtml = (html, sourceUrl = "") => {
         titleTamil = cleanTitle(rawTitle);
     }
 
-    const contentArea = $('.post-inner, .entry-content, .post-content, article').first();
+    const contentArea = $('.post-inner, .entry-content, .post-content, article, .td-post-content, .site-main, main, #contents').first();
     if (!contentArea.length) return null;
 
-    // Remove obvious junk containers
-    contentArea.find('.sharedaddy, .yarpp-related, #comments, .nav-links, .menu, header, footer, .author-box, style, script, .breadcrumb, aside, nav, iframe, .rp4wp-related-posts').remove();
+    // Remove obvious junk containers from DOM
+    contentArea.find('.sharedaddy, .yarpp-related, #comments, .nav-links, .menu, header, footer, .author-box, style, script, .breadcrumb, aside, nav, iframe, .rp4wp-related-posts, .post-tags, .entry-meta, .post-categories, .crp_related, .wpcnt, .page-links, .navigation, .social-share, .addtoany_share_save_container').remove();
     
     let rawHtml = contentArea.html() || "";
+    // Convert block elements to line breaks
     rawHtml = rawHtml.replace(/<\/(p|div|h[1-6]|li|ul|ol|table)>/gi, '\n');
     rawHtml = rawHtml.replace(/<br\s*[\/]?>/gi, '\n');
     
     const plainText = cheerio.load(rawHtml).text();
     const splitLines = plainText.split('\n');
 
-    let mode = "PRE_TAMIL"; 
-    let tamilLines = [];
+    let validLines = [];
 
     for (let line of splitLines) {
         let originalLine = line.trim();
         
         if (!originalLine) {
-            if (mode === "TAMIL" && tamilLines.length > 0 && tamilLines[tamilLines.length-1] !== "") {
-                tamilLines.push("");
-            }
+            validLines.push("");
             continue;
         }
 
-        let lowerLine = originalLine.toLowerCase();
-        
-        // Hard Stop Detection
-        if (finalStopKeywords.some(keyword => lowerLine.includes(keyword))) {
-            break; 
-        }
-
-        // Blacklist Line Removal
-        if (blacklistKeywords.some(keyword => lowerLine.includes(keyword)) || lowerLine.includes('»') || lowerLine.includes('©')) {
-            continue;
-        }
-        
-        let cleanedLine = originalLine.replace(/^[\s,.\-()–|:»]+/, '').replace(/[\s,.\-()–|:»]+$/, '').trim();
+        // Remove leading/trailing punctuation (like », -, |)
+        let cleanedLine = originalLine.replace(/^[\s,.\-()–|:»>]+/, '').replace(/[\s,.\-()–|:»<]+$/, '').trim();
         if (!cleanedLine) continue;
 
-        let isTamilLine = containsTamil(cleanedLine);
+        // Check against blacklist
+        let isBlacklisted = blacklistRegexes.some(regex => regex.test(cleanedLine));
+        if (isBlacklisted) continue;
 
-        if (mode === "PRE_TAMIL") {
-            if (isTamilLine) {
-                mode = "TAMIL"; // Started Tamil lyrics!
-            } else {
-                continue; // Skip anything before the first Tamil line (e.g. repeated titles, dates)
-            }
+        // Check for standalone numbers (matches lines with ONLY numbers and punctuation)
+        if (/^[\d\s.,()[\]{}]+$/.test(cleanedLine)) {
+            continue;
         }
-        
-        if (mode === "TAMIL") {
-            if (isTamilLine || /^[0-9]+$/.test(cleanedLine)) {
-                // Strip stray english text from Tamil line
-                let purelyTamil = cleanedLine.replace(/[a-zA-Z]/g, '').replace(/\s+/g, ' ').trim();
-                // But preserve numbers like "1."
-                if (!purelyTamil && /^[0-9.]+$/.test(cleanedLine)) {
-                    purelyTamil = cleanedLine;
-                }
-                
-                if (purelyTamil) {
-                   tamilLines.push(purelyTamil);
-                }
-            }
-        }
+
+        // If it survived, it's a valid lyric line (Tamil or English transliteration)
+        validLines.push(cleanedLine);
     }
     
-    // Deduplicate consecutive lines
-    let dedupTamil = [];
+    // Normalize blank lines: convert 3+ blank lines to 1 blank line, trim edges
+    let text = validLines.join('\n');
+    text = text.replace(/\n{3,}/g, '\n\n').trim();
+
+    // Deduplicate the same line appearing consecutively more than twice
+    const lines = text.split('\n');
+    let dedupLines = [];
     let prevLine = null;
-    let titleLikeCount = 0;
-    for (const l of tamilLines) {
-        if (l && l === prevLine && titleLikeCount < 4) continue; 
-        dedupTamil.push(l);
-        if (l) { prevLine = l; titleLikeCount++; }
-    }
+    let consecutiveCount = 0;
     
-    const finalLyrics = dedupTamil.join('\n').replace(/\n{3,}/g, '\n\n').trim();
-    
-    if (!finalLyrics || finalLyrics.length < 20) return null;
-
-    // Final Validation
-    const lowerLyrics = finalLyrics.toLowerCase();
-    for (const badWord of finalValidationFailKeywords) {
-        // We match words with boundaries if possible, but includes is safer for fragments like "home »"
-        // Since we stripped english letters from lyrics, words like "home" won't be in the finalLyrics string anyway!
-        // But if they are, we reject.
-        if (lowerLyrics.includes(badWord)) {
-            console.log(`[LyricsExtractor] Rejected due to bad word "${badWord}" found in final text.`);
-            return null; 
+    for (const l of lines) {
+        if (l && l === prevLine) {
+            consecutiveCount++;
+            if (consecutiveCount >= 3) continue; // skip if repeated 3+ times consecutively
+        } else {
+            consecutiveCount = 0;
         }
+        dedupLines.push(l);
+        if (l) prevLine = l;
+    }
+
+    const finalLyrics = dedupLines.join('\n').trim();
+
+    if (!finalLyrics) {
+        throw new Error("No lyrics detected");
+    }
+
+    const meaningfulLinesCount = dedupLines.filter(l => l.trim().length > 0).length;
+    
+    if (meaningfulLinesCount < 2) {
+        throw new Error("Too few lyric lines (minimum 2 required)");
     }
 
     return { 
@@ -142,7 +131,7 @@ export const extractLyricsFromHtml = (html, sourceUrl = "") => {
         titleTamil: titleTamil || rawTitle, 
         titleEnglish, 
         lyricsTamil: finalLyrics, 
-        lyricsEnglish: "", // We stop before English, so this is blank.
+        lyricsEnglish: "", // We preserve English lines inline in lyricsTamil now, or it could be split if needed.
         artist: "",
     };
 };

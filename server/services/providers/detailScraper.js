@@ -78,14 +78,20 @@ export const scrapeSongDetails = async (url) => {
         });
 
         const cleanedText = cleanHtml.text().trim();
-        // Validate content length (meaningful lyrics block should be > 50 chars)
-        if (cleanedText.length > 50) {
+        const splitLines = cleanedText.split('\\n');
+        let validLines = 0;
+        for (const line of splitLines) {
+          if (line.trim().length > 0) validLines++;
+        }
+
+        // Validate content (meaningful lyrics block should have at least 2 lines)
+        if (validLines >= 2) {
           finalHtml = cleanHtml.html();
           usedSelector = sel;
           console.log(`[Scraper] ${domain}: Success with selector "${sel}"`);
           break;
         } else {
-          console.log(`[Scraper] ${domain}: Selector "${sel}" failed validation (length: ${cleanedText.length}). Trying next...`);
+          console.log(`[Scraper] ${domain}: Selector "${sel}" failed validation (valid lines: ${validLines}). Trying next...`);
         }
       } else {
         console.log(`[Scraper] ${domain}: Selector "${sel}" not found.`);

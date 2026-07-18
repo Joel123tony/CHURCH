@@ -40,7 +40,7 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
   const skip = (page - 1) * limit;
   
   // 1. Build MongoDB Query
-  const dbQuery = {};
+  const dbQuery = { status: "completed", isPublished: true };
   if (searchQuery) {
     dbQuery.$text = { $search: searchQuery };
   }
@@ -147,6 +147,8 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
                  url: scrapedSong.sourceUrl,
                  sourceUrl: scrapedSong.sourceUrl,
                  scrapeStatus: "success",
+                 status: "completed",
+                 isPublished: true,
                  lyricsLength: scrapedSong.lyricsTamil?.length || 0,
                  importedAt: new Date(),
                  keywords: scrapedSong.keywords

@@ -108,7 +108,7 @@ export const getLatestSongsController = async (req, res) => {
       return res.json(cachedData);
     }
 
-    const latestSongs = await Song.find({})
+    const latestSongs = await Song.find({ status: "completed", isPublished: true })
       .sort({ publishedDate: -1, createdAt: -1 })
       .limit(20)
       .lean();
