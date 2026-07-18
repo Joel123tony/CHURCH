@@ -9,6 +9,9 @@ import ContentBlock from "../models/ContentBlock.js";
 
 import upload from "../middleware/upload.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
+import { spawn } from "child_process";
+import path from "path";
+import adminSongRoutes from "./adminSongRoutes.js";
 
 const router = express.Router();
 
@@ -293,5 +296,36 @@ router.delete("/sermons/:id", async (req, res) => {
     });
   }
 });
+
+/* ==================================================
+   MANUAL SONG IMPORT (BACKGROUND WORKER)
+================================================== */
+router.post("/songs/import", (req, res) => {
+  try {
+    const scriptPath = path.join(process.cwd(), "scripts", "fetchLatestTamilSongs.js");
+    
+    // Spawn in detached background mode to prevent blocking API
+    const child = spawn("node", [scriptPath], {
+      detached: true,
+      stdio: "ignore" // We don't need to capture stdout/stderr in the HTTP response
+    });
+    
+    child.unref(); // Allow the parent event loop to exit independently of the child
+
+    return res.status(202).json({
+      success: true,
+      message: "Song import started in the background. Check server logs for progress."
+    });
+  } catch (err) {
+    console.error("Song Import Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+// Import the new modular admin song routes (import-url, save, status)
+router.use("/songs", adminSongRoutes);
 
 export default router;

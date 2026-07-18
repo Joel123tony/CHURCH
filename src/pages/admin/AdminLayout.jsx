@@ -16,7 +16,8 @@ import {
   MessageSquare,
   BookOpen,
   Globe,
-  HeartHandshake
+  HeartHandshake,
+  Music
 } from "lucide-react";
 
 const AdminClock = () => {
@@ -117,6 +118,7 @@ export default function AdminLayout() {
         { to: "/admin/prayer-requests", label: "Prayer Requests", icon: HandHeart },
         { to: "/admin/pastor-message", label: "Pastor Messages", icon: MessageSquare },
         { to: "/admin/books", label: "Books", icon: BookOpen },
+        { to: "/admin/songs", label: "Songs", icon: Music },
         { to: "/admin/donations", label: "Donations", icon: HeartHandshake },
       ],
     }

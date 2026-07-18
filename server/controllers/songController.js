@@ -9,10 +9,11 @@ export const searchSongsController = async (req, res) => {
     const query = req.query.search || req.query.q || "";
     const category = req.query.category || "";
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 20;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const sortOrder = req.query.sort || "latest";
     
     // Cache Key
-    const cacheKey = `songs_search_${query}_${category}_${page}_${limit}`;
+    const cacheKey = `songs_search_${query}_${category}_${sortOrder}_${page}_${limit}`;
     const cachedData = getCached(cacheKey);
     if (cachedData) {
       return res.json(cachedData);
@@ -20,7 +21,7 @@ export const searchSongsController = async (req, res) => {
 
     const categories = category ? category.split(",") : [];
 
-    const result = await searchSongs(query, categories, page, limit);
+    const result = await searchSongs(query, categories, sortOrder, page, limit);
 
     setCached(cacheKey, result, 300); // Cache for 5 minutes
 
@@ -90,6 +91,45 @@ export const getSongDetailsController = async (req, res) => {
     });
   } catch (error) {
     console.error("GET SONG DETAILS ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+/* =========================
+   GET LATEST SONGS
+========================= */
+import Song from "../models/Song.js";
+
+export const getLatestSongsController = async (req, res) => {
+  try {
+    const cacheKey = "songs_latest";
+    const cachedData = getCached(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
+    const latestSongs = await Song.find({})
+      .sort({ publishedDate: -1, createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    const formattedSongs = latestSongs.map(s => ({
+      title: s.title,
+      titleTamil: s.titleTamil,
+      titleEnglish: s.titleEnglish,
+      lyrics: s.lyrics,
+      lyricsTamil: s.lyricsTamil,
+      lyricsEnglish: s.lyricsEnglish,
+      artist: s.artist,
+      source: s.source,
+      publishedDate: s.publishedDate || s.createdAt
+    }));
+
+    setCached(cacheKey, formattedSongs, 600); // cache for 10 minutes
+
+    return res.json(formattedSongs);
+  } catch (error) {
+    console.error("GET LATEST SONGS ERROR:", error);
     return res.status(500).json({ success: false, message: "Server Error" });
   }
 };

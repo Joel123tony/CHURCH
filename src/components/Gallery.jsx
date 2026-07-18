@@ -44,18 +44,30 @@ function GalleryTile({ item, onClick, compact = false, t }) {
     >
       <div className={`relative overflow-hidden bg-[#0f172a] ${frameClass}`}>
         {isVideo ? (
-          <video
-            src={item.url}
-            controls={!compact}
-            muted={compact}
-            preload="metadata"
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-            onLoadedMetadata={() => setLoading(false)}
-          />
+          compact ? (
+            <img
+              src={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
+              alt={item.title || "video thumbnail"}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+              onLoad={() => setLoading(false)}
+            />
+          ) : (
+            <video
+              src={item.url}
+              controls={!compact}
+              muted={compact}
+              poster={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
+              preload="metadata"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+              onLoadedMetadata={() => setLoading(false)}
+            />
+          )
         ) : (
           <img
             src={item.url}
             alt={item.title || "gallery media"}
+            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
             onLoad={() => setLoading(false)}
           />

@@ -78,12 +78,25 @@ export const uploadMedia = async (req, res) => {
 ========================= */
 export const getAllMedia = async (req, res) => {
   try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const skip = (page - 1) * limit;
+
     const media = await Gallery.find()
-      .sort({ createdAt: -1 });
+      .select('_id title eventDate mediaType url thumbnail public_id clientPriority folder size duration dimensions createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const totalCount = await Gallery.countDocuments();
 
     return res.json({
       success: true,
       data: media,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page
     });
   } catch (err) {
     return res.status(500).json({

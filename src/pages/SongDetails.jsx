@@ -13,6 +13,7 @@ export default function SongDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(100);
+  const [activeTab, setActiveTab] = useState('tamil');
 
   // The state from the Link if available
   const songMeta = location.state?.song || {
@@ -26,8 +27,13 @@ export default function SongDetails() {
     setLoading(true);
     setError(null);
     try {
-      // id is the encoded URL
-      const res = await API.get(`/songs/details?url=${encodeURIComponent(decodeURIComponent(id))}&title=${encodeURIComponent(songMeta.title)}`);
+      if (songMeta.lyricsTamil) {
+         setSongLyrics(songMeta.lyricsTamil); // We already have the text
+         setLoading(false);
+         return;
+      }
+      
+      const res = await API.get(`/songs/details?url=${encodeURIComponent(decodeURIComponent(id))}&title=${encodeURIComponent(songMeta.title || songMeta.titleTamil)}`);
       if (res.data.success && res.data.data) {
         setSongLyrics(res.data.data.lyrics);
       } else {
@@ -121,8 +127,14 @@ export default function SongDetails() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-sm border border-[#E8DCCB] mb-6">
             <Music size={28} className="text-[#D4AF37]" />
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-[#54091b] tracking-tight mb-4">{songMeta.title}</h1>
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <h1 className="text-3xl sm:text-5xl font-black text-[#54091b] tracking-tight mb-2">{songMeta.titleTamil || songMeta.title}</h1>
+          {songMeta.titleEnglish && (
+             <h2 className="text-xl sm:text-2xl font-bold text-slate-500 tracking-tight mb-4">{songMeta.titleEnglish}</h2>
+          )}
+          {songMeta.artist && (
+             <h3 className="text-lg font-semibold text-slate-600 mb-2">🎤 {songMeta.artist}</h3>
+          )}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
             <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#54091b] text-[#F6EFE3] shadow-sm">{songMeta.category}</span>
             <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-white text-[#1E293B] border border-[#E8DCCB]">{songMeta.language}</span>
             <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#F8F4EC] text-slate-500 border border-[#E8DCCB] border-dashed">Source: {songMeta.source}</span>
@@ -161,11 +173,32 @@ export default function SongDetails() {
         ) : (
           /* Content Container */
           <div className="bg-white rounded-[32px] p-6 sm:p-12 shadow-sm border border-[#E8DCCB] animate-fade-in-up">
+            
+            {/* Tabs (If dual language available) */}
+            {songMeta.lyricsEnglish && (
+              <div className="flex justify-center mb-8">
+                 <div className="bg-[#F4EFE7] p-1.5 rounded-2xl inline-flex shadow-inner">
+                    <button 
+                       onClick={() => setActiveTab('tamil')}
+                       className={`px-8 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'tamil' ? 'bg-white text-[#54091b] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                       Tamil Lyrics
+                    </button>
+                    <button 
+                       onClick={() => setActiveTab('english')}
+                       className={`px-8 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'english' ? 'bg-white text-[#54091b] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                       English Transliteration
+                    </button>
+                 </div>
+              </div>
+            )}
+
             {/* Lyrics Area */}
             <div className="prose prose-lg max-w-none text-center mx-auto transition-all duration-300 ease-out" style={{ fontSize: `${1.125 * (zoomLevel / 100)}rem` }}>
               <div
                 className="font-medium text-[#1E293B] leading-[2.5] whitespace-pre-wrap font-serif tracking-wide"
-                dangerouslySetInnerHTML={{ __html: songLyrics }}
+                dangerouslySetInnerHTML={{ __html: (activeTab === 'english' && songMeta.lyricsEnglish) ? songMeta.lyricsEnglish : (songMeta.lyricsTamil || songLyrics) }}
               ></div>
             </div>
           </div>

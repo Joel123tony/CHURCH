@@ -15,6 +15,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 import { connectDB } from "./config/db.js";
+import { initCronJobs } from "./jobs/cronJobs.js";
 
 /* ROUTES */
 import uploadRoutes from "./routes/uploadRoutes.js";
@@ -182,6 +183,9 @@ app.use((err, req, res, _next) => {
 const startServer = async () => {
   try {
     await connectDB();
+    
+    // Initialize background cron jobs
+    initCronJobs();
 
     const PORT = process.env.PORT || 5000;
 

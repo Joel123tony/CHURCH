@@ -256,7 +256,10 @@ export const createPastor = async (req, res) => {
 ========================= */
 export const getAllPastors = async (req, res) => {
   try {
-    const pastors = await Pastor.find().sort({ createdAt: -1 });
+    const pastors = await Pastor.find()
+      .select('name role bio image joinedYear leftYear education church email number active isCurrent createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.json({
       success: true,
@@ -284,7 +287,10 @@ export const getPublicPastors = async (req, res) => {
 
     const pastors = await Pastor.find({
       $or: [{ active: true }, { active: { $exists: false } }],
-    }).sort({ joinedYear: -1 }).lean();
+    })
+    .select('name role bio image joinedYear leftYear education church email number isCurrent')
+    .sort({ joinedYear: -1 })
+    .lean();
 
     setCached(CACHE_KEY, pastors, 60);
 

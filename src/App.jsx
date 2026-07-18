@@ -25,6 +25,7 @@ const PastorMessage = lazy(() => import("./pages/admin/PastorMessage"));
 const Books = lazy(() => import("./pages/admin/Books"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Donations = lazy(() => import("./pages/admin/Donations"));
+const AdminSongs = lazy(() => import("./pages/admin/AdminSongs"));
 
 
 const PageLoader = () => (
@@ -93,6 +94,7 @@ export default function App() {
                 <Route path="pastor-message" element={<PastorMessage />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="donations" element={<Donations />} />
+                <Route path="songs" element={<AdminSongs />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

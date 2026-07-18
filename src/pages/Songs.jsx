@@ -12,14 +12,14 @@ export default function Songs() {
 
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
   const [totalSongs, setTotalSongs] = useState(0);
 
   // Search state from URL
   const search = searchParams.get("q") || "";
+  const sortParam = searchParams.get("sort") || "latest";
 
   // Multiple categories support from URL
   const categoryParam = searchParams.get("category");
@@ -42,12 +42,14 @@ export default function Songs() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const updateParams = (newSearch, newCategories) => {
+  const updateParams = (newSearch, newCategories, newSort, newPage = 1) => {
     const params = new URLSearchParams();
     if (newSearch) params.set("q", newSearch);
     if (newCategories && newCategories.length > 0 && !newCategories.includes("All")) {
       params.set("category", newCategories.join(","));
     }
+    if (newSort && newSort !== "latest") params.set("sort", newSort);
+    if (newPage > 1) params.set("page", newPage.toString());
     setSearchParams(params, { replace: true });
   };
 
@@ -64,35 +66,24 @@ export default function Songs() {
         newCats.push(cat);
       }
     }
-    updateParams(search, newCats);
+    updateParams(search, newCats, sortParam, 1);
   };
 
-  const fetchSongs = async (query, categories, pageNum = 1) => {
-    if (pageNum === 1) setLoading(true);
-    else setLoadingMore(true);
+  const fetchSongs = async (query, categories, sort, pageNum = 1) => {
+    setLoading(true);
     setError(null);
     try {
       const categoryParam = categories.includes("All") ? "" : categories.join(",");
-      const res = await API.get(`/songs?search=${encodeURIComponent(query)}&category=${encodeURIComponent(categoryParam)}&page=${pageNum}&limit=20`);
+      const res = await API.get(`/songs?search=${encodeURIComponent(query)}&category=${encodeURIComponent(categoryParam)}&sort=${sort}&page=${pageNum}&limit=10`);
       
-      const newSongs = res.data.songs || [];
-      if (pageNum === 1) {
-        setSongs(newSongs);
-      } else {
-        setSongs(prev => {
-          const existingUrls = new Set(prev.map(s => s.url));
-          const uniqueNew = newSongs.filter(s => !existingUrls.has(s.url));
-          return [...prev, ...uniqueNew];
-        });
-      }
+      setSongs(res.data.songs || []);
       setTotalSongs(res.data.totalSongs || 0);
-      setHasMore(pageNum < (res.data.totalPages || 1));
+      setTotalPages(res.data.totalPages || 1);
     } catch (err) {
       console.error(err);
       setError("Unable to connect to the server. Please check your internet connection and try again.");
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   };
 
@@ -129,41 +120,10 @@ export default function Songs() {
 
   // Initial load or when URL changes
   useEffect(() => {
-    setPage(1);
-    fetchSongs(search, selectedCategories, 1);
-  }, [search, searchParams.get("category")]);
-
-  const loadMore = () => {
-    if (!loadingMore && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchSongs(search, selectedCategories, nextPage);
-    }
-  };
-
-  // Intersection Observer for infinite scrolling
-  const observerTarget = useRef(null);
-  
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-    
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
-    };
-  }, [hasMore, loading, loadingMore, page]);
+    const currentPage = parseInt(searchParams.get("page"), 10) || 1;
+    setPage(currentPage);
+    fetchSongs(search, selectedCategories, sortParam, currentPage);
+  }, [search, searchParams.get("category"), searchParams.get("sort"), searchParams.get("page")]);
 
   const handleSearchSubmit = (e) => {
     if (e.key === "Enter") {
@@ -193,9 +153,11 @@ export default function Songs() {
 
         {/* Sticky Search & Categories Container */}
         <div className="sticky z-40 bg-[#F4EFE7] pt-4 pb-4 mb-8 -mx-5 px-5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-[#E8DCCB] shadow-sm transition-all" style={{ top: "var(--navbar-height)" }}>
-          {/* Search Bar with Autocomplete */}
-          <div className="max-w-3xl mx-auto mb-4 relative z-50" ref={searchRef}>
-            <div className="relative group">
+          {/* Controls Bar */}
+          <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-4 mb-4 relative z-50">
+            {/* Search Bar with Autocomplete */}
+            <div className="relative group flex-1" ref={searchRef}>
+              <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                 <Search className="h-6 w-6 text-[#54091b]/40 group-focus-within:text-[#54091b] transition-colors" />
               </div>
@@ -244,54 +206,38 @@ export default function Songs() {
                   onClick={() => {
                     setShowSuggestions(false);
                     setPage(1);
-                    fetchSongs(search, selectedCategories, 1);
+                    fetchSongs(search, selectedCategories, sortParam, 1);
                   }}
                 >
                   See all results →
                 </div>
               </div>
             )}
+            </div>
+            
+            {/* Sort Dropdown */}
+            <select
+              value={sortParam}
+              onChange={(e) => updateParams(search, selectedCategories, e.target.value, 1)}
+              className="bg-white border-2 border-slate-200 rounded-2xl py-4 px-4 text-lg focus:outline-none focus:border-[#54091b] transition-all shadow-sm text-slate-900 font-medium sm:w-48 appearance-none cursor-pointer h-[60px]"
+              style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2364748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2em' }}
+            >
+              <option value="latest">{t("Latest First")}</option>
+              <option value="oldest">{t("Oldest First")}</option>
+              <option value="a-z">{t("A-Z")}</option>
+            </select>
           </div>
 
-          {/* Categories Bar */}
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 overflow-x-auto resources-scrollbar pb-2 snap-x">
-              {CATEGORIES.map(cat => {
-                const isActive = selectedCategories.includes(cat);
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => toggleCategory(cat)}
-                    className={`shrink-0 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 snap-center border-2 ${isActive
-                        ? 'bg-[#54091b] text-[#F6EFE3] shadow-md border-[#54091b]'
-                        : 'bg-white text-[#54091b] border-[#E8DCCB] hover:border-[#54091b]/30 hover:bg-[#F8F4EC]'
-                      }`}
-                  >
-                    {t(cat)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+
         </div>
 
         {/* Content Area */}
         {loading ? (
-          <div className="space-y-4 max-w-3xl mx-auto">
-            {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="bg-white rounded-[20px] p-6 sm:p-8 animate-pulse shadow-sm border border-slate-100 flex gap-6">
-                <div className="w-12 h-12 bg-slate-100 rounded-full shrink-0"></div>
-                <div className="flex-1">
-                  <div className="h-5 bg-slate-200 rounded-lg w-1/2 mb-3"></div>
-                  <div className="flex gap-2 mb-5">
-                    <div className="h-4 bg-slate-100 rounded-lg w-20"></div>
-                    <div className="h-4 bg-slate-100 rounded-lg w-24"></div>
-                  </div>
-                  <div className="h-3 bg-slate-50 rounded-lg w-full mb-2"></div>
-                  <div className="h-3 bg-slate-50 rounded-lg w-5/6"></div>
-                </div>
-              </div>
-            ))}
+          <div className="py-24 text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#54091b]/20 border-t-[#54091b]"></div>
+            <p className="text-[#54091b]">
+              {search ? t("Searching Christian song libraries... This might take a few seconds.") : t("Loading songs...")}
+            </p>
           </div>
         ) : error ? (
           <div className="max-w-2xl mx-auto bg-red-50 text-red-600 p-8 rounded-3xl text-center border border-red-100 shadow-sm">
@@ -306,9 +252,7 @@ export default function Songs() {
           </div>
         ) : songs.length > 0 ? (
           <div className="space-y-5 max-w-3xl mx-auto">
-            <div className="text-sm font-bold text-slate-500 mb-6 flex justify-between items-center px-2">
-              <span>{totalSongs} {t("Results Found")}</span>
-            </div>
+
             {songs.map((song, idx) => (
               <Link
                 to={`/songs/${encodeURIComponent(song.url)}`}
@@ -324,52 +268,83 @@ export default function Songs() {
                     <Music className="w-5 h-5 text-[#54091b] group-hover:text-[#F6EFE3] transition-colors" />
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4 mb-1">
                       <h3 className="text-xl sm:text-2xl font-bold text-[#1E293B] truncate group-hover:text-[#54091b] transition-colors tracking-tight">
-                        {song.title}
+                        {song.titleTamil || song.title}
                       </h3>
                       <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-[#D4AF37]/10 transition-colors">
                         <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#D4AF37] transition-colors" />
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                      <span className="text-xs font-bold px-3 py-1 bg-[#54091b]/5 text-[#54091b] rounded-full border border-[#54091b]/10">
-                        {song.category}
-                      </span>
-                      <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-500 rounded-full border border-slate-200">
-                        {song.source}
-                      </span>
-                      {song.author && (
-                        <span className="text-xs font-bold px-3 py-1 bg-[#D4AF37]/10 text-[#b59223] rounded-full border border-[#D4AF37]/30">
-                          {song.author}
-                        </span>
-                      )}
-                    </div>
+                    {song.titleEnglish && (
+                      <div className="text-sm font-medium text-slate-500 mb-2 truncate">
+                        {song.titleEnglish}
+                      </div>
+                    )}
 
                     <p className="text-slate-600 text-sm leading-relaxed line-clamp-2 font-serif opacity-90 group-hover:opacity-100 transition-opacity">
-                      {song.lyrics || t("Lyrics preview not available.")}
+                      {song.lyricsTamil || song.lyrics || t("Lyrics preview not available.")}
                     </p>
                   </div>
                 </div>
               </Link>
             ))}
             
-            {/* Infinite Scroll Target */}
-            <div ref={observerTarget} className="h-10 w-full flex items-center justify-center mt-8">
-              {loadingMore && (
-                <div className="flex items-center gap-2 text-[#54091b] font-bold">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Loading more...</span>
+            {/* Pagination UI */}
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-12 mb-8">
+                <button
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    updateParams(search, selectedCategories, sortParam, page - 1);
+                  }}
+                  disabled={page <= 1}
+                  className="px-4 py-2 rounded-xl font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#54091b] hover:border-[#54091b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center"
+                >
+                  &laquo; {t("Previous")}
+                </button>
+                
+                <div className="hidden sm:flex items-center gap-2">
+                  {[...Array(totalPages)].map((_, i) => {
+                    const p = i + 1;
+                    if (p === 1 || p === totalPages || (p >= page - 2 && p <= page + 2)) {
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            updateParams(search, selectedCategories, sortParam, p);
+                          }}
+                          className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center transition-all shadow-sm ${page === p ? "bg-[#54091b] text-white border-none" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#54091b] hover:border-[#54091b]"}`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    } else if (p === page - 3 || p === page + 3) {
+                      return <span key={p} className="text-slate-400">...</span>;
+                    }
+                    return null;
+                  })}
                 </div>
-              )}
-              {!hasMore && songs.length > 0 && (
-                <div className="text-slate-400 text-sm font-medium">
-                  {t("You've reached the end of the list.")}
+                
+                <div className="sm:hidden flex items-center gap-2 mx-2">
+                  <span className="font-bold text-[#54091b]">Page {page} of {totalPages}</span>
                 </div>
-              )}
-            </div>
+
+                <button
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    updateParams(search, selectedCategories, sortParam, page + 1);
+                  }}
+                  disabled={page >= totalPages}
+                  className="px-4 py-2 rounded-xl font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#54091b] hover:border-[#54091b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center"
+                >
+                  {t("Next")} &raquo;
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-24 bg-white/50 rounded-[24px] border border-[#E8DCCB] shadow-sm max-w-3xl mx-auto">
