@@ -2,6 +2,7 @@ import Song from "../models/Song.js";
 import SongSearchCache from "../models/SongSearchCache.js";
 import SongSearchLog from "../models/SongSearchLog.js";
 import { searchOnlineSources } from "./songSources/adapterManager.js";
+import { normalizeTanglish } from "../utils/searchNormalizer.js";
 
 // Concurrency Queue for Live Searches
 const MAX_CONCURRENT_SEARCHES = 2;
@@ -42,7 +43,8 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
   // 1. Build MongoDB Query
   const dbQuery = { status: "completed", isPublished: true };
   if (searchQuery) {
-    dbQuery.$text = { $search: searchQuery };
+    const normalizedQuery = normalizeTanglish(searchQuery) || searchQuery;
+    dbQuery.$text = { $search: `"${searchQuery}" ${normalizedQuery}` };
   }
   
   if (selectedCategories.length > 0 && !selectedCategories.includes("All")) {

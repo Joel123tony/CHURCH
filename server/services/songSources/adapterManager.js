@@ -2,13 +2,15 @@ import * as wtcProvider from "./worldTamilChristians.js";
 import * as tcsProvider from "./tamilChristianSongs.js";
 import * as tcwProvider from "./tamilChristianWorship.js";
 import * as tcProvider from "./tamilChristianCom.js";
+import * as ytProvider from "./youtubeDiscovery.js";
 
 // Ordered by priority
 export const providers = [
     { name: "World Tamil Christians", provider: wtcProvider, domain: "worldtamilchristians.com" },
     { name: "TamilChristianSongs.in", provider: tcsProvider, domain: "tamilchristiansongs.in" },
     { name: "TamilChristianWorship", provider: tcwProvider, domain: "tamilchristianworship.com" },
-    { name: "TamilChristian.com", provider: tcProvider, domain: "tamilchristian.com" }
+    { name: "TamilChristian.com", provider: tcProvider, domain: "tamilchristian.com" },
+    { name: "YouTube", provider: ytProvider, domain: "youtube.com" }
 ];
 
 export const detectProvider = (url) => {

@@ -1,5 +1,5 @@
 import express from "express";
-import { importUrlPreview, importSongSave, getImportStatus, getDashboardData, startLibraryScan, getScanStatus, getFailedImports, deleteFailedImport, getRecentImports, retryAllFailed, retrySelectedFailed, getRetryStatus } from "../controllers/adminSongController.js";
+import { importUrlPreview, importSongSave, getImportStatus, getDashboardData, startLibraryScan, getScanStatus, getFailedImports, deleteFailedImport, getRecentImports, retryAllFailed, retrySelectedFailed, getRetryStatus, getWorkerStatus } from "../controllers/adminSongController.js";
 import auth from "../middleware/auth.js"; 
 
 const router = express.Router();
@@ -16,5 +16,6 @@ router.get("/recent", auth, getRecentImports);
 router.post("/retry-all", auth, retryAllFailed);
 router.post("/retry-selected", auth, retrySelectedFailed);
 router.get("/retry/status", auth, getRetryStatus);
+router.get("/workers/status", auth, getWorkerStatus);
 
 export default router;

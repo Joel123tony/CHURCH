@@ -178,7 +178,7 @@ const AdminSongs = React.memo(() => {
     return Math.floor(seconds) + " secs ago";
   }, []);
 
-  const { stats = {}, sourceBreakdown = [], scheduler = {}, scanProgress = {}, queue = {}, lastImport = {} } = dashboardData;
+  const { stats = {}, sourceBreakdown = [], scheduler = {}, scanProgress = {}, queueMetrics = {}, workers = [], lastImport = {} } = dashboardData;
 
   const healthData = useMemo(() => {
     if (error) {
@@ -488,37 +488,40 @@ const AdminSongs = React.memo(() => {
                  </div>
               )}
 
-              {/* Scheduler Status */}
-              {isInitialLoading ? <SkeletonSection h="h-40" /> : (
+              {/* Background Workers Status */}
+              {isInitialLoading ? <SkeletonSection h="h-64" /> : (
                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex-1">
-                    <div className="p-5 border-b border-slate-100">
+                    <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                        <h2 className="text-base font-bold flex items-center gap-2 text-slate-800">
-                          <Calendar className="text-slate-400" size={20} strokeWidth={2.5} />
-                          Scheduler
+                          <Activity className="text-slate-400" size={20} strokeWidth={2.5} />
+                          Background Workers
                        </h2>
+                       <span className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">
+                           {workers.filter(w => w.status !== "Stopped" && w.status !== "Failed").length} Active
+                       </span>
                     </div>
                     <div className="p-0">
-                       <div className="flex justify-between items-center p-4 border-b border-slate-50">
-                          <span className="text-sm font-medium text-slate-600 flex items-center gap-2">
-                             <span className={`w-2 h-2 rounded-full ${scheduler.status === 'Running' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
-                             State
-                          </span>
-                          <span className={`text-xs font-bold uppercase ${scheduler.status === 'Running' ? 'text-emerald-600' : 'text-slate-500'}`}>
-                             {scheduler.status || "Idle"}
-                          </span>
-                       </div>
-                       <div className="flex justify-between items-center p-4 border-b border-slate-50">
-                          <span className="text-sm font-medium text-slate-600">Next Scan</span>
-                          <span className="text-sm font-bold text-slate-800">{scheduler.dailyScan || "03:00 AM"}</span>
-                       </div>
-                       <div className="flex justify-between items-center p-4 border-b border-slate-50">
-                          <span className="text-sm font-medium text-slate-600">Last Scan</span>
-                          <span className="text-sm font-bold text-slate-800">{scheduler.lastScan || "Unknown"}</span>
-                       </div>
-                       <div className="flex justify-between items-center p-4 bg-slate-50/50">
-                          <span className="text-sm font-medium text-slate-600">Background Workers</span>
-                          <span className="text-sm font-bold text-slate-800">1 Active</span>
-                       </div>
+                       {workers.length > 0 ? workers.map((w, idx) => (
+                           <div key={idx} className="flex justify-between items-center p-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
+                              <span className="text-sm font-medium text-slate-600 flex items-center gap-2 capitalize">
+                                 <span className={`w-2 h-2 rounded-full ${
+                                     w.status === 'Idle' ? 'bg-slate-400' :
+                                     w.status === 'Busy' ? 'bg-emerald-500 animate-pulse' :
+                                     'bg-rose-500'
+                                 }`}></span>
+                                 {w.type.replace("_", " ")}
+                              </span>
+                              <span className={`text-xs font-bold uppercase ${
+                                  w.status === 'Idle' ? 'text-slate-500' :
+                                  w.status === 'Busy' ? 'text-emerald-600' :
+                                  'text-rose-600'
+                              }`}>
+                                 {w.status}
+                              </span>
+                           </div>
+                       )) : (
+                           <div className="p-6 text-center text-sm text-slate-400 font-medium">No workers detected</div>
+                       )}
                     </div>
                  </div>
               )}
@@ -565,36 +568,36 @@ const AdminSongs = React.memo(() => {
                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-1">
                     <h2 className="text-base font-bold flex items-center gap-2 text-slate-800 mb-5">
                        <ListOrdered className="text-slate-400" size={20} strokeWidth={2.5} />
-                       Queue
+                       Job Queue Metrics
                     </h2>
                     <div className="space-y-4">
                        <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-100">
                           <div className="flex items-center gap-3">
                              <div className="w-2.5 h-2.5 rounded-full bg-slate-400"></div>
-                             <span className="text-sm font-bold text-slate-600">Waiting</span>
+                             <span className="text-sm font-bold text-slate-600">Pending</span>
                           </div>
-                          <span className="text-base font-black text-slate-800"><AnimatedNumber value={queue.waiting || 0} /></span>
+                          <span className="text-base font-black text-slate-800"><AnimatedNumber value={queueMetrics.pending || 0} /></span>
                        </div>
                        <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-100">
                           <div className="flex items-center gap-3">
-                             <div className="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>
-                             <span className="text-sm font-bold text-slate-600">Running</span>
+                             <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                             <span className="text-sm font-bold text-slate-600">Processing</span>
                           </div>
-                          <span className="text-base font-black text-slate-800"><AnimatedNumber value={queue.running || 0} /></span>
+                          <span className="text-base font-black text-slate-800"><AnimatedNumber value={queueMetrics.processing || 0} /></span>
                        </div>
                        <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-100">
                           <div className="flex items-center gap-3">
-                             <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
-                             <span className="text-sm font-bold text-slate-600">Recovering</span>
+                             <div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
+                             <span className="text-sm font-bold text-slate-600">Quarantined</span>
                           </div>
-                          <span className="text-base font-black text-slate-800"><AnimatedNumber value={queue.recovering || 0} /></span>
+                          <span className="text-base font-black text-slate-800"><AnimatedNumber value={queueMetrics.quarantined || 0} /></span>
                        </div>
                        <div className="flex justify-between items-center p-3 rounded-xl bg-slate-50 border border-slate-100">
                           <div className="flex items-center gap-3">
                              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                             <span className="text-sm font-bold text-slate-600">Completed</span>
+                             <span className="text-sm font-bold text-slate-600">Completed (Success)</span>
                           </div>
-                          <span className="text-base font-black text-slate-800"><AnimatedNumber value={queue.completed || 0} /></span>
+                          <span className="text-base font-black text-slate-800"><AnimatedNumber value={queueMetrics.completed || 0} /></span>
                        </div>
                     </div>
                  </div>

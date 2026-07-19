@@ -57,6 +57,14 @@ const songSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    composer: {
+      type: String,
+      default: "",
+    },
+    lyricist: {
+      type: String,
+      default: "",
+    },
     duration: {
       type: String,
       default: "",
@@ -70,9 +78,46 @@ const songSchema = new mongoose.Schema(
       sparse: true,
       unique: true,
     },
+    youtubeMetadata: {
+      videoId: String,
+      channelName: String,
+      uploadDate: String,
+      thumbnail: String,
+      viewCount: Number,
+      confidenceScore: Number,
+      extractedFrom: String
+    },
+    isPendingLyrics: {
+      type: Boolean,
+      default: false,
+    },
     keywords: [{
       type: String,
     }],
+    themes: [{
+      type: String,
+    }],
+    bibleReferences: [{
+      type: String,
+    }],
+    searchKey: {
+      type: String,
+      index: true,
+    },
+    uuid: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    duplicateOf: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Song',
+      default: null,
+    },
+    qualityScore: {
+      type: Number,
+      default: 0,
+    },
     importedAt: {
       type: Date,
       default: Date.now,
@@ -129,7 +174,7 @@ const songSchema = new mongoose.Schema(
 
 // Create a compound text index on titles, lyrics, and keywords for full-text search
 songSchema.index(
-  { title: "text", titleTamil: "text", titleEnglish: "text", lyrics: "text", lyricsTamil: "text", lyricsEnglish: "text", artist: "text", keywords: "text" },
+  { title: "text", titleTamil: "text", titleEnglish: "text", lyrics: "text", lyricsTamil: "text", lyricsEnglish: "text", artist: "text", keywords: "text", searchKey: "text" },
   { language_override: "dummy_language_override_field" }
 );
 

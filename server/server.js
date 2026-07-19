@@ -16,6 +16,7 @@ import rateLimit from "express-rate-limit";
 
 import { connectDB } from "./config/db.js";
 import { initCronJobs } from "./jobs/cronJobs.js";
+import { startWorkers } from "./workers/index.js";
 
 /* ROUTES */
 import uploadRoutes from "./routes/uploadRoutes.js";
@@ -188,6 +189,9 @@ const startServer = async () => {
     
     // Initialize background cron jobs
     initCronJobs();
+    
+    // Start independent background workers
+    startWorkers();
 
     const PORT = process.env.PORT || 5000;
 

@@ -1,13 +1,89 @@
 import axios from "axios";
+import { getSubtitles } from "youtube-captions-scraper";
 
 export const searchSong = async (query) => {
-    // YouTube is for discovery only, not lyrics search.
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) return null;
+
+    try {
+        const encQuery = encodeURIComponent(`${query} tamil christian song lyrics official`);
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encQuery}&type=video&key=${apiKey}`;
+        
+        const res = await axios.get(url, { timeout: 10000 });
+        if (res.data.items && res.data.items.length > 0) {
+            const videoId = res.data.items[0].id.videoId;
+            return {
+                sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
+                source: "YouTube Search",
+                lyricsTamil: "pending_fetch" // Signal that we found a result, but need to fetch it
+            };
+        }
+    } catch (error) {
+        console.error("[YouTube Search Error]:", error.message);
+    }
     return null;
 };
 
 export const fetchSong = async (url) => {
-    // YouTube does not provide lyrics extraction yet.
-    return null;
+    try {
+        const videoId = url.split("v=")[1]?.split("&")[0];
+        if (!videoId) return null;
+
+        const apiKey = process.env.YOUTUBE_API_KEY;
+        let description = "";
+        let metadata = { videoId };
+
+        if (apiKey) {
+            try {
+                const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`;
+                const res = await axios.get(videoUrl, { timeout: 10000 });
+                if (res.data.items && res.data.items.length > 0) {
+                    const snippet = res.data.items[0].snippet;
+                    const stats = res.data.items[0].statistics;
+                    description = snippet.description || "";
+                    
+                    metadata = {
+                        ...metadata,
+                        channelName: snippet.channelTitle,
+                        uploadDate: snippet.publishedAt,
+                        thumbnail: snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url,
+                        viewCount: stats.viewCount ? parseInt(stats.viewCount, 10) : 0
+                    };
+                }
+            } catch (err) {
+                console.error(`[YouTube] Metadata extraction failed:`, err.message);
+            }
+        }
+
+        console.log(`[YouTube] Fetching captions for: ${videoId}`);
+        let textPayload = "";
+        try {
+            const captions = await getSubtitles({
+                videoID: videoId,
+                lang: 'ta' // Attempt to fetch Tamil captions
+            });
+            if (captions && captions.length > 0) {
+                textPayload = captions.map(c => c.text).join("\n");
+            }
+        } catch (err) {
+            console.error(`[YouTube] Caption extraction failed for ${videoId}.`);
+        }
+
+        if (!description && !textPayload) {
+            return null; // Nothing found at all
+        }
+
+        // Return a structured JSON string so AiCleaningWorker can parse it easily
+        return JSON.stringify({
+            isYouTubeSource: true,
+            description,
+            captions: textPayload,
+            metadata
+        });
+    } catch (err) {
+        console.error(`[YouTube] fetchSong failed:`, err.message);
+        return null;
+    }
 };
 
 export const discoverLatest = async () => {
