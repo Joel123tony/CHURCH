@@ -69,3 +69,20 @@ export const getLatestVideos = async (limit = 6) => {
     publishedAt: item?.snippet?.publishedAt,
   }));
 };
+
+/* =========================
+   SEARCH YOUTUBE
+========================= */
+export const searchYouTubeVideos = async (query, limit = 10) => {
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=${limit}&key=${API_KEY}`;
+  
+  const data = await fetchYT(url);
+
+  return (data?.items || []).map((item) => ({
+    videoId: item?.id?.videoId,
+    title: item?.snippet?.title,
+    thumbnail: item?.snippet?.thumbnails?.high?.url,
+    publishedAt: item?.snippet?.publishedAt,
+    channelTitle: item?.snippet?.channelTitle
+  }));
+};

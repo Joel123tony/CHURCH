@@ -57,6 +57,19 @@ const songSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    duration: {
+      type: String,
+      default: "",
+    },
+    thumbnail: {
+      type: String,
+      default: "",
+    },
+    youtubeUrl: {
+      type: String,
+      sparse: true,
+      unique: true,
+    },
     keywords: [{
       type: String,
     }],
@@ -75,6 +88,15 @@ const songSchema = new mongoose.Schema(
       enum: ["success", "failed"],
       default: "success",
     },
+    lyricsStatus: {
+      type: String,
+      enum: ["found", "pending"],
+      default: "found",
+    },
+    lastChecked: {
+      type: Date,
+      default: Date.now,
+    },
     failReason: {
       type: String,
     },
@@ -86,8 +108,16 @@ const songSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "processing", "completed", "failed"],
+      enum: ["pending", "processing", "completed", "failed", "recovering"],
       default: "completed",
+    },
+    retryCount: {
+      type: Number,
+      default: 0,
+    },
+    nextRetryAt: {
+      type: Date,
+      default: null,
     },
     isPublished: {
       type: Boolean,

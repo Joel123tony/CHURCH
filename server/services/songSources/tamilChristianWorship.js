@@ -1,32 +1,67 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { extractLyricsFromHtml } from "../../utils/lyricsExtractor.js";
+import { extractSongsFromHtml } from "../../utils/lyricsExtractor.js";
+export const isCollectionPage = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    // TCW usually groups everything in newpraiselinks.html
+    return lower.includes('newpraiselinks') || lower.includes('index');
+};
 
-export const fetchSong = async (songUrl) => {
+export const isSongPage = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return lower.includes('.html') && !isCollectionPage(url) && !lower.includes('contact');
+};
+
+export const extractCollection = async (url) => {
+    try {
+        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
+        const $ = cheerio.load(res.data);
+        
+        const links = new Set();
+        $('a').each((i, el) => {
+            let h = $(el).attr('href');
+            if (h && (h.includes('.html') || h.includes('.htm')) && !h.includes('newpraise') && !h.includes('index') && !h.includes('contact')) {
+                if (!h.startsWith('http')) {
+                    h = 'http://tamilchristianworship.com/' + h.replace(/^\//, '');
+                }
+                links.add(h);
+            }
+        });
+        
+        return Array.from(links);
+    } catch (error) {
+        console.error("TCW extractCollection Error:", error.message);
+        return [];
+    }
+};
+
+export const extractSong = async (songUrl) => {
     try {
         const res = await axios.get(songUrl, { 
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, 
             timeout: 15000 
         });
         
-        const extracted = extractLyricsFromHtml(res.data, songUrl);
+        const extractedSongs = await extractSongsFromHtml(res.data, songUrl);
         
-        if (!extracted) {
+        if (!extractedSongs || extractedSongs.length === 0) {
             throw new Error("Page does not contain song lyrics");
         }
 
-        return { 
+        return extractedSongs.map(extracted => ({ 
             titleTamil: extracted.titleTamil, 
             titleEnglish: extracted.titleEnglish, 
             lyricsTamil: extracted.lyricsTamil, 
             lyricsEnglish: extracted.lyricsEnglish,
-            artist: "", // TCW doesn't typically list artists structurally
+            artist: "",
             album: "",
             source: "TamilChristianWorship",
             sourceUrl: songUrl
-        };
+        }));
     } catch (err) {
-        console.error("TCW fetchSong Error:", err.message);
+        console.error("TCW extractSong Error:", err.message);
         throw new Error(`TCW Provider Error: ${err.message}`);
     }
 }
@@ -106,7 +141,8 @@ export const searchSong = async (query) => {
         });
         
         if (bestUrl) {
-            return await fetchSong(bestUrl);
+            const songs = await extractSong(bestUrl);
+            return songs.length > 0 ? songs[0] : null;
         }
         
         return null;

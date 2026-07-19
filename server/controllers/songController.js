@@ -10,7 +10,7 @@ export const searchSongsController = async (req, res) => {
     const category = req.query.category || "";
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
-    const sortOrder = req.query.sort || "latest";
+    const sortOrder = req.query.sort || "a-z";
     
     // Cache Key
     const cacheKey = `songs_search_${query}_${category}_${sortOrder}_${page}_${limit}`;

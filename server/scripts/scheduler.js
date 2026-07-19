@@ -1,9 +1,11 @@
 import cron from 'node-cron';
 import { providers } from '../services/songSources/adapterManager.js';
 import Song from '../models/Song.js';
+import { runTrendingDiscovery } from '../services/youtubeDiscovery.js';
+import { runLyricsRecovery } from '../services/lyricsRecovery.js';
 
 export const initSchedulers = () => {
-    // Daily Discovery (2 AM)
+    // Daily Discovery from Existing Providers (2 AM)
     cron.schedule('0 2 * * *', async () => {
         console.log("[Scheduler] Running Daily Discovery...");
         for (const { name, provider } of providers) {
@@ -14,7 +16,6 @@ export const initSchedulers = () => {
                     const exists = await Song.findOne({ url });
                     if (!exists) {
                         console.log(`[Scheduler] Discovered new URL from ${name}: ${url}`);
-                        // The actual fetching/importing logic would be queued to a background worker here.
                         // We will just fetch it directly for now if it supports fetchSong
                         if (provider.fetchSong) {
                             const songData = await provider.fetchSong(url);
@@ -42,8 +43,20 @@ export const initSchedulers = () => {
         }
     });
 
-    // Monthly Cleanup (4 AM on the 1st)
-    cron.schedule('0 4 1 * *', async () => {
+    // Daily Trending YouTube Discovery (3 AM)
+    cron.schedule('0 3 * * *', async () => {
+        console.log("[Scheduler] Running Daily YouTube Trending Discovery...");
+        await runTrendingDiscovery();
+    });
+
+    // Daily Lyrics Recovery (4 AM)
+    cron.schedule('0 4 * * *', async () => {
+        console.log("[Scheduler] Running Daily Lyrics Recovery...");
+        await runLyricsRecovery();
+    });
+
+    // Monthly Cleanup (5 AM on the 1st)
+    cron.schedule('0 5 1 * *', async () => {
         console.log("[Scheduler] Running Monthly Cleanup...");
         try {
             // Remove songs with empty lyrics

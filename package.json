@@ -37,7 +37,8 @@
     "react-pageflip": "^2.0.3",
     "react-router-dom": "^7.17.0",
     "react-toastify": "^11.1.0",
-    "serverless-http": "^4.0.0"
+    "serverless-http": "^4.0.0",
+    "swr": "^2.4.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -11,14 +11,14 @@ import upload from "../middleware/upload.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { spawn } from "child_process";
 import path from "path";
-import adminSongRoutes from "./adminSongRoutes.js";
+import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
 /* ==================================================
    DASHBOARD
 ================================================== */
-router.get("/dashboard", async (req, res) => {
+router.get("/dashboard", auth, async (req, res) => {
   try {
     const [
       pastorsCount,
@@ -69,7 +69,7 @@ router.get("/dashboard", async (req, res) => {
 /* ==================================================
    GET ALL PASTORS
 ================================================== */
-router.get("/pastors", async (req, res) => {
+router.get("/pastors", auth, async (req, res) => {
   try {
     const pastors = await Pastor.find()
       .sort({ createdAt: -1 });
@@ -94,6 +94,7 @@ router.get("/pastors", async (req, res) => {
 ================================================== */
 router.post(
   "/pastors",
+  auth,
   upload.single("file"),
   async (req, res) => {
     try {
@@ -137,6 +138,7 @@ router.post(
 ================================================== */
 router.put(
   "/pastors/:id",
+  auth,
   upload.single("file"),
   async (req, res) => {
     try {
@@ -196,7 +198,7 @@ router.put(
 /* ==================================================
    DELETE PASTOR
 ================================================== */
-router.delete("/pastors/:id", async (req, res) => {
+router.delete("/pastors/:id", auth, async (req, res) => {
   try {
     const pastor = await Pastor.findByIdAndDelete(
       req.params.id
@@ -226,7 +228,7 @@ router.delete("/pastors/:id", async (req, res) => {
 /* ==================================================
    GET ALL SERMONS
 ================================================== */
-router.get("/sermons", async (req, res) => {
+router.get("/sermons", auth, async (req, res) => {
   try {
     const sermons = await Sermon.find()
       .sort({ createdAt: -1 });
@@ -249,7 +251,7 @@ router.get("/sermons", async (req, res) => {
 /* ==================================================
    CREATE SERMON
 ================================================== */
-router.post("/sermons", async (req, res) => {
+router.post("/sermons", auth, async (req, res) => {
   try {
     const sermon = await Sermon.create(req.body);
 
@@ -270,7 +272,7 @@ router.post("/sermons", async (req, res) => {
 /* ==================================================
    DELETE SERMON
 ================================================== */
-router.delete("/sermons/:id", async (req, res) => {
+router.delete("/sermons/:id", auth, async (req, res) => {
   try {
     const sermon = await Sermon.findByIdAndDelete(
       req.params.id
@@ -300,7 +302,7 @@ router.delete("/sermons/:id", async (req, res) => {
 /* ==================================================
    MANUAL SONG IMPORT (BACKGROUND WORKER)
 ================================================== */
-router.post("/songs/import", (req, res) => {
+router.post("/songs/import", auth, (req, res) => {
   try {
     const scriptPath = path.join(process.cwd(), "scripts", "fetchLatestTamilSongs.js");
     
@@ -308,6 +310,10 @@ router.post("/songs/import", (req, res) => {
     const child = spawn("node", [scriptPath], {
       detached: true,
       stdio: "ignore" // We don't need to capture stdout/stderr in the HTTP response
+    });
+    
+    child.on("error", (err) => {
+      console.error("Failed to start background song import process:", err);
     });
     
     child.unref(); // Allow the parent event loop to exit independently of the child
@@ -324,8 +330,5 @@ router.post("/songs/import", (req, res) => {
     });
   }
 });
-
-// Import the new modular admin song routes (import-url, save, status)
-router.use("/songs", adminSongRoutes);
 
 export default router;

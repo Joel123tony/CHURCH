@@ -1,17 +1,51 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { extractLyricsFromHtml } from "../../utils/lyricsExtractor.js";
+import { extractSongsFromHtml } from "../../utils/lyricsExtractor.js";
+export const isCollectionPage = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return lower.includes('/category/') || lower.includes('/tag/') || lower.includes('/page/');
+};
 
-export const fetchSong = async (songUrl) => {
+export const isSongPage = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return !isCollectionPage(url) && !lower.includes('/author/') && !lower.includes('?s=');
+};
+
+export const extractCollection = async (url) => {
+    try {
+        const res = await axios.get(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 15000
+        });
+        const $ = cheerio.load(res.data);
+        const childUrls = new Set();
+        
+        $('.entry-title a, .post-title a, h2 a').each((i, el) => {
+            const href = $(el).attr('href');
+            if (href && href.includes('worldtamilchristians.com')) {
+                childUrls.add(href);
+            }
+        });
+        
+        return Array.from(childUrls);
+    } catch (err) {
+        console.error("WTC extractCollection Error:", err.message);
+        return [];
+    }
+};
+
+export const extractSong = async (songUrl) => {
     try {
         const res = await axios.get(songUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, timeout: 15000 });
-        const extracted = extractLyricsFromHtml(res.data, songUrl);
+        const extractedSongs = await extractSongsFromHtml(res.data, songUrl);
         
-        if (!extracted) {
+        if (!extractedSongs || extractedSongs.length === 0) {
             throw new Error("Lyrics could not be found or were rejected by the sanitizer.");
         }
 
-        return { 
+        return extractedSongs.map(extracted => ({ 
             titleTamil: extracted.titleTamil, 
             titleEnglish: extracted.titleEnglish, 
             lyricsTamil: extracted.lyricsTamil, 
@@ -19,9 +53,9 @@ export const fetchSong = async (songUrl) => {
             artist: "",
             source: "World Tamil Christians",
             sourceUrl: songUrl
-        };
+        }));
     } catch (err) {
-        console.error("WTC fetchSong Error:", err.message);
+        console.error("WTC extractSong Error:", err.message);
         throw new Error(`WTC Provider Error: ${err.message}`);
     }
 }
@@ -40,7 +74,8 @@ export const searchSong = async (query) => {
         });
 
         if (bestUrl) {
-            return await fetchSong(bestUrl);
+            const songs = await extractSong(bestUrl);
+            return songs.length > 0 ? songs[0] : null;
         }
         return null;
     } catch (error) {

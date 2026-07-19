@@ -1,21 +1,52 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { extractLyricsFromHtml } from "../../utils/lyricsExtractor.js";
+import { extractSongsFromHtml } from "../../utils/lyricsExtractor.js";
+export const isCollectionPage = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return lower.includes('/category/') || lower.includes('/tag/') || lower.includes('/page/') || lower.includes('lyrics-page');
+};
 
-export const fetchSong = async (songUrl) => {
+export const isSongPage = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return !isCollectionPage(url) && !lower.includes('?s=');
+};
+
+export const extractCollection = async (url) => {
+    try {
+        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
+        const $ = cheerio.load(res.data);
+        const childUrls = new Set();
+        
+        $('a').each((i, el) => {
+            const href = $(el).attr('href');
+            if (href && href.includes('tamilchristian.com') && !href.includes('/category/') && !href.includes('/tag/') && !href.includes('lyrics-page') && href.split('/').length > 4) {
+                childUrls.add(href);
+            }
+        });
+        
+        return Array.from(childUrls);
+    } catch (err) {
+        console.error("TamilChristianCom extractCollection Error:", err.message);
+        return [];
+    }
+};
+
+export const extractSong = async (songUrl) => {
     try {
         const res = await axios.get(songUrl, { 
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, 
             timeout: 15000 
         });
         
-        const extracted = extractLyricsFromHtml(res.data, songUrl);
+        const extractedSongs = await extractSongsFromHtml(res.data, songUrl);
         
-        if (!extracted) {
+        if (!extractedSongs || extractedSongs.length === 0) {
             throw new Error("Page does not contain song lyrics");
         }
 
-        return { 
+        return extractedSongs.map(extracted => ({ 
             titleTamil: extracted.titleTamil, 
             titleEnglish: extracted.titleEnglish, 
             lyricsTamil: extracted.lyricsTamil, 
@@ -24,9 +55,9 @@ export const fetchSong = async (songUrl) => {
             album: "",
             source: "TamilChristian.com",
             sourceUrl: songUrl
-        };
+        }));
     } catch (err) {
-        console.error("TamilChristianCom fetchSong Error:", err.message);
+        console.error("TamilChristianCom extractSong Error:", err.message);
         throw new Error(`TamilChristianCom Provider Error: ${err.message}`);
     }
 }
@@ -126,7 +157,8 @@ export const searchSong = async (query) => {
         });
         
         if (bestUrl) {
-            return await fetchSong(bestUrl);
+            const songs = await extractSong(bestUrl);
+            return songs.length > 0 ? songs[0] : null;
         }
         
         return null;

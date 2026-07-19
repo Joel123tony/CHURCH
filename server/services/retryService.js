@@ -3,6 +3,8 @@ import { detectProvider } from "./songSources/adapterManager.js";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+const RETRY_INTERVALS_SEC = [0, 30, 120, 300, 900, 1800, 3600, 7200];
+
 class RetryService {
     constructor() {
         this.isRunning = false;
@@ -15,16 +17,51 @@ class RetryService {
             durationMs: 0
         };
         this.startTime = 0;
+        this.startAutoRetryLoop();
     }
 
-    isRecoverable(reason) {
-        if (!reason) return true;
-        const r = reason.toLowerCase();
-        // Do not retry these:
-        if (r.includes("duplicate") || r.includes("unsupported") || r.includes("invalid html") || r.includes("not a song page")) {
-            return false;
+    startAutoRetryLoop() {
+        setInterval(async () => {
+            if (this.isRunning) return;
+            try {
+                const now = new Date();
+                const dueForRetry = await Song.find({
+                    status: "recovering",
+                    nextRetryAt: { $lte: now }
+                }).select("_id").lean();
+
+                if (dueForRetry.length > 0) {
+                    console.log(`[RetryService] Auto-retry loop found ${dueForRetry.length} songs due for retry.`);
+                    const ids = dueForRetry.map(s => s._id);
+                    await this.startRetrySelected(ids, true);
+                }
+            } catch (err) {
+                console.error("[RetryService] Auto-retry loop error:", err);
+            }
+        }, 60 * 1000); // Check every minute
+    }
+
+    isRecoverable(reason, httpStatus) {
+        if (!reason && !httpStatus) return true;
+        
+        const r = (reason || "").toLowerCase();
+        
+        // Known recoverable HTTP statuses
+        const recoverableStatuses = [500, 502, 503, 504, 429];
+        if (httpStatus && recoverableStatuses.includes(httpStatus)) return true;
+
+        // Known recoverable errors
+        if (r.includes("timeout") || 
+            r.includes("network error") || 
+            r.includes("econnreset") || 
+            r.includes("enotfound") || 
+            r.includes("ehostunreach") || 
+            r.includes("etimedout")) {
+            return true;
         }
-        return true;
+
+        // Everything else (404, 410, parsing issues, duplicate, unsupported) is permanent
+        return false;
     }
 
     getStatus() {
@@ -42,18 +79,25 @@ class RetryService {
                 const songId = queue.pop();
                 try {
                     const song = await Song.findById(songId);
-                    if (!song || song.status !== "failed") {
+                    if (song.status !== "failed" && song.status !== "recovering") {
                         this.status.skipped++;
                         continue;
                     }
 
-                    if (!this.isRecoverable(song.failReason)) {
+                    if (!this.isRecoverable(song.failReason, song.httpStatus)) {
+                        // If it somehow got into the queue but is permanent, mark it failed.
+                        if (song.status === "recovering") {
+                             song.status = "failed";
+                             await song.save();
+                        }
                         this.status.skipped++;
                         continue;
                     }
 
                     const providerInfo = detectProvider(song.url || song.sourceUrl);
-                    if (!providerInfo || !providerInfo.provider.fetchSong) {
+                    if (!providerInfo || (!providerInfo.provider.fetchSong && !providerInfo.provider.extractSong)) {
+                        song.failReason = "Unsupported Provider for retry";
+                        await song.save();
                         this.status.skipped++;
                         continue;
                     }
@@ -61,7 +105,15 @@ class RetryService {
                     this.status.retried++;
 
                     try {
-                        const songData = await providerInfo.provider.fetchSong(song.url || song.sourceUrl);
+                        const fetcher = providerInfo.provider.extractSong || providerInfo.provider.fetchSong;
+                        let songData = await fetcher(song.url || song.sourceUrl);
+                        
+                        if (Array.isArray(songData)) {
+                            if (songData.length === 0) throw new Error("No songs found");
+                            // For retrying a single failed URL that turned out to be an array, 
+                            // we just recover the first one into this song record.
+                            songData = songData[0];
+                        }
                         
                         // Successfully fetched, update the record
                         song.title = songData.titleTamil || songData.titleEnglish || songData.title;
@@ -82,7 +134,28 @@ class RetryService {
                     } catch (fetchErr) {
                         // Still failed
                         song.failReason = fetchErr.message;
-                        song.httpStatus = fetchErr.status || 500;
+                        song.httpStatus = fetchErr.status || fetchErr.response?.status || 500;
+                        
+                        if (this.isRecoverable(song.failReason, song.httpStatus)) {
+                            const nextRetryCount = (song.retryCount || 0) + 1;
+                            
+                            if (nextRetryCount >= RETRY_INTERVALS_SEC.length) {
+                                // Exceeded max retries -> permanent failure
+                                song.status = "failed";
+                                song.retryCount = nextRetryCount;
+                                console.log(`[RetryService] Retry exhausted for ${song.url}, marking as permanently failed.`);
+                            } else {
+                                // Still recovering, backoff
+                                song.status = "recovering";
+                                song.retryCount = nextRetryCount;
+                                const delaySeconds = RETRY_INTERVALS_SEC[nextRetryCount];
+                                song.nextRetryAt = new Date(Date.now() + delaySeconds * 1000);
+                            }
+                        } else {
+                            // Hit a permanent error during retry (e.g. now it's 404)
+                            song.status = "failed";
+                        }
+                        
                         await song.save();
                         this.status.failed++;
                     }
@@ -96,19 +169,26 @@ class RetryService {
         await Promise.all(workers);
     }
 
-    async startRetrySelected(ids) {
+    async startRetrySelected(ids, isAuto = false) {
         if (this.isRunning) return false;
         
         this.isRunning = true;
         this.startTime = Date.now();
-        this.status = {
-            total: ids.length,
-            retried: 0,
-            recovered: 0,
-            failed: 0,
-            skipped: 0,
-            durationMs: 0
-        };
+        
+        // Only reset status if it's a manual trigger to avoid wiping it instantly from UI during auto-retries
+        if (!isAuto) {
+            this.status = {
+                total: ids.length,
+                retried: 0,
+                recovered: 0,
+                failed: 0,
+                skipped: 0,
+                durationMs: 0
+            };
+        } else {
+            // For auto, just increment total to process
+            this.status.total += ids.length;
+        }
 
         const queue = [...ids];
         this.processQueue(queue, 5).then(() => {
@@ -125,7 +205,7 @@ class RetryService {
     async startRetryAll() {
         if (this.isRunning) return false;
 
-        const failedSongs = await Song.find({ status: "failed" }).select("_id").lean();
+        const failedSongs = await Song.find({ status: { $in: ["failed", "recovering"] } }).select("_id").lean();
         const ids = failedSongs.map(s => s._id);
 
         if (ids.length === 0) return false;

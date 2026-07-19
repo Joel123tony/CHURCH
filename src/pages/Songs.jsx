@@ -19,7 +19,7 @@ export default function Songs() {
 
   // Search state from URL
   const search = searchParams.get("q") || "";
-  const sortParam = searchParams.get("sort") || "latest";
+  const sortParam = searchParams.get("sort") || "a-z";
 
   // Multiple categories support from URL
   const categoryParam = searchParams.get("category");
@@ -48,7 +48,7 @@ export default function Songs() {
     if (newCategories && newCategories.length > 0 && !newCategories.includes("All")) {
       params.set("category", newCategories.join(","));
     }
-    if (newSort && newSort !== "latest") params.set("sort", newSort);
+    if (newSort && newSort !== "a-z") params.set("sort", newSort);
     if (newPage > 1) params.set("page", newPage.toString());
     setSearchParams(params, { replace: true });
   };
@@ -222,9 +222,12 @@ export default function Songs() {
               className="bg-white border-2 border-slate-200 rounded-2xl py-4 px-4 text-lg focus:outline-none focus:border-[#54091b] transition-all shadow-sm text-slate-900 font-medium sm:w-48 appearance-none cursor-pointer h-[60px]"
               style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2364748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1.2em' }}
             >
-              <option value="latest">{t("Latest First")}</option>
-              <option value="oldest">{t("Oldest First")}</option>
               <option value="a-z">{t("A-Z")}</option>
+              <option value="latest">{t("Latest First")}</option>
+              <option value="trending">{t("Trending")}</option>
+              <option value="newest">{t("Newest Uploads")}</option>
+              <option value="recently_added">{t("Recently Added")}</option>
+              <option value="oldest">{t("Oldest First")}</option>
             </select>
           </div>
 
@@ -284,9 +287,22 @@ export default function Songs() {
                       </div>
                     )}
 
-                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-2 font-serif opacity-90 group-hover:opacity-100 transition-opacity">
+                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-2 font-serif opacity-90 group-hover:opacity-100 transition-opacity mb-4">
                       {song.lyricsTamil || song.lyrics || t("Lyrics preview not available.")}
                     </p>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        {song.category && (
+                          <span className="inline-flex items-center gap-1 bg-[#F4EFE7] text-[#54091b]/80 text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider border border-[#E8DCCB]">
+                            {song.category}
+                          </span>
+                        )}
+                        {song.artist && (
+                          <span className="text-xs text-slate-500 font-medium ml-auto">
+                            {song.artist}
+                          </span>
+                        )}
+                    </div>
                   </div>
                 </div>
               </Link>

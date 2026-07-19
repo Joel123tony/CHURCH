@@ -13,18 +13,25 @@ export const importUrlPreview = async (req, res) => {
         const providerInfo = detectProvider(url);
         console.log(`[Admin Import] Detected provider info:`, providerInfo ? providerInfo.name : "null");
         
-        if (!providerInfo || !providerInfo.provider.fetchSong) {
+        if (!providerInfo || (!providerInfo.provider.fetchSong && !providerInfo.provider.extractSong)) {
             return res.status(400).json({ 
                 success: false, 
                 message: "Unsupported provider", 
-                details: "The provided URL does not match any of our supported song providers (e.g. World Tamil Christians, TamilChristianSongs)." 
+                details: "The provided URL does not match any of our supported song providers." 
             });
         }
 
         const provider = providerInfo.provider;
         console.log(`[Admin Import] Selected adapter for ${providerInfo.name}. Fetching...`);
         
-        const songData = await provider.fetchSong(url);
+        const fetcher = provider.extractSong || provider.fetchSong;
+        let songData = await fetcher(url);
+        
+        if (Array.isArray(songData)) {
+            if (songData.length === 0) throw new Error("No songs found");
+            songData = songData[0];
+        }
+        
         console.log(`[Admin Import] Adapter response successful for: ${songData.titleTamil || "Unknown Title"}`);
 
         return res.json({ success: true, preview: songData });
@@ -134,6 +141,8 @@ export const getImportStatus = async (req, res) => {
         return res.status(500).json({ success: false, message: "Server error" });
     }
 };
+
+export const getDashboardData = getImportStatus;
 
 export const startLibraryScan = async (req, res) => {
     try {

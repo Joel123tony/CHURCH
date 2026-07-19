@@ -103,10 +103,10 @@ export default function AdminLayout() {
 
   const navSections = [
     {
-      title: "MAIN",
+      title: "",
       links: [
         { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
-        { to: "/admin/settings", label: "Settings", icon: ShieldCheck },
+        { to: "/admin/songs", label: "Songs", icon: Music },
       ],
     },
     {
@@ -118,8 +118,18 @@ export default function AdminLayout() {
         { to: "/admin/prayer-requests", label: "Prayer Requests", icon: HandHeart },
         { to: "/admin/pastor-message", label: "Pastor Messages", icon: MessageSquare },
         { to: "/admin/books", label: "Books", icon: BookOpen },
-        { to: "/admin/songs", label: "Songs", icon: Music },
+      ],
+    },
+    {
+      title: "DONATIONS",
+      links: [
         { to: "/admin/donations", label: "Donations", icon: HeartHandshake },
+      ],
+    },
+    {
+      title: "SETTINGS",
+      links: [
+        { to: "/admin/settings", label: "Settings", icon: ShieldCheck },
       ],
     }
   ];
@@ -169,11 +179,13 @@ export default function AdminLayout() {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-4 py-2 admin-scrollbar">
           <div className="flex flex-col gap-7">
-            {navSections.map((section) => (
-              <div key={section.title} className="flex flex-col gap-2">
-                <h2 className="px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
-                  {section.title}
-                </h2>
+            {navSections.map((section, index) => (
+              <div key={section.title || index} className="flex flex-col gap-2">
+                {section.title && (
+                  <h2 className="px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
+                    {section.title}
+                  </h2>
+                )}
                 <div className="flex flex-col gap-1.5">
                   {section.links.map((link) => (
                     <NavLink

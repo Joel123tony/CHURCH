@@ -1,16 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import API from "../../api/axios";
 import { 
-  AlertOctagon, RefreshCw, Trash2, Globe, Clock, AlertCircle,
-  Play, Search, ChevronLeft, ChevronRight, X, FileText, CheckCircle, RotateCcw, ArrowLeft
+  RefreshCw, Trash2, Globe, Clock, 
+  Search, ChevronLeft, ChevronRight, X, ArrowLeft,
+  ServerCrash, RotateCcw, AlertTriangle, Archive, FileDown,
+  CheckCircle
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function AdminFailedImports() {
   // Data State
   const [failedImports, setFailedImports] = useState([]);
+  const [activityTimeline, setActivityTimeline] = useState([]);
   const [stats, setStats] = useState({
     failed: 0,
+    recovering: 0,
     recovered: 0,
     retryQueue: 0,
     lastRetry: "N/A"
@@ -19,7 +23,9 @@ export default function AdminFailedImports() {
   // UI State
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
   const [totalPages, setTotalPages] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
@@ -27,71 +33,85 @@ export default function AdminFailedImports() {
 
   // Retry Progress State
   const [retryStatus, setRetryStatus] = useState(null);
-  const retryIntervalRef = useRef(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
+  // Debounce search
   useEffect(() => {
-    fetchFailedImports();
-  }, [page, search]);
+    const timer = setTimeout(() => {
+        if (search !== searchInput) {
+            setSearch(searchInput);
+            setPage(1);
+        }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput, search]);
 
-  useEffect(() => {
-    // Poll retry status independently on mount to check if a background job is already running
-    pollRetryStatus();
-    return () => stopPolling();
-  }, []);
-
-  const fetchFailedImports = async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
-      const res = await API.get(`/admin/songs/failed?page=${page}&limit=10&search=${encodeURIComponent(search)}`);
+      const res = await API.get(`/admin/songs/failed?page=${page}&limit=10&search=${encodeURIComponent(search)}&filter=${encodeURIComponent(filter)}`);
       if (res.data.success) {
-        setFailedImports(res.data.data);
-        setTotalPages(res.data.totalPages);
-        setHasNext(res.data.hasNext);
-        setHasPrevious(res.data.hasPrevious);
-        setStats(res.data.stats);
+        setFailedImports(res.data.data || []);
+        setActivityTimeline(res.data.activityTimeline || []);
+        setTotalPages(res.data.totalPages || 1);
+        setHasNext(res.data.hasNext || false);
+        setHasPrevious(res.data.hasPrevious || false);
+        setStats(res.data.stats || stats);
       }
     } catch (err) {
       console.error("Failed to fetch failed imports:", err);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
-  };
+  }, [page, search, filter, stats]);
 
-  const startPolling = () => {
-    if (retryIntervalRef.current) return;
-    retryIntervalRef.current = setInterval(pollRetryStatus, 1000);
-  };
-
-  const stopPolling = () => {
-    if (retryIntervalRef.current) {
-      clearInterval(retryIntervalRef.current);
-      retryIntervalRef.current = null;
-    }
-  };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const pollRetryStatus = async () => {
     try {
       const res = await API.get("/admin/songs/retry/status");
       if (res.data.success) {
         setRetryStatus(res.data.status);
-        if (!res.data.status.isRunning && retryIntervalRef.current) {
-           stopPolling();
-           // Refresh list once done
-           fetchFailedImports();
-        } else if (res.data.status.isRunning && !retryIntervalRef.current) {
-           startPolling();
-        }
+        setIsRetrying(res.data.status?.total > 0 && res.data.status?.retried < res.data.status?.total);
       }
     } catch (err) {
       console.error("Polling error:", err);
-      stopPolling();
     }
   };
+
+  useEffect(() => {
+    let interval;
+    const poll = async () => {
+        if (document.visibilityState === 'visible') {
+            await pollRetryStatus();
+            fetchData(true);
+        }
+    };
+    
+    // Auto Refresh: Every 2 seconds during retry operations, otherwise 30 seconds
+    const intervalTime = isRetrying ? 2000 : 30000;
+    interval = setInterval(poll, intervalTime);
+    
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            poll();
+        }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+        clearInterval(interval);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchData, isRetrying]);
 
   const handleRetryAll = async () => {
     try {
       await API.post("/admin/songs/retry-all");
-      startPolling();
+      pollRetryStatus();
+      fetchData(true);
     } catch (err) {
       alert("Failed to start retry all. Job might already be running or queue is empty.");
     }
@@ -102,22 +122,27 @@ export default function AdminFailedImports() {
     try {
       await API.post("/admin/songs/retry-selected", { ids: selectedIds });
       setSelectedIds([]);
-      startPolling();
+      pollRetryStatus();
+      fetchData(true);
     } catch (err) {
       alert("Failed to start retry selected.");
     }
+  };
+
+  const handleClearArchived = async () => {
+      if (!window.confirm("Are you sure you want to delete ALL permanent failures forever?")) return;
+      alert("Mass clear is not yet implemented. Please select rows to delete.");
   };
 
   const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) return;
     if (!window.confirm(`Delete ${selectedIds.length} records forever?`)) return;
     
-    // Process sequentially for simplicity
     for (const id of selectedIds) {
        await API.delete(`/admin/songs/failed/${id}`);
     }
     setSelectedIds([]);
-    fetchFailedImports();
+    fetchData();
   };
 
   const handleDelete = async (id) => {
@@ -125,7 +150,7 @@ export default function AdminFailedImports() {
     try {
       const res = await API.delete(`/admin/songs/failed/${id}`);
       if (res.data.success) {
-        fetchFailedImports();
+        fetchData();
       }
     } catch (err) {
       alert("Failed to delete record.");
@@ -146,326 +171,425 @@ export default function AdminFailedImports() {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const d = new Date(dateString);
-    return new Intl.DateTimeFormat('en-GB', { 
-      day: '2-digit', month: 'short', year: 'numeric', 
-      hour: '2-digit', minute: '2-digit'
-    }).format(d);
+  const timeAgo = (dateString) => {
+      if (!dateString) return "N/A";
+      const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+      let interval = seconds / 31536000;
+      if (interval > 1) return Math.floor(interval) + " yr ago";
+      interval = seconds / 2592000;
+      if (interval > 1) return Math.floor(interval) + " mo ago";
+      interval = seconds / 86400;
+      if (interval > 1) return Math.floor(interval) + " d ago";
+      interval = seconds / 3600;
+      if (interval > 1) return Math.floor(interval) + " hr ago";
+      interval = seconds / 60;
+      if (interval > 1) return Math.floor(interval) + " min ago";
+      return "Just now";
+  };
+
+  const getReasonType = (r, http) => {
+      const text = (r || "").toLowerCase();
+      if (text.includes("404") || http === 404) return "404";
+      if (text.includes("invalid url")) return "Invalid URL";
+      if (text.includes("unsupported") || text.includes("not a song page")) return "Unsupported Provider";
+      if (text.includes("too short") || text.includes("empty lyrics")) return "Parser Error";
+      return "Manual Review";
+  };
+
+  const getProviderColor = (provider) => {
+      const p = (provider || "").toLowerCase();
+      if (p.includes("world tamil")) return "bg-blue-50 text-blue-700 border-blue-200";
+      if (p.includes("tamilchristiansongs.in")) return "bg-green-50 text-green-700 border-green-200";
+      if (p.includes("worship")) return "bg-orange-50 text-orange-700 border-orange-200";
+      if (p.includes("christsquare")) return "bg-purple-50 text-purple-700 border-purple-200";
+      if (p.includes("keerthanai")) return "bg-teal-50 text-teal-700 border-teal-200";
+      return "bg-slate-50 text-slate-700 border-slate-200"; // fallback
   };
 
   const formatReasonBadge = (reason, httpStatus) => {
-     let color = "bg-slate-100 text-slate-600";
-     let icon = <AlertCircle size={12} />;
-     let label = reason || "Unknown Error";
-
-     const r = (reason || "").toLowerCase();
-
-     if (r.includes("too short") || r.includes("empty lyrics")) {
-        color = "bg-amber-100 text-amber-700";
-        label = "Lyrics Too Short / Empty";
-     } else if (r.includes("timeout")) {
-        color = "bg-blue-100 text-blue-700";
-        label = "Timeout";
-     } else if (r.includes("duplicate")) {
-        color = "bg-yellow-100 text-yellow-700";
-        label = "Duplicate Song";
-     } else if (httpStatus && httpStatus >= 500) {
-        color = "bg-red-100 text-red-700";
-        label = `HTTP ${httpStatus}`;
-     } else if (r.includes("404") || (httpStatus && httpStatus === 404)) {
-        color = "bg-red-100 text-red-700";
-        label = "Page Not Found (404)";
-     } else if (r.includes("not a song page")) {
-        color = "bg-slate-200 text-slate-700";
-        label = "Not a Song Page";
-     }
-
+     const type = getReasonType(reason, httpStatus);
+     
+     // The requirements say: Status Badge -> 🔴 Permanent, 🟡 Recovering, 🟢 Recovered
+     // But this is for the filter chips vs reason types. Since the page only shows Permanent Failures, we can just use Permanent.
      return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${color}`}>
-           {icon} {label}
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-sm">
+           <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+           Permanent
         </span>
      );
   };
 
+  const recoverTitle = (song) => {
+     if (song.title && song.title !== "Unknown Title" && song.title !== "Untitled" && song.title !== "") {
+         return song.title;
+     }
+     
+     // 1. Recover from URL slug
+     const url = song.sourceUrl || song.url || "";
+     if (url) {
+         try {
+            const urlObj = new URL(url);
+            let path = urlObj.pathname;
+            // Remove trailing slash
+            if (path.endsWith("/")) path = path.slice(0, -1);
+            // Get last segment
+            const segments = path.split("/");
+            let lastSegment = segments[segments.length - 1];
+            if (lastSegment) {
+                // Replace hyphens with spaces and capitalize
+                return lastSegment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+         } catch(e) {}
+     }
+     
+     // 2. Recover from first lyric line
+     if (song.lyrics) {
+         const firstLine = song.lyrics.split('\n').find(l => l.trim().length > 0);
+         if (firstLine && firstLine.length < 50) return firstLine.trim();
+     }
+     
+     return "Title unavailable";
+  };
+
+  const filters = ["All", "404", "HTTP 500", "Timeout", "Invalid URL", "Parser Error", "Manual Review"];
+
+  // Group timeline by hour/minute
+  const groupedTimeline = activityTimeline.reduce((acc, item) => {
+      const date = new Date(item.updatedAt);
+      const timeKey = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (!acc[timeKey]) acc[timeKey] = [];
+      acc[timeKey].push(item);
+      return acc;
+  }, {});
+
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 font-sans text-slate-900 bg-[#f8fafc] min-h-screen">
       
-      {/* Back Button */}
-      <div>
-        <Link 
-          to="/admin/songs"
-          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-sm bg-slate-50 hover:bg-slate-100 px-3 py-2 rounded-xl transition-colors w-max min-h-[44px]"
-        >
-          <ArrowLeft size={16} />
-          <span className="hidden sm:inline">Back to Songs Dashboard</span>
-          <span className="sm:hidden">Back</span>
-        </Link>
-      </div>
-
-      {/* Header Area */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center shadow-sm border border-red-100">
-              <AlertOctagon size={24} />
+      {/* Header Compact */}
+      <div className="sticky top-0 z-40 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/60 px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all">
+        <div className="flex flex-col gap-1">
+            <Link 
+                to="/admin/songs"
+                className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold text-xs transition-colors w-max uppercase tracking-widest mb-1"
+            >
+                <ArrowLeft size={14} /> Back to Songs Dashboard
+            </Link>
+            <div className="flex items-center gap-4">
+               <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-none">Failed Imports</h1>
             </div>
-            Failed Imports <span className="text-lg text-slate-400 font-bold ml-2">({stats.failed})</span>
-          </h1>
-          <p className="text-slate-500 font-medium mt-1">Review and manage failed background song scrapes.</p>
+            <p className="text-slate-500 text-xs font-medium">Review permanently failed imports requiring manual attention.</p>
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <button 
-            onClick={fetchFailedImports} 
-            disabled={loading || retryStatus?.isRunning}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            Refresh List
-          </button>
-          
-          <button 
-            onClick={handleRetryAll}
-            disabled={retryStatus?.isRunning || stats.failed === 0}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[#54091b] text-white rounded-xl font-bold hover:bg-[#6a0b22] transition-all shadow-sm shadow-[#54091b]/20 disabled:opacity-50"
-          >
-            {retryStatus?.isRunning ? (
-               <RefreshCw size={16} className="animate-spin" />
-            ) : (
-               <RotateCcw size={16} className="fill-white/20" />
-            )}
-            {retryStatus?.isRunning ? "Retrying..." : "Retry All Failed"}
-          </button>
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <button 
+                onClick={() => fetchData()} 
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition-all shadow-sm text-sm"
+            >
+                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                <span className="hidden md:inline">Refresh</span>
+            </button>
+            <button 
+                onClick={handleRetryAll}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-md text-sm"
+            >
+                <RotateCcw size={14} />
+                <span className="hidden md:inline">Retry Recoverable</span>
+            </button>
+            <button 
+                onClick={handleClearArchived}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-rose-600 border border-slate-200 rounded-xl font-bold hover:bg-rose-50 transition-all shadow-sm text-sm"
+            >
+                <Trash2 size={14} />
+                <span className="hidden md:inline">Clear Archived</span>
+            </button>
         </div>
       </div>
 
-      {/* Retry Progress Bar */}
-      {retryStatus?.isRunning && (
-         <div className="bg-[#54091b] text-white p-6 rounded-3xl shadow-lg relative overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-               <div>
-                  <h3 className="text-lg font-bold flex items-center gap-2 mb-1">
-                     <RefreshCw size={18} className="animate-spin" /> Retrying Failed Imports
-                  </h3>
-                  <p className="text-white/70 text-sm font-medium">Processing in background batches. You can navigate away safely.</p>
-               </div>
-               <div className="text-right">
-                  <div className="text-2xl font-black">{retryStatus.retried} / {retryStatus.total}</div>
-                  <div className="text-xs font-bold text-white/50 uppercase tracking-wider">Processed</div>
-               </div>
+      <div className="px-4 md:px-8 space-y-6">
+          {/* KPI Cards (Compact Height) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-[115px]">
+              <div className="flex justify-between items-start mb-1">
+                  <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><ServerCrash size={16} /></div>
+              </div>
+              <div>
+                <div className="text-3xl font-black text-slate-800 tracking-tight leading-none">{stats.failed}</div>
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Permanent</div>
+              </div>
             </div>
             
-            <div className="mt-6">
-               <div className="flex justify-between text-xs font-bold mb-2">
-                  <span className="text-emerald-400">{retryStatus.recovered} Recovered</span>
-                  <span className="text-red-400">{retryStatus.failed} Still Failed</span>
-                  <span className="text-slate-400">{retryStatus.skipped} Skipped</span>
-               </div>
-               <div className="w-full bg-black/20 h-3 rounded-full overflow-hidden flex">
-                  <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${(retryStatus.recovered / Math.max(1, retryStatus.total)) * 100}%` }}></div>
-                  <div className="bg-red-500 h-full transition-all duration-300" style={{ width: `${(retryStatus.failed / Math.max(1, retryStatus.total)) * 100}%` }}></div>
-                  <div className="bg-slate-500 h-full transition-all duration-300" style={{ width: `${(retryStatus.skipped / Math.max(1, retryStatus.total)) * 100}%` }}></div>
-               </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-[115px]">
+              <div className="flex justify-between items-start mb-1">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center"><RefreshCw size={16} /></div>
+              </div>
+              <div>
+                <div className="text-3xl font-black text-slate-800 tracking-tight leading-none">{stats.recovering || 0}</div>
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Recovering</div>
+              </div>
             </div>
-         </div>
-      )}
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Failed</div>
-          <div className="text-3xl font-black text-red-600">{stats.failed}</div>
-        </div>
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Recovered</div>
-          <div className="text-3xl font-black text-emerald-600">{stats.recovered}</div>
-        </div>
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Retry Queue</div>
-          <div className="text-3xl font-black text-blue-600">{stats.retryQueue}</div>
-        </div>
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Last Retry</div>
-          <div className="text-xl font-black text-slate-800 mt-2">{stats.lastRetry}</div>
-        </div>
-      </div>
-
-      {/* Main Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-slate-50/50">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 shrink-0">
-              <FileText className="text-slate-400" size={18} />
-              Quarantined Records
-            </h2>
             
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-               {selectedIds.length > 0 && (
-                  <div className="flex items-center gap-2 w-full sm:w-auto animate-in fade-in">
-                     <button onClick={handleRetrySelected} className="px-3 py-1.5 bg-[#F4EFE7] text-[#54091b] font-bold text-xs rounded-lg border border-[#E8DCCB] hover:bg-[#E8DCCB] transition-colors">
-                        Retry ({selectedIds.length})
-                     </button>
-                     <button onClick={handleDeleteSelected} className="px-3 py-1.5 bg-red-50 text-red-600 font-bold text-xs rounded-lg border border-red-100 hover:bg-red-100 transition-colors">
-                        Delete
-                     </button>
-                  </div>
-               )}
-               
-               <div className="relative w-full sm:w-64 shrink-0">
-                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                 <input 
-                   type="text" 
-                   placeholder="Search by title, URL or provider..." 
-                   value={search}
-                   onChange={(e) => {
-                      setSearch(e.target.value);
-                      setPage(1);
-                   }}
-                   className="w-full pl-9 pr-8 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-[#54091b] focus:ring-1 focus:ring-[#54091b] transition-all bg-white"
-                 />
-                 {search && (
-                   <button onClick={() => { setSearch(""); setPage(1); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                     <X size={14} />
-                   </button>
-                 )}
-               </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-[115px]">
+              <div className="flex justify-between items-start mb-1">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><CheckCircle size={16} /></div>
+              </div>
+              <div>
+                <div className="text-3xl font-black text-slate-800 tracking-tight leading-none">{stats.recovered}</div>
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Recovered</div>
+              </div>
             </div>
-        </div>
-        
-        <div className="flex-1 overflow-x-auto min-h-[400px]">
-            <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/80 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
-                <th className="px-6 py-4 w-12 text-center">
-                   <input type="checkbox" onChange={toggleAll} checked={failedImports.length > 0 && selectedIds.length === failedImports.length} className="rounded border-slate-300 text-[#54091b] focus:ring-[#54091b] w-4 h-4" />
-                </th>
-                <th className="px-4 py-4 w-[250px] max-w-[250px]">URL / Title</th>
-                <th className="px-4 py-4">Provider</th>
-                <th className="px-4 py-4">Reason</th>
-                <th className="px-4 py-4 text-right">Date</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100/80">
-              {loading ? (
-                 Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="px-6 py-4"></td>
-                      <td className="px-4 py-4"><div className="h-4 bg-slate-200 rounded-md w-3/4 mb-2"></div><div className="h-3 bg-slate-100 rounded-md w-1/2"></div></td>
-                      <td className="px-4 py-4"><div className="h-6 bg-slate-200 rounded-md w-24"></div></td>
-                      <td className="px-4 py-4"><div className="h-6 bg-slate-200 rounded-md w-32"></div></td>
-                      <td className="px-4 py-4 text-right"><div className="h-4 bg-slate-200 rounded-md w-20 ml-auto"></div></td>
-                      <td className="px-6 py-4"></td>
-                    </tr>
-                 ))
-              ) : failedImports.length > 0 ? (
-                 failedImports.map((song) => (
-                    <tr key={song._id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="px-6 py-4 text-center">
-                         <input type="checkbox" checked={selectedIds.includes(song._id)} onChange={() => toggleSelection(song._id)} className="rounded border-slate-300 text-[#54091b] focus:ring-[#54091b] w-4 h-4" />
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex flex-col">
-                           {song.title && <span className="font-bold text-sm text-slate-800 mb-0.5">{song.title}</span>}
-                           <div className="flex items-center gap-1.5">
-                              <Globe size={12} className="text-slate-400 shrink-0" />
-                              <a href={song.sourceUrl || song.url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline truncate w-48 block" title={song.sourceUrl || song.url}>
-                                 {song.sourceUrl || song.url}
-                              </a>
-                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wider">
-                          <Globe size={10} /> {song.source}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        {formatReasonBadge(song.failReason, song.httpStatus)}
-                      </td>
-                      <td className="px-4 py-4 text-xs font-medium text-slate-500 text-right whitespace-nowrap">
-                        {formatDate(song.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                           <button 
-                             onClick={() => { setSelectedIds([song._id]); handleRetrySelected(); }}
-                             className="p-1.5 bg-white text-slate-400 border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm"
-                             title="Retry"
-                           >
-                             <RotateCcw size={16} />
-                           </button>
-                           <button 
-                             onClick={() => handleDelete(song._id)}
-                             className="p-1.5 bg-white text-slate-400 border border-slate-200 rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors shadow-sm"
-                             title="Delete"
-                           >
-                             <Trash2 size={16} />
-                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                 ))
-              ) : (
-                 <tr>
-                    <td colSpan="6" className="px-6 py-16 text-center text-sm font-medium text-slate-400">
-                       <div className="flex flex-col items-center gap-2">
-                          <CheckCircle size={32} className="text-slate-300 mb-2" />
-                          <p>No failed imports found.</p>
-                          {search && (
-                             <button onClick={() => { setSearch(""); setPage(1); }} className="mt-2 text-[#54091b] font-bold hover:underline">
-                               Clear Search
-                             </button>
-                          )}
-                       </div>
-                    </td>
-                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-           <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-4">
-             <button
-               disabled={!hasPrevious}
-               onClick={() => setPage(p => p - 1)}
-               className="flex items-center gap-1 text-sm font-bold text-slate-600 hover:text-[#54091b] disabled:opacity-30 disabled:hover:text-slate-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-white border border-transparent hover:border-slate-200"
-             >
-               <ChevronLeft size={16} /> Previous
-             </button>
-             <div className="flex items-center gap-1 overflow-x-auto resources-scrollbar px-2">
-               {Array.from({ length: totalPages }).map((_, i) => {
-                 const pageNum = i + 1;
-                 if (pageNum === 1 || pageNum === totalPages || (pageNum >= page - 2 && pageNum <= page + 2)) {
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setPage(pageNum)}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${pageNum === page ? 'bg-[#54091b] text-white shadow-md' : 'text-slate-600 hover:bg-white border border-transparent hover:border-slate-200'}`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                 } else if (pageNum === page - 3 || pageNum === page + 3) {
-                    return <span key={pageNum} className="text-slate-400 px-1">...</span>;
-                 }
-                 return null;
-               })}
-             </div>
-             <button
-               disabled={!hasNext}
-               onClick={() => setPage(p => p + 1)}
-               className="flex items-center gap-1 text-sm font-bold text-slate-600 hover:text-[#54091b] disabled:opacity-30 disabled:hover:text-slate-600 transition-colors px-3 py-1.5 rounded-lg hover:bg-white border border-transparent hover:border-slate-200"
-             >
-               Next <ChevronRight size={16} />
-             </button>
-           </div>
-        )}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-[115px]">
+              <div className="flex justify-between items-start mb-1">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><Clock size={16} /></div>
+              </div>
+              <div>
+                <div className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-none truncate">{activityTimeline.length > 0 ? timeAgo(activityTimeline[0].updatedAt) : "N/A"}</div>
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">Last Recovery</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col xl:flex-row gap-6 items-start">
+            {/* Main Content Table Area */}
+            <div className="flex-1 w-full space-y-4">
+                
+                {/* Search & Filters */}
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    {/* Filter Chips */}
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto overflow-x-auto admin-scrollbar pb-1 md:pb-0">
+                        {filters.map(f => (
+                            <button
+                                key={f}
+                                onClick={() => { setFilter(f); setPage(1); }}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${filter === f ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                            >
+                                {f}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="relative w-full md:w-80 shrink-0">
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input 
+                            type="text" 
+                            placeholder="Search title, URL, provider..." 
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            className="w-full pl-9 pr-8 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all bg-slate-50 hover:bg-white shadow-inner"
+                        />
+                        {searchInput && (
+                            <button onClick={() => setSearchInput("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Sticky Bulk Action Toolbar */}
+                {selectedIds.length > 0 && (
+                    <div className="sticky top-[88px] z-30 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 rounded-md bg-white/20 flex items-center justify-center text-xs font-black">{selectedIds.length}</div>
+                            <span className="font-bold text-sm">Rows Selected</span>
+                        </div>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <button onClick={handleRetrySelected} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-colors">
+                                <RotateCcw size={14} /> Retry
+                            </button>
+                            <button onClick={handleDeleteSelected} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 hover:text-rose-200 rounded-xl font-bold text-sm transition-colors">
+                                <Trash2 size={14} /> Delete
+                            </button>
+                            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-colors">
+                                <Archive size={14} /> Archive
+                            </button>
+                            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-colors">
+                                <FileDown size={14} /> Export
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Permanent Failures Table */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-100">
+                                    <th className="px-6 py-3 w-12 text-center">
+                                        <input type="checkbox" onChange={toggleAll} checked={failedImports.length > 0 && selectedIds.length === failedImports.length} className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 w-4 h-4" />
+                                    </th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider w-[40%]">Song</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Provider</th>
+                                    <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100/70">
+                            {loading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <tr key={i} className="animate-pulse">
+                                        <td className="px-6 py-4"></td>
+                                        <td className="px-4 py-4"><div className="h-4 bg-slate-200 rounded-md w-3/4 mb-2"></div><div className="h-3 bg-slate-100 rounded-md w-1/2"></div></td>
+                                        <td className="px-4 py-4"><div className="h-6 bg-slate-200 rounded-full w-24"></div></td>
+                                        <td className="px-4 py-4"><div className="h-6 bg-slate-200 rounded-full w-20"></div></td>
+                                        <td className="px-6 py-4"></td>
+                                    </tr>
+                                ))
+                            ) : failedImports.length > 0 ? (
+                                failedImports.map((song) => {
+                                    const title = recoverTitle(song);
+                                    const providerStyle = getProviderColor(song.source);
+                                    return (
+                                    <tr key={song._id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-6 py-3 text-center">
+                                            <input type="checkbox" checked={selectedIds.includes(song._id)} onChange={() => toggleSelection(song._id)} className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 w-4 h-4 cursor-pointer" />
+                                        </td>
+                                        <td className="px-4 py-3 max-w-xs">
+                                            <div className="flex flex-col">
+                                                <span className={`font-bold text-sm mb-0.5 truncate flex items-center gap-2 ${title === 'Title unavailable' ? 'text-slate-400 italic' : 'text-slate-800'}`}>
+                                                    <span className="text-lg opacity-80">🎵</span> {title}
+                                                </span>
+                                                <a href={song.sourceUrl || song.url} target="_blank" rel="noreferrer" className="text-[11px] font-medium text-slate-400 hover:text-indigo-600 hover:underline truncate" title={song.sourceUrl || song.url}>
+                                                    {song.sourceUrl || song.url}
+                                                </a>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${providerStyle}`}>
+                                                <Globe size={10} /> {song.source || "Unknown"}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {formatReasonBadge(song.failReason, song.httpStatus)}
+                                        </td>
+                                        <td className="px-6 py-3 text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button 
+                                                    onClick={() => { setSelectedIds([song._id]); handleRetrySelected(); }}
+                                                    className="p-1.5 bg-white text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm"
+                                                    title="Retry"
+                                                >
+                                                    <RotateCcw size={14} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDelete(song._id)}
+                                                    className="p-1.5 bg-white text-rose-400 border border-slate-200 rounded-lg hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-sm"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-24 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-4">
+                                            <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shadow-inner">
+                                                <CheckCircle size={32} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-black text-slate-800">✅ Great! No failed imports.</h3>
+                                                <p className="text-sm font-medium text-slate-500 max-w-sm mx-auto mt-1">Background importer is healthy and running smoothly.</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between gap-4 py-2">
+                        <button
+                            disabled={!hasPrevious}
+                            onClick={() => setPage(p => p - 1)}
+                            className="flex items-center gap-1.5 text-sm font-bold text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-600 transition-colors px-4 py-2 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow"
+                        >
+                            <ChevronLeft size={16} /> Previous
+                        </button>
+                        <div className="flex items-center gap-1 overflow-x-auto admin-scrollbar px-2">
+                            {Array.from({ length: totalPages }).map((_, i) => {
+                            const pageNum = i + 1;
+                            if (pageNum === 1 || pageNum === totalPages || (pageNum >= page - 2 && pageNum <= page + 2)) {
+                                return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setPage(pageNum)}
+                                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${pageNum === page ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm'}`}
+                                >
+                                    {pageNum}
+                                </button>
+                                );
+                            } else if (pageNum === page - 3 || pageNum === page + 3) {
+                                return <span key={pageNum} className="text-slate-400 px-1 font-bold">...</span>;
+                            }
+                            return null;
+                            })}
+                        </div>
+                        <button
+                            disabled={!hasNext}
+                            onClick={() => setPage(p => p + 1)}
+                            className="flex items-center gap-1.5 text-sm font-bold text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-600 transition-colors px-4 py-2 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow"
+                        >
+                            Next <ChevronRight size={16} />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Right Panel: Compact Activity Timeline */}
+            <div className="w-full xl:w-[320px] shrink-0 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="p-5 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+                    <Clock size={16} className="text-slate-400" strokeWidth={2.5} />
+                    <h2 className="text-sm font-bold text-slate-800">Timeline</h2>
+                </div>
+                <div className="p-5 flex-1 overflow-y-auto max-h-[600px] admin-scrollbar">
+                    {Object.keys(groupedTimeline).length > 0 ? (
+                        <div className="space-y-6">
+                            {Object.entries(groupedTimeline).map(([time, events], i) => {
+                                // Count events by type
+                                let failed = 0;
+                                let recovered = 0;
+                                let retrying = 0;
+                                
+                                events.forEach(e => {
+                                    if (e.status === 'completed') recovered++;
+                                    else if (e.status === 'recovering') retrying++;
+                                    else failed++;
+                                });
+
+                                return (
+                                    <div key={time} className="relative pl-4 border-l-2 border-slate-100 pb-2 last:pb-0">
+                                        <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-slate-300 ring-4 ring-white"></div>
+                                        <div className="text-[10px] font-bold text-slate-400 mb-1.5">{time}</div>
+                                        <div className="space-y-1">
+                                            {failed > 0 && <div className="text-xs font-medium text-slate-600 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span> {failed} permanent failures detected</div>}
+                                            {recovered > 0 && <div className="text-xs font-medium text-slate-600 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span> {recovered} recovered automatically</div>}
+                                            {retrying > 0 && <div className="text-xs font-medium text-slate-600 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span> {retrying} retry started</div>}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-center py-10">
+                            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-3">
+                                <AlertTriangle size={16} className="text-slate-300" />
+                            </div>
+                            <p className="text-xs font-bold text-slate-500">No recent timeline activity.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+          </div>
       </div>
-
     </div>
   );
 }

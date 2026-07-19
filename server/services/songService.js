@@ -58,9 +58,14 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
     
     // Sort logic
     if (sortOrder === "a-z") {
-      findOperation.sort({ titleTamil: 1, title: 1 });
+      // Use collation for case-insensitive and Tamil character sorting
+      findOperation.collation({ locale: "ta", strength: 1 }).sort({ title: 1 });
     } else if (sortOrder === "oldest") {
       findOperation.sort({ publishedDate: 1, createdAt: 1 });
+    } else if (sortOrder === "newest") {
+      findOperation.sort({ publishedDate: -1, createdAt: -1 });
+    } else if (sortOrder === "trending" || sortOrder === "recently_added") {
+      findOperation.sort({ createdAt: -1 });
     } else if (searchQuery && sortOrder === "latest") {
       findOperation.sort({ score: { $meta: "textScore" } });
     } else {
@@ -191,9 +196,34 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
 
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
+  // Add Badges for frontend
+  const now = new Date();
+  const enhancedSongs = dbSongs.map(song => {
+      let isTrending = false;
+      let isNew = false;
+      
+      // Trending: imported within last 90 days
+      if (song.createdAt) {
+          const daysSinceImport = (now - new Date(song.createdAt)) / (1000 * 60 * 60 * 24);
+          if (daysSinceImport <= 90) isTrending = true;
+      }
+      
+      // New: Uploaded within last 30 days
+      if (song.publishedDate) {
+          const daysSincePublish = (now - new Date(song.publishedDate)) / (1000 * 60 * 60 * 24);
+          if (daysSincePublish <= 30) isNew = true;
+      }
+
+      return {
+          ...song,
+          isTrending,
+          isNew
+      };
+  });
+
   return {
     success: true,
-    songs: dbSongs,
+    songs: enhancedSongs,
     totalSongs: totalCount,
     currentPage: page,
     totalPages: totalPages,

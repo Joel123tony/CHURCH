@@ -8,7 +8,8 @@ import { connectDB } from "./config/db.js";
 
 /* ROUTES */
 import authRoutes from "./routes/authRoutes.js";
-import adminRoutes from "./routes/adminAuth.routes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import adminSongRoutes from "./routes/adminSongRoutes.js";
 import pastorRoutes from "./routes/pastor.routes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
@@ -37,6 +38,7 @@ app.use(cookieParser());
    ROUTES
 ========================= */
 app.use("/api/auth", authRoutes);
+app.use("/api/admin/songs", adminSongRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/pastors", pastorRoutes);
 

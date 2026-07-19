@@ -1,17 +1,52 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { extractLyricsFromHtml } from "../../utils/lyricsExtractor.js";
+import { extractSongsFromHtml } from "../../utils/lyricsExtractor.js";
+export const isCollectionPage = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return lower.includes('/category/') || lower.includes('/tag/') || lower.includes('/page/');
+};
 
-export const fetchSong = async (songUrl) => {
+export const isSongPage = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    // TCS valid songs usually have /tamil/lyrics/ in them
+    return lower.includes('/tamil/lyrics/') && !isCollectionPage(url) && !lower.includes('?s=');
+};
+
+export const extractCollection = async (url) => {
+    try {
+        const res = await axios.get(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 15000
+        });
+        const $ = cheerio.load(res.data);
+        const childUrls = new Set();
+        
+        $('.entry-title a').each((i, el) => {
+            const href = $(el).attr('href');
+            if (href && href.includes('/tamil/lyrics/')) {
+                childUrls.add(href);
+            }
+        });
+        
+        return Array.from(childUrls);
+    } catch (err) {
+        console.error("TCS extractCollection Error:", err.message);
+        return [];
+    }
+};
+
+export const extractSong = async (songUrl) => {
     try {
         const songRes = await axios.get(songUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, timeout: 15000 });
-        const extracted = extractLyricsFromHtml(songRes.data, songUrl);
+        const extractedSongs = await extractSongsFromHtml(songRes.data, songUrl);
         
-        if (!extracted) {
+        if (!extractedSongs || extractedSongs.length === 0) {
             throw new Error("Lyrics could not be found or were rejected by the sanitizer.");
         }
 
-        return {
+        return extractedSongs.map(extracted => ({
             titleTamil: extracted.titleTamil,
             titleEnglish: extracted.titleEnglish,
             lyricsTamil: extracted.lyricsTamil,
@@ -19,9 +54,9 @@ export const fetchSong = async (songUrl) => {
             artist: "",
             source: "TamilChristianSongs.in",
             sourceUrl: songUrl
-        };
+        }));
     } catch (error) {
-        console.error("TCS fetchSong Error:", error.message);
+        console.error("TCS extractSong Error:", error.message);
         throw new Error(`TCS Provider Error: ${error.message}`);
     }
 };
@@ -45,7 +80,8 @@ export const searchSong = async (query) => {
         });
 
         if (bestUrl) {
-            return await fetchSong(bestUrl);
+            const songs = await extractSong(bestUrl);
+            return songs.length > 0 ? songs[0] : null;
         }
         
         return null;

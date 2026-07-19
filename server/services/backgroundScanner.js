@@ -1,11 +1,7 @@
 import { providers } from "./songSources/adapterManager.js";
 import Song from "../models/Song.js";
 import { retryService } from "./retryService.js";
-
-const normalizeString = (str) => {
-    if (!str) return "";
-    return str.replace(/[^\w\s\u0B80-\u0BFF]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
-};
+import { normalizeTitle } from "../utils/lyricsExtractor.js";
 
 const getFingerprint = (lyrics) => {
     if (!lyrics) return "";
@@ -38,6 +34,9 @@ class BackgroundScanner {
             totalSkipped: 0,
             successRate: 0,
             avgExtractionTime: 0,
+            collectionPagesFound: 0,
+            childSongUrlsExtracted: 0,
+            invalidPagesRejected: 0,
             providers: {}
         };
         this.initProviders();
@@ -53,6 +52,9 @@ class BackgroundScanner {
                 duplicates: 0,
                 failed: 0,
                 skipped: 0,
+                collectionsFound: 0,
+                childUrlsExtracted: 0,
+                invalidRejected: 0,
                 queue: [],
                 known: new Set(),
                 discoveryDone: false,
@@ -183,78 +185,115 @@ class BackgroundScanner {
         const startTime = Date.now();
         
         try {
-            // Check exact URL first
-            const existingUrl = await Song.findOne({ url }).lean();
-            if (existingUrl) {
-                console.log(`[Scanner] [${name}] Duplicate: Exact URL match for ${url}`);
-                pStatus.duplicates++;
+            // Check if collection page
+            if (provider.isCollectionPage && provider.isCollectionPage(url)) {
+                console.log(`[Scanner] [${name}] Collection detected: ${url}`);
+                pStatus.collectionsFound++;
+                
+                const childUrls = await withRetry(() => provider.extractCollection(url), 3);
+                if (childUrls && childUrls.length > 0) {
+                    for (const cUrl of childUrls) {
+                        if (!pStatus.known.has(cUrl)) {
+                            pStatus.known.add(cUrl);
+                            pStatus.queue.push(cUrl);
+                            pStatus.discovered++;
+                            pStatus.queued++;
+                            pStatus.childUrlsExtracted++;
+                        }
+                    }
+                }
+                return; // Collection processed, urls queued
+            }
+
+            // Reject if explicitly invalid page
+            if (provider.isSongPage && !provider.isSongPage(url)) {
+                console.log(`[Scanner] [${name}] Rejected Invalid Page: ${url}`);
+                pStatus.invalidRejected++;
                 return;
             }
 
-            // Download & Extract with Retry
+            // Download & Extract
             console.log(`[Scanner] [${name}] Download & Extract: ${url}`);
-            const songData = await withRetry(() => provider.fetchSong(url), 3);
             
-            // Validate
-            console.log(`[Scanner] [${name}] Validated: ${url}`);
-            if (!songData || !songData.lyricsTamil) {
-                throw new Error("Invalid song data: Missing lyrics");
-            }
+            // extractSong can return an array of songs, fallback to fetchSong for older providers
+            const extractedData = await withRetry(() => provider.extractSong ? provider.extractSong(url) : provider.fetchSong(url), 3);
+            const songsArray = Array.isArray(extractedData) ? extractedData : [extractedData];
 
-            // Fingerprint & Title duplicate check
-            const normTitle = normalizeString(songData.titleTamil || songData.titleEnglish || "");
-            if (normTitle) {
-                const possibleDuplicates = await Song.find({ 
-                    $or: [
-                        { titleTamil: { $regex: new RegExp(`^${normTitle}$`, 'i') } },
-                        { titleEnglish: { $regex: new RegExp(`^${normTitle}$`, 'i') } }
-                    ]
-                }).lean();
-                
-                const fp = getFingerprint(songData.lyricsTamil);
-                let isDuplicate = false;
-                
-                for (const dup of possibleDuplicates) {
-                    const dupFp = getFingerprint(dup.lyricsTamil);
-                    if (fp && dupFp && fp === dupFp) {
-                        isDuplicate = true;
-                        break;
+            for (const songData of songsArray) {
+                // Validate
+                if (!songData || !songData.lyricsTamil) {
+                    console.log(`[Scanner] [${name}] Invalid song data, missing lyrics`);
+                    pStatus.failed++;
+                    continue; // Skip this one, maybe other songs on the page are fine
+                }
+
+                // Check exact URL first
+                const existingUrl = await Song.findOne({ url: songData.sourceUrl || url }).lean();
+                if (existingUrl) {
+                    console.log(`[Scanner] [${name}] Duplicate: Exact URL match for ${songData.sourceUrl || url}`);
+                    pStatus.duplicates++;
+                    continue;
+                }
+
+                // Fingerprint & Title duplicate check
+                const normTitle = normalizeTitle(songData.titleTamil || songData.titleEnglish || "");
+                if (normTitle) {
+                    const possibleDuplicates = await Song.find({ 
+                        $or: [
+                            { titleTamil: { $regex: new RegExp(`^${normTitle}$`, 'i') } },
+                            { titleEnglish: { $regex: new RegExp(`^${normTitle}$`, 'i') } }
+                        ]
+                    }).lean();
+                    
+                    const fp = getFingerprint(songData.lyricsTamil);
+                    let isDuplicate = false;
+                    
+                    for (const dup of possibleDuplicates) {
+                        const dupFp = getFingerprint(dup.lyricsTamil);
+                        if (fp && dupFp && fp === dupFp) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+
+                    if (isDuplicate) {
+                        console.log(`[Scanner] [${name}] Duplicate: Title/Fingerprint match for ${songData.titleTamil}`);
+                        pStatus.duplicates++;
+                        continue;
                     }
                 }
 
-                if (isDuplicate) {
-                    console.log(`[Scanner] [${name}] Duplicate: Title/Fingerprint match for ${url}`);
-                    pStatus.duplicates++;
-                    return;
-                }
+                // Save
+                await Song.create({
+                    title: songData.titleTamil || songData.titleEnglish || "Unknown Title",
+                    titleTamil: songData.titleTamil,
+                    titleEnglish: songData.titleEnglish,
+                    lyrics: songData.lyricsTamil,
+                    lyricsTamil: songData.lyricsTamil,
+                    lyricsEnglish: songData.lyricsEnglish,
+                    category: "Tamil Christian Songs",
+                    source: songData.source || name,
+                    url: songData.sourceUrl || url,
+                    sourceUrl: songData.sourceUrl || url,
+                    artist: songData.artist || "",
+                    scrapeStatus: "success",
+                    status: "completed",
+                    isPublished: true
+                });
+
+                console.log(`[Scanner] [${name}] Saved successfully: ${songData.titleTamil || "Song"}`);
+                pStatus.imported++;
             }
-
-            // Save
-            await Song.create({
-                title: songData.titleTamil || songData.titleEnglish || "Unknown Title",
-                titleTamil: songData.titleTamil,
-                titleEnglish: songData.titleEnglish,
-                lyrics: songData.lyricsTamil,
-                lyricsTamil: songData.lyricsTamil,
-                lyricsEnglish: songData.lyricsEnglish,
-                category: "Tamil Christian Songs",
-                source: songData.source || name,
-                url: songData.sourceUrl || url,
-                sourceUrl: songData.sourceUrl || url,
-                artist: songData.artist || "",
-                scrapeStatus: "success",
-                status: "completed",
-                isPublished: true
-            });
-
-            console.log(`[Scanner] [${name}] Saved successfully: ${url}`);
-            pStatus.imported++;
 
         } catch (err) {
             console.error(`[Scanner] [${name}] Failed: ${url} - ${err.message}`);
             pStatus.failed++;
             
             try {
+                const httpStatus = err.response?.status || 500;
+                const isRec = retryService.isRecoverable(err.message, httpStatus);
+                const docStatus = isRec ? "recovering" : "failed";
+                
                 await Song.create({
                     title: "Failed Import",
                     category: "Unknown",
@@ -263,8 +302,10 @@ class BackgroundScanner {
                     sourceUrl: url,
                     scrapeStatus: "failed",
                     failReason: err.message,
-                    httpStatus: err.response?.status || 500,
-                    status: "failed",
+                    httpStatus: httpStatus,
+                    status: docStatus,
+                    retryCount: 0,
+                    nextRetryAt: isRec ? new Date() : null,
                     isPublished: false
                 });
             } catch(e) {}
@@ -278,6 +319,7 @@ class BackgroundScanner {
     updateTotals() {
         let tDisc = 0, tQ = 0, tProc = 0, tImp = 0, tDup = 0, tFail = 0, tSkip = 0;
         let tExtractions = 0, tTime = 0;
+        let tCollections = 0, tChildUrls = 0, tInvalid = 0;
         
         for (const key in this.status.providers) {
             const p = this.status.providers[key];
@@ -290,6 +332,10 @@ class BackgroundScanner {
             tSkip += p.skipped;
             tExtractions += p.extractions;
             tTime += p.totalExtractionTime;
+            
+            tCollections += (p.collectionsFound || 0);
+            tChildUrls += (p.childUrlsExtracted || 0);
+            tInvalid += (p.invalidRejected || 0);
         }
 
         this.status.totalDiscovered = tDisc;
@@ -299,6 +345,10 @@ class BackgroundScanner {
         this.status.totalDuplicates = tDup;
         this.status.totalFailed = tFail;
         this.status.totalSkipped = tSkip;
+        
+        this.status.collectionPagesFound = tCollections;
+        this.status.childSongUrlsExtracted = tChildUrls;
+        this.status.invalidPagesRejected = tInvalid;
         
         this.status.successRate = tExtractions > 0 ? ((tImp / tExtractions) * 100).toFixed(1) + "%" : "0%";
         this.status.avgExtractionTime = tExtractions > 0 ? Math.floor(tTime / tExtractions) + "ms" : "0ms";
