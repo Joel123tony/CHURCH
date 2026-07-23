@@ -45,6 +45,7 @@
     "string-similarity": "^4.0.4",
     "tough-cookie": "^6.0.2",
     "transliteration": "^2.6.1",
+    "youtube-captions-scraper": "^2.0.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
