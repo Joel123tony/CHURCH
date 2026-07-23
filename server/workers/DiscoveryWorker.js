@@ -3,6 +3,7 @@ import { QueueManager } from "../utils/queueManager.js";
 import Song from "../models/Song.js";
 import crypto from "crypto";
 import { providers } from "../services/songSources/adapterManager.js";
+import { discoverProviderCandidates, upsertDiscoveredProvider, benchmarkProviderCandidate } from "../services/providerDiscovery.js";
 
 export class DiscoveryWorker extends BaseWorker {
     constructor() {
@@ -32,12 +33,33 @@ export class DiscoveryWorker extends BaseWorker {
 
     async runAutonomousCrawl() {
         console.log("[DiscoveryWorker] Initiating autonomous provider crawl...");
+        const seedUrls = providers.map(({ domain }) => domain ? `https://${domain.replace(/^https?:\/\//, "").replace(/^www\./, "")}` : null).filter(Boolean);
+        try {
+            const discovered = await discoverProviderCandidates(seedUrls);
+            for (const candidate of discovered) {
+                const benchmarked = await benchmarkProviderCandidate(candidate);
+                await upsertDiscoveredProvider(benchmarked);
+            }
+        } catch (err) {
+            console.error("[DiscoveryWorker] Autonomous provider discovery failed:", err.message);
+        }
+
         for (const { name, provider } of providers) {
             if (provider.discoverLatest) {
                 try {
                     console.log(`[DiscoveryWorker] Crawling provider: ${name}`);
                     const urls = await provider.discoverLatest();
                     if (!urls || urls.length === 0) continue;
+                    
+                    // URL Fingerprinting & Hash Comparison
+                    const urlSetHash = crypto.createHash('md5').update(urls.sort().join('|')).digest('hex');
+                    const cacheKey = `discovery_hash_${name}`;
+                    const { getCached, setCached } = await import("../utils/cache.js");
+                    
+                    if (getCached(cacheKey) === urlSetHash) {
+                        console.log(`[DiscoveryWorker] Fingerprint matched for ${name}. No new content detected. Skipping...`);
+                        continue;
+                    }
                     
                     let newDiscoveredCount = 0;
                     for (const url of urls) {
@@ -55,6 +77,8 @@ export class DiscoveryWorker extends BaseWorker {
                             newDiscoveredCount++;
                         }
                     }
+                    
+                    setCached(cacheKey, urlSetHash, 60 * 60 * 24); // Cache for 24 hours
                     console.log(`[DiscoveryWorker] Finished ${name}: Queued ${newDiscoveredCount} new songs.`);
                 } catch (err) {
                     console.error(`[DiscoveryWorker] Failed to crawl ${name}:`, err.message);

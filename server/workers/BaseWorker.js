@@ -10,7 +10,7 @@ export class BaseWorker {
         this.status = "Idle";
     }
 
-    async processJob(job) {
+    async processJob() {
         throw new Error("processJob() must be implemented by subclass");
     }
 
@@ -32,6 +32,18 @@ export class BaseWorker {
                     
                     const isHardReject = err.message.includes("Hard Reject") || err.message.includes("Archive");
                     
+                    if (job.songId) {
+                        try {
+                            const Song = (await import("../models/Song.js")).default;
+                            if (isHardReject || job.attempts >= (job.maxAttempts || 3)) {
+                                await Song.findByIdAndUpdate(job.songId, {
+                                    status: "failed",
+                                    failReason: err.message
+                                });
+                            }
+                        } catch (e) { console.error("Error updating song status", e); }
+                    }
+
                     if (isHardReject) {
                         await QueueManager.quarantineJob(job._id, err.message);
                     } else {

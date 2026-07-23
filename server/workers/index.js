@@ -5,6 +5,8 @@ import { ValidationWorker } from "./ValidationWorker.js";
 import { DuplicateWorker } from "./DuplicateWorker.js";
 import { RecoveryWorker } from "./RecoveryWorker.js";
 import { IndexWorker } from "./IndexWorker.js";
+import { ModerationWorker } from "./ModerationWorker.js";
+import { ProviderHealthProbeWorker } from "./ProviderHealthProbeWorker.js";
 
 const workers = [
     new DiscoveryWorker(),
@@ -13,7 +15,9 @@ const workers = [
     new ValidationWorker(),
     new DuplicateWorker(),
     new RecoveryWorker(),
-    new IndexWorker()
+    new IndexWorker(),
+    new ModerationWorker(),
+    new ProviderHealthProbeWorker()
 ];
 
 let heartbeatMonitor = null;

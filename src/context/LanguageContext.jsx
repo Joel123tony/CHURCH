@@ -5,7 +5,7 @@ const LanguageContext = createContext(null);
 
 // ─── localStorage cache helpers ────────────────────────────────────
 const CACHE_KEY = "mtc-translations";
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 
 function loadCachedTranslations() {
   try {
@@ -97,7 +97,16 @@ export function LanguageProvider({ children }) {
       const STATIC_DICTIONARY = {
         "Holy Life": "பரிசுத்த ஜீவியம்",
         "Gospel Ministry": "சுவிசேஷ ஊழியம்",
-        "Holy Life , Gospel Ministry": "பரிசுத்த ஜீவியம் , சுவிசேஷ ஊழியம்"
+        "Holy Life , Gospel Ministry": "பரிசுத்த ஜீவியம் , சுவிசேஷ ஊழியம்",
+        "Gallery": "கேலரி",
+        "Pastor": "பாஸ்டர்",
+        "Pastor's Message": "பாஸ்டரின் செய்தி",
+        "Contact Us": "எங்களை தொடர்புகொள்ளுங்கள்",
+        "youtube": "யூடியூப்",
+        "youtube.loading": "ஏற்றுகிறது...",
+        "youtube.noVideos": "வீடியோக்கள் இல்லை",
+        "Search Christan Songs": "கிறிஸ்தவ பாடல்களைத் தேடுங்கள்",
+        "Search songs by title or lyrics...": "தலைப்பு அல்லது பாடல்வரிகளைத் தேடுங்கள்..."
       };
 
       if (STATIC_DICTIONARY[enText]) {

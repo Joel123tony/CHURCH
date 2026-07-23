@@ -1,5 +1,7 @@
 import { searchSongs } from "../services/songService.js";
 import { getCached, setCached } from "../utils/cache.js";
+import Song from "../models/Song.js";
+import { prepareSongForClient, normalizeLyricsText } from "../utils/songNormalization.js";
 
 /* =========================
    SEARCH MULTI-SOURCE
@@ -23,9 +25,23 @@ export const searchSongsController = async (req, res) => {
 
     const result = await searchSongs(query, categories, sortOrder, page, limit);
 
-    setCached(cacheKey, result, 300); // Cache for 5 minutes
+    if (query && !(result.songs || []).length) {
+      const notFoundResponse = {
+        success: false,
+        message: "Song not found.",
+        songs: [],
+        data: []
+      };
+      return res.json(notFoundResponse);
+    }
 
-    return res.json(result);
+    const response = {
+      ...result,
+      data: result.songs || []
+    };
+
+    setCached(cacheKey, response, 300); // Cache for 5 minutes
+    return res.json(response);
   } catch (error) {
     console.error("SEARCH SONGS ERROR:", error);
     return res.status(500).json({
@@ -43,18 +59,52 @@ import { scrapeSongDetails } from "../services/providers/detailScraper.js";
 ========================= */
 export const getSongDetailsController = async (req, res) => {
   try {
-    const { url, title } = req.query;
-    if (!url) {
-      return res.status(400).json({ success: false, message: "URL is required" });
+    const requestedId = req.params.slug || req.query.slug || req.query.url || req.query.id;
+    const title = req.query.title;
+    if (!requestedId) {
+      return res.status(400).json({ success: false, message: "URL or slug is required" });
     }
 
-    const cacheKey = `song_details_${url}`;
+    const decodedId = decodeURIComponent(requestedId);
+    const cacheKey = `song_details_${decodedId}`;
     const cachedData = getCached(cacheKey);
     if (cachedData) {
-      return res.json({ success: true, data: { lyrics: cachedData } });
+      if (typeof cachedData === "string") {
+        return res.json({
+          success: true,
+          data: {
+            lyrics: normalizeLyricsText(cachedData)
+          }
+        });
+      }
+      return res.json(cachedData);
     }
 
-    let lyricsHtml = await scrapeSongDetails(decodeURIComponent(url));
+    const existingSong = await Song.findOne({
+      $or: [
+        { slug: decodedId },
+        { url: decodedId },
+        { sourceUrl: decodedId }
+      ]
+    }).lean();
+
+    if (existingSong) {
+      const prepared = prepareSongForClient(existingSong);
+      const response = {
+        success: true,
+        data: {
+          ...prepared,
+          lyrics: normalizeLyricsText(prepared.lyrics || prepared.lyricsTamil || ""),
+          originalLyrics: normalizeLyricsText(prepared.originalLyrics || ""),
+          cleanLyrics: normalizeLyricsText(prepared.cleanLyrics || prepared.lyrics || ""),
+          cleanedLyrics: normalizeLyricsText(prepared.cleanedLyrics || prepared.lyrics || "")
+        }
+      };
+      setCached(cacheKey, response, 600);
+      return res.json(response);
+    }
+
+    let lyricsHtml = await scrapeSongDetails(decodedId);
     
     // Cross-Provider Fallback Mechanism
     if (lyricsHtml === "Lyrics not available." && title) {
@@ -65,7 +115,7 @@ export const getSongDetailsController = async (req, res) => {
       const fallbackSongs = await searchSongs(decodedTitle, []);
       
       // Filter out the primary URL that already failed
-      const alternativeSongs = fallbackSongs.filter(song => song.url !== decodeURIComponent(url));
+      const alternativeSongs = fallbackSongs.songs ? fallbackSongs.songs.filter(song => song.url !== decodedId) : [];
       
       // Try scraping alternatives sequentially
       for (const altSong of alternativeSongs) {
@@ -79,16 +129,14 @@ export const getSongDetailsController = async (req, res) => {
       }
     }
 
-    if (lyricsHtml !== "Lyrics not available.") {
-      setCached(cacheKey, lyricsHtml, 86400); // Cache valid lyrics for 24 hours
-    }
-
-    return res.json({
+    const response = {
       success: true,
       data: {
-        lyrics: lyricsHtml
+        lyrics: normalizeLyricsText(lyricsHtml)
       }
-    });
+    };
+    setCached(cacheKey, response, 86400);
+    return res.json(response);
   } catch (error) {
     console.error("GET SONG DETAILS ERROR:", error);
     return res.status(500).json({ success: false, message: "Server Error" });
@@ -98,7 +146,6 @@ export const getSongDetailsController = async (req, res) => {
 /* =========================
    GET LATEST SONGS
 ========================= */
-import Song from "../models/Song.js";
 
 export const getLatestSongsController = async (req, res) => {
   try {
@@ -113,21 +160,23 @@ export const getLatestSongsController = async (req, res) => {
       .limit(20)
       .lean();
 
-    const formattedSongs = latestSongs.map(s => ({
-      title: s.title,
-      titleTamil: s.titleTamil,
-      titleEnglish: s.titleEnglish,
-      lyrics: s.lyrics,
-      lyricsTamil: s.lyricsTamil,
-      lyricsEnglish: s.lyricsEnglish,
-      artist: s.artist,
-      source: s.source,
-      publishedDate: s.publishedDate || s.createdAt
-    }));
+    const formattedSongs = latestSongs.map((s) => {
+      const prepared = prepareSongForClient(s);
+      return {
+        ...prepared,
+        lyrics: normalizeLyricsText(prepared.lyrics || ""),
+        lyricsTamil: normalizeLyricsText(prepared.lyricsTamil || prepared.lyrics || ""),
+        originalLyrics: normalizeLyricsText(prepared.originalLyrics || ""),
+        cleanLyrics: normalizeLyricsText(prepared.cleanLyrics || prepared.lyrics || ""),
+        cleanedLyrics: normalizeLyricsText(prepared.cleanedLyrics || prepared.lyrics || ""),
+        publishedDate: s.publishedDate || s.createdAt
+      };
+    });
 
-    setCached(cacheKey, formattedSongs, 600); // cache for 10 minutes
+    const payload = { success: true, data: formattedSongs, songs: formattedSongs };
+    setCached(cacheKey, payload, 600); // cache for 10 minutes
 
-    return res.json(formattedSongs);
+    return res.json(payload);
   } catch (error) {
     console.error("GET LATEST SONGS ERROR:", error);
     return res.status(500).json({ success: false, message: "Server Error" });

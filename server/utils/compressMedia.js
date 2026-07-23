@@ -7,14 +7,10 @@ import os from "os";
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-/**
- * Smart compress an image buffer using Sharp.
- */
 export const compressImage = async (buffer) => {
   const originalSize = buffer.length;
   const sizeMB = originalSize / (1024 * 1024);
 
-  // Skip if very small (e.g., < 100KB)
   if (originalSize < 100 * 1024) {
     return { buffer, originalSize, compressedSize: originalSize, isCompressed: false };
   }
@@ -29,57 +25,48 @@ export const compressImage = async (buffer) => {
     const compressedBuffer = await sharp(buffer)
       .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
       .toFormat("webp", { quality })
-      .withMetadata(false) // Strip EXIF
+      .withMetadata(false)
       .toBuffer();
 
     const compressedSize = compressedBuffer.length;
-    // If savings are < 10%, keep original
     if (compressedSize > originalSize * 0.9) {
       return { buffer, originalSize, compressedSize: originalSize, isCompressed: false };
     }
 
     return { buffer: compressedBuffer, originalSize, compressedSize, isCompressed: true };
-  } catch (err) {
-    console.error("Image Compression Error:", err);
+  } catch (error) {
+    console.error("Image Compression Error:", error);
     return { buffer, originalSize, compressedSize: originalSize, isCompressed: false };
   }
 };
 
-/**
- * Smart compress a video buffer using FFmpeg.
- */
 export const compressVideo = (buffer) => {
   return new Promise((resolve) => {
     const originalSize = buffer.length;
     const tempInput = path.join(os.tmpdir(), `input-${Date.now()}-${Math.random().toString(36).substring(7)}.mp4`);
     const tempOutput = path.join(os.tmpdir(), `output-${Date.now()}-${Math.random().toString(36).substring(7)}.mp4`);
 
-    // Skip if very small < 1MB
     if (originalSize < 1024 * 1024) {
-
       return resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
     }
 
     try {
-
       fs.writeFileSync(tempInput, buffer);
 
-      let crf = 28;
+      let crf = 24;
       const sizeMB = originalSize / (1024 * 1024);
       if (sizeMB > 1000) crf = 32;
       else if (sizeMB > 500) crf = 30;
       else if (sizeMB > 100) crf = 28;
-      else crf = 24;
 
-
-      
-      // Add a safety timeout (e.g., 5 minutes max for compression)
       const timeoutId = setTimeout(() => {
         console.error("[UPLOAD TRACE] X. FFmpeg timed out after 5 minutes!");
         try {
           if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
           if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
-        } catch(e){}
+        } catch {
+          // Ignore cleanup failures.
+        }
         resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
       }, 5 * 60 * 1000);
 
@@ -91,43 +78,43 @@ export const compressVideo = (buffer) => {
           "-acodec aac",
           "-b:a 128k",
           "-movflags +faststart",
-          "-vf scale='min(1920,iw)':-2" // Max 1080p
+          "-vf scale='min(1920,iw)':-2"
         ])
-        .toFormat('mp4')
-        .on('end', () => {
+        .toFormat("mp4")
+        .on("end", () => {
           clearTimeout(timeoutId);
 
           try {
             const compressedBuffer = fs.readFileSync(tempOutput);
             const compressedSize = compressedBuffer.length;
-            
+
             fs.unlinkSync(tempInput);
             fs.unlinkSync(tempOutput);
 
             if (compressedSize > originalSize * 0.9) {
-
               return resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
             }
 
-
             resolve({ buffer: compressedBuffer, originalSize, compressedSize, isCompressed: true });
-          } catch(err) {
-
+          } catch (error) {
+            console.error("Video compression readback error:", error);
             resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
           }
         })
-        .on('error', (err) => {
+        .on("error", (error) => {
           clearTimeout(timeoutId);
-          console.error("[UPLOAD TRACE] X. FFmpeg Compression Error:", err);
+          console.error("[UPLOAD TRACE] X. FFmpeg Compression Error:", error);
           try {
             if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
             if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
-          } catch(e){}
+          } catch {
+            // Ignore cleanup failures.
+          }
           resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
         })
         .save(tempOutput);
-    } catch (err) {
-      console.error("Video Temp File Error:", err);
+    } catch (error) {
+      console.error("Video Temp File Error:", error);
       resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
     }
   });

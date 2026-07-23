@@ -4,6 +4,8 @@ import Song from "../models/Song.js";
 import crypto from "crypto";
 import * as cheerio from "cheerio";
 import { cleanLyricsWithAI } from "../services/aiLyricsCleaner.js";
+import { buildSongPayload } from "../utils/songNormalization.js";
+import { recordProviderHealth } from "../services/ai/providerHealth.js";
 
 export class AiCleaningWorker extends BaseWorker {
     constructor() {
@@ -11,7 +13,7 @@ export class AiCleaningWorker extends BaseWorker {
     }
 
     async processJob(job) {
-        const { html, url } = job.payload;
+        const { html, rawText: suppliedRawText, providerCandidates = [], url } = job.payload;
         const songId = job.songId;
 
         const song = await Song.findById(songId);
@@ -19,9 +21,11 @@ export class AiCleaningWorker extends BaseWorker {
             throw new Error(`Song metadata not found for ID: ${songId}`);
         }
 
-        let rawText = "";
+        let rawText = suppliedRawText || "";
         let isYouTube = false;
         let youtubeMetadata = null;
+        let isMergedFallback = false;
+        let candidateVersions = [...providerCandidates];
 
         try {
             const parsed = JSON.parse(html);
@@ -29,12 +33,19 @@ export class AiCleaningWorker extends BaseWorker {
                 isYouTube = true;
                 rawText = html; // Pass the JSON string straight to AI
                 youtubeMetadata = parsed.metadata;
+            } else if (parsed.isAiMergedSource) {
+                isMergedFallback = true;
+                rawText = parsed.rawText || rawText;
+                youtubeMetadata = parsed.metadata || {};
+                if (Array.isArray(parsed.candidates) && parsed.candidates.length > 0) {
+                    candidateVersions = parsed.candidates;
+                }
             }
-        } catch (e) {
+        } catch {
             // Not JSON, parse as HTML
         }
 
-        if (!isYouTube) {
+        if (!isYouTube && !isMergedFallback) {
             // Fast extraction of main content area to feed AI
             const $ = cheerio.load(html);
             const contentArea = $('.post-inner, .entry-content, .post-content, article, .td-post-content, .site-main, main, #contents').first();
@@ -42,7 +53,7 @@ export class AiCleaningWorker extends BaseWorker {
             if (contentArea.length) {
                 contentArea.find('.sharedaddy, .yarpp-related, #comments, .nav-links, header, footer, style, script, iframe, nav').remove();
                 let rawHtml = contentArea.html() || "";
-                rawHtml = rawHtml.replace(/<\/(p|div|h[1-6]|li|ul|ol|table)>/gi, '\n').replace(/<br\s*[\/]?>/gi, '\n');
+                rawHtml = rawHtml.replace(/<\/(p|div|h[1-6]|li|ul|ol|table)>/gi, '\n').replace(/<br\s*\/?>/gi, '\n');
                 rawText = cheerio.load(rawHtml).text();
             } else {
                 rawText = $.text();
@@ -51,7 +62,35 @@ export class AiCleaningWorker extends BaseWorker {
 
         console.log(`[AiCleaningWorker] Invoking AI for: ${song.title}`);
         
-        const aiResult = await cleanLyricsWithAI(rawText);
+        const aiResult = await cleanLyricsWithAI(rawText, {
+            title: song.title,
+            titleTamil: song.titleTamil,
+            titleEnglish: song.titleEnglish,
+            source: song.source,
+            sourceUrl: url,
+            category: song.category,
+            language: song.language,
+            metadata: youtubeMetadata || song.aiMetadata || {},
+            providerCandidates: candidateVersions,
+            originalVersions: candidateVersions
+        });
+
+        const providerName = song.source || aiResult.aiProvider || song.aiProvider || "unknown";
+        const candidateList = Array.isArray(candidateVersions) ? candidateVersions : [];
+        const hasMissingLyrics = !(aiResult.lyrics || "").trim();
+        const hasMissingVerse = hasMissingLyrics || !(aiResult.aiSections || []).some((section) => /verse/i.test(section?.label || section?.type || ""));
+        await recordProviderHealth({
+            provider: providerName,
+            domain: song.sourceUrl ? new URL(song.sourceUrl).hostname : "",
+            success: aiResult.valid !== false,
+            parsed: true,
+            merged: !!aiResult.mergedVersion || candidateList.length > 1,
+            missingLyrics: hasMissingLyrics,
+            missingVerse: hasMissingVerse,
+            confidence: aiResult.confidenceScore || 0,
+            processingTimeMs: aiResult.aiProcessingTimeMs || 0,
+            note: aiResult.aiNeedsReview ? `ai-needs-review:${aiResult.aiProvider || song.aiProvider || "heuristic"}` : ""
+        });
 
         if (aiResult.valid === false) {
             throw new Error(`Hard Reject: AI Rejected Import: ${aiResult.reason || "Archive Page"}`);
@@ -62,11 +101,32 @@ export class AiCleaningWorker extends BaseWorker {
             
             for (let i = 0; i < aiResult.songs.length; i++) {
                 const s = aiResult.songs[i];
+                const splitPayload = buildSongPayload({
+                    ...s,
+                    source: song.source,
+                    sourceUrl: url,
+                    category: song.category,
+                    status: "processing",
+                    scrapeStatus: "success",
+                    lyricsStatus: "found",
+                    isPublished: true,
+                    aiStatus: s.aiStatus || "processed",
+                    aiProvider: s.aiProvider || "gemini",
+                    aiConfidence: s.aiConfidence || s.confidenceScore || 0,
+                    aiMetadata: s.metadata || {},
+                    providerHistory: song.providerHistory || []
+                }, {
+                    source: song.source,
+                    sourceUrl: url,
+                    category: song.category
+                });
+
                 // Create a separate Song record for each
                 const splitSong = new Song({
                     uuid: crypto.randomUUID(),
-                    title: s.title || `Split Song ${i + 1}`,
-                    titleTamil: s.title || `Split Song ${i + 1}`,
+                    ...splitPayload,
+                    title: splitPayload.title || `Split Song ${i + 1}`,
+                    titleTamil: splitPayload.titleTamil || `Split Song ${i + 1}`,
                     artist: song.artist,
                     source: song.source,
                     sourceUrl: url,
@@ -82,14 +142,30 @@ export class AiCleaningWorker extends BaseWorker {
                 const splitAiResult = {
                     valid: true,
                     multiSong: false,
-                    title: s.title,
-                    lyrics: s.lyrics,
-                    language: s.language || "ta",
+                    title: splitPayload.title,
+                    alternateTitle: splitPayload.titleEnglish || "",
+                    lyrics: splitPayload.cleanedLyrics || splitPayload.lyrics || "",
+                    originalLyrics: splitPayload.originalLyrics || "",
+                    language: splitPayload.language || "ta",
+                    confidenceScore: s.confidenceScore || aiResult.confidenceScore || 0,
+                    extractedFrom: s.extractedFrom || aiResult.extractedFrom || "website",
+                    themes: splitPayload.themes || [],
+                    tags: splitPayload.keywords || [],
+                    author: splitPayload.author || "",
+                    composer: splitPayload.composer || "",
+                    album: splitPayload.album || "",
+                    year: splitPayload.year || "",
+                    scriptureReferences: splitPayload.bibleReferences || [],
+                    worshipCategory: splitPayload.aiMetadata?.worshipCategory || "",
                     containsRelatedSongs: aiResult.containsRelatedSongs || false,
                     containsSeo: aiResult.containsSeo || false,
                     containsNavigation: aiResult.containsNavigation || false,
                     containsChords: aiResult.containsChords || false,
-                    containsMetadata: aiResult.containsMetadata || false
+                    containsMetadata: aiResult.containsMetadata || false,
+                    aiUsed: true,
+                    aiStatus: "processed",
+                    aiProvider: aiResult.aiProvider || "heuristic",
+                    aiProcessedAt: new Date()
                 };
 
                 await QueueManager.addJob("validation", {
@@ -103,11 +179,15 @@ export class AiCleaningWorker extends BaseWorker {
         }
 
         // Single Song processing
+        song.aiStatus = "processed";
+        await song.save();
+
         // Queue for validation
         await QueueManager.addJob("validation", {
             aiResult,
             url,
-            metadata: youtubeMetadata
+            metadata: youtubeMetadata,
+            providerCandidates
         }, song._id);
 
         console.log(`[AiCleaningWorker] AI completed successfully, queued for validation: ${song.title}`);

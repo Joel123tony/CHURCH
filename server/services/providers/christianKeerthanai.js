@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 
-export const searchChristianKeerthanai = async (query, category) => {
+export const searchChristianKeerthanai = async (query) => {
   try {
     const searchUrl = query 
       ? `https://christiankeerthanaisong.com/?s=${encodeURIComponent(query)}`

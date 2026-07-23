@@ -299,16 +299,16 @@ export default function Gallery() {
 
   return (
     <>
-      <section id="gallery" className="py-16 bg-[#F4EFE7]">
+      <section id="gallery" className="py-16 bg-[#54091b]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-8 flex items-center justify-between gap-4">
-            <h2 className="text-3xl font-bold text-[#54091b]">
+            <h2 className="text-3xl font-bold text-[#F4EFE7]">
               {t("Gallery")}
             </h2>
 
             <button
               onClick={() => setOpenModal(true)}
-              className="rounded-full bg-[#54091b] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6a1231] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/40"
+              className="rounded-full bg-[#F4EFE7] px-5 py-2.5 text-sm font-semibold text-[#54091b] transition hover:bg-[#e8dac9] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4EFE7]/40"
             >
               {t("All Media")}
             </button>
@@ -384,9 +384,9 @@ export default function Gallery() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain bg-[#f8f3ea] px-4 py-5 sm:px-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain bg-[#54091b] px-4 py-5 sm:px-6">
               <div className="mx-auto max-w-7xl">
-                <div className="mb-4 flex items-center justify-between text-sm text-[#54091b]">
+                <div className="mb-4 flex items-center justify-between text-sm text-[#F4EFE7]">
                   <span>
                     {filteredMedia.length}{" "}
                     {filteredMedia.length === 1 ? "item" : "items"}
@@ -395,7 +395,7 @@ export default function Gallery() {
                 </div>
 
                 {filteredMedia.length === 0 ? (
-                  <div className="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center text-slate-600 shadow-sm">
+                  <div className="rounded-3xl border border-[#6f2335] bg-[#F4EFE7] px-6 py-16 text-center text-[#54091b] shadow-sm">
                     {t("No media found")}
                   </div>
                 ) : (

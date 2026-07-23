@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_URL;
+const baseURL = import.meta.env.VITE_API_URL || "/api";
 
 const API = axios.create({
   baseURL,
@@ -22,6 +22,26 @@ API.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+/* RESPONSE INTERCEPTOR */
+let networkErrorLogged = false;
+
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ECONNREFUSED') {
+      if (!networkErrorLogged) {
+        console.error("Unable to connect to the server. Please ensure the backend is running.");
+        networkErrorLogged = true;
+      }
+      
+      // Returning a handled error structure stops infinite loops from tools like SWR
+      // and provides a clean message to the UI
+      return Promise.reject(new Error("Unable to connect to the server. Please ensure the backend is running."));
+    }
+    return Promise.reject(error);
+  }
 );
 
 export default API;

@@ -8,24 +8,41 @@ export class RecoveryWorker extends BaseWorker {
     }
 
     async processJob(job) {
-        // Recovery Worker scans for failed songs and requeues them if lyrics are pending
-        // but it doesn't process standard queue items.
-        // Wait, the Smart Retry system is actually built into QueueManager.failJob() 
-        // which automatically updates nextRunAt based on exponential backoff.
-        // The QueueManager.getNextJob() automatically picks them up when nextRunAt <= now!
-        
-        // This recovery worker specifically scans for songs marked "pending" lyrics 
-        // that have fallen out of the queue entirely, pushing them back into discovery or import.
-        
         console.log(`[RecoveryWorker] Scanning for stranded pending songs...`);
 
-        const strandedSongs = await Song.find({
-            lyricsStatus: "pending",
-            status: "pending",
-            retryCount: { $lt: 5 } // Arbitrary cap for now
-        }).limit(50);
+        const query = job.songId
+            ? { _id: job.songId }
+            : {
+                $or: [
+                    { lyricsStatus: "pending" },
+                    { lyricsStatus: "pending_fetch" },
+                    { isPendingLyrics: true }
+                ]
+            };
+
+        const strandedSongs = await Song.find(query).limit(job.songId ? 1 : 50);
+        const now = Date.now();
 
         for (const song of strandedSongs) {
+            if ((song.retryCount || 0) >= 5) {
+                console.error(`[RecoveryWorker] Permanently failing song: ${song.title} after 5 retries.`);
+                song.lyricsStatus = "unavailable";
+                song.isPendingLyrics = false;
+                song.lyricsTamil = "unavailable";
+                song.lyrics = "unavailable";
+                song.status = "completed";
+                await song.save();
+                continue;
+            }
+
+            // Exponential backoff: retryCount^2 * 5 minutes
+            const backoffMs = Math.pow(song.retryCount || 0, 2) * 5 * 60 * 1000;
+            const timeSinceLastUpdate = now - new Date(song.updatedAt).getTime();
+            
+            if (timeSinceLastUpdate < backoffMs && !job.songId) {
+                continue; // Skip this song until backoff expires
+            }
+
             // Check if it has a pending job in JobQueue
             const existingJob = await JobQueue.findOne({
                 songId: song._id,
@@ -33,12 +50,13 @@ export class RecoveryWorker extends BaseWorker {
             });
 
             if (!existingJob) {
-                console.log(`[RecoveryWorker] Requeuing stranded song: ${song.title}`);
+                console.log(`[RecoveryWorker] Requeuing stranded song: ${song.title} (Retry ${song.retryCount || 0})`);
                 const { QueueManager } = await import("../utils/queueManager.js");
                 await QueueManager.addJob("import", {
-                    url: song.sourceUrl || song.url
+                    url: song.sourceUrl || song.url,
+                    recoveryReason: job.payload?.reason || "AI recovery"
                 }, song._id);
-                song.retryCount += 1;
+                song.retryCount = (song.retryCount || 0) + 1;
                 await song.save();
             }
         }

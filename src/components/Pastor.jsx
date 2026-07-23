@@ -160,7 +160,7 @@ export default function Pastor() {
       <section id="pastor" className="py-16 bg-[#5b1320]">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <div className="mb-6 lg:mb-8">
-            <h2 className="text-3xl font-bold text-[#FFFFFF]">{t("Pastor")}</h2>
+            <h2 className="text-3xl font-bold text-[#F4EFE7]">{t("Pastor")}</h2>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-4">

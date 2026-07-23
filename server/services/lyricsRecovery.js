@@ -1,6 +1,6 @@
 import Song from "../models/Song.js";
 import { searchOnlineSources } from "./songSources/adapterManager.js";
-import { extractLyricsFromHtml } from "../utils/lyricsExtractor.js";
+import { buildSongPayload } from "../utils/songNormalization.js";
 
 const MAX_RECOVERY_ATTEMPTS = 5;
 
@@ -35,11 +35,66 @@ export const runLyricsRecovery = async () => {
             
             if (result && result.lyricsTamil) {
                 // Success! We found it.
-                song.lyrics = result.lyricsTamil;
-                song.lyricsTamil = result.lyricsTamil;
-                song.lyricsEnglish = result.lyricsEnglish || "";
+                const payload = buildSongPayload({
+                    ...song.toObject(),
+                    ...result,
+                    title: result.titleTamil || result.titleEnglish || result.title || song.title,
+                    titleTamil: result.titleTamil || result.title || song.titleTamil,
+                    titleEnglish: result.titleEnglish || song.titleEnglish || "",
+                    lyrics: result.lyricsTamil || result.lyrics || song.lyrics,
+                    originalLyrics: result.originalLyrics || song.originalLyrics || song.lyrics || "",
+                    cleanLyrics: result.lyricsTamil || result.lyrics || "",
+                    cleanedLyrics: result.lyricsTamil || result.lyrics || "",
+                    lyricsEnglish: result.lyricsEnglish || song.lyricsEnglish || "",
+                    author: result.author || song.author || "",
+                    composer: result.composer || song.composer || "",
+                    album: result.album || song.album || "",
+                    year: result.year || song.year || "",
+                    language: result.language || song.language || "Tamil",
+                    source: result.source || song.source || "",
+                    sourceUrl: result.sourceUrl || song.sourceUrl || song.url || "",
+                    aiStatus: result.aiStatus || "fallback",
+                    aiProvider: result.aiProvider || "heuristic",
+                    aiConfidence: result.aiConfidence || result.confidenceScore || 0,
+                    aiMetadata: result.metadata || song.aiMetadata || {},
+                    themes: result.themes || song.themes || [],
+                    keywords: result.tags || song.keywords || [],
+                    bibleReferences: result.scriptureReferences || song.bibleReferences || []
+                }, {
+                    source: result.source || song.source || "",
+                    sourceUrl: result.sourceUrl || song.sourceUrl || song.url || "",
+                    category: song.category
+                });
+
+                song.title = payload.title;
+                song.titleTamil = payload.titleTamil;
+                song.titleEnglish = payload.titleEnglish;
+                song.lyrics = payload.lyrics;
+                song.lyricsTamil = payload.lyricsTamil;
+                song.lyricsEnglish = payload.lyricsEnglish;
+                song.originalLyrics = payload.originalLyrics;
+                song.cleanLyrics = payload.cleanLyrics;
+                song.cleanedLyrics = payload.cleanedLyrics;
+                song.author = payload.author;
+                song.composer = payload.composer;
+                song.album = payload.album;
+                song.year = payload.year;
+                song.language = payload.language;
+                song.keywords = payload.keywords;
+                song.themes = payload.themes;
+                song.bibleReferences = payload.bibleReferences;
+                song.searchKey = payload.searchKey;
+                song.normalizedTitle = payload.normalizedTitle;
+                song.normalizedLyrics = payload.normalizedLyrics;
+                song.slug = payload.slug || song.slug;
+                song.aiStatus = payload.aiStatus;
+                song.aiProvider = payload.aiProvider;
+                song.aiConfidence = payload.aiConfidence;
+                song.aiProcessedAt = payload.aiProcessedAt || new Date();
+                song.aiMetadata = payload.aiMetadata;
                 song.lyricsStatus = "found";
                 song.status = "completed"; // Full completion
+                song.recoveredAt = new Date();
                 
                 await song.save();
                 recoveredCount++;

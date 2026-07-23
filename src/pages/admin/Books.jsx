@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import API from "../../api/axios";
 import { toast } from "react-toastify";
 import { FaTrash, FaEdit, FaBook, FaUpload, FaImage, FaTimes, FaFilePdf, FaBookOpen, FaEye } from "react-icons/fa";
@@ -113,12 +113,15 @@ export default function Books() {
 
   useEffect(() => {
     fetchBooks();
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (coverPreview && typeof coverPreview === 'string' && coverPreview.startsWith('blob:')) {
         URL.revokeObjectURL(coverPreview);
       }
-    }
-  }, []);
+    };
+  }, [coverPreview]);
 
   useEffect(() => {
     if (pdfFile) {

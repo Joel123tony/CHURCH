@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getBlock, saveBlock } from "../../services/api";
 import { toast } from "react-toastify";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -479,4 +479,3 @@ export default function PastorMessage() {
     </div>
   );
 }
-

@@ -10,9 +10,21 @@ export default function YoutubeSection() {
   const loadVideos = async () => {
     try {
       const res = await API.get("/youtube/latest");
-      console.log("Fetched videos:", res.data);
-      const data = Array.isArray(res.data) ? res.data : [];
-      const newVideos = data.slice(0, 4);
+      const payload = res?.data;
+      const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.value)
+          ? payload.value
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+      const newVideos = data.slice(0, 4).map((video) => ({
+        ...video,
+        videoId: video.videoId || video.id || video?.id?.videoId || "",
+        title: video.title || video.snippet?.title || "No Title",
+      }));
+
       setVideos(prev =>
         newVideos.map(video => {
           const prevVideo = prev.find(v => (v.id && v.id === video.id) || (v.videoId && v.videoId === video.videoId));
@@ -45,16 +57,16 @@ export default function YoutubeSection() {
     <section id="Youtube" className="py-16 bg-[#54091b]">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="mb-6 lg:mb-8">
-          <h2 className="text-3xl font-bold text-white">
+          <h2 className="text-3xl font-bold text-[#F4EFE7]">
             {t("youtube")}
           </h2>
           
         </div>
 
         {loading ? (
-          <div className="text-center text-white/70">{t("youtube.loading")}</div>
+          <div className="text-center text-[#F4EFE7]/70">{t("youtube.loading")}</div>
         ) : videos.length === 0 ? (
-          <div className="text-center text-white/70">{t("youtube.noVideos")}</div>
+          <div className="text-center text-[#F4EFE7]/70">{t("youtube.noVideos")}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {videos.map((video, index) => {
@@ -106,7 +118,7 @@ export default function YoutubeSection() {
                     </div>
 
                     {video.publishedAt && (
-                      <p className="mt-2 text-sm text-[#54091b]/80 font-medium">
+                      <p className="mt-2 text-sm text-[#F4EFE7]/80 font-medium">
                         {new Date(video.publishedAt).toLocaleDateString()}
                       </p>
                     )}

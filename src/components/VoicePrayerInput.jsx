@@ -5,7 +5,6 @@ import { useAlert } from "../context/ConfirmContext";
 export default function VoicePrayerInput() {
   const [name, setName] = useState("");
   const [request, setRequest] = useState("");
-  const [request, setRequest] = useState("");
   const [listening, setListening] = useState(false);
   const alert = useAlert();
 

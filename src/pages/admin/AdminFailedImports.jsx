@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import API from "../../api/axios";
 import { 
   RefreshCw, Trash2, Globe, Clock, 
@@ -32,7 +32,7 @@ export default function AdminFailedImports() {
   const [selectedIds, setSelectedIds] = useState([]);
 
   // Retry Progress State
-  const [retryStatus, setRetryStatus] = useState(null);
+  const [, setRetryStatus] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
 
   // Debounce search
@@ -58,8 +58,8 @@ export default function AdminFailedImports() {
         setHasPrevious(res.data.hasPrevious || false);
         setStats(res.data.stats || stats);
       }
-    } catch (err) {
-      console.error("Failed to fetch failed imports:", err);
+    } catch {
+      console.error("Failed to fetch failed imports");
     } finally {
       if (!isBackground) setLoading(false);
     }
@@ -76,8 +76,8 @@ export default function AdminFailedImports() {
         setRetryStatus(res.data.status);
         setIsRetrying(res.data.status?.total > 0 && res.data.status?.retried < res.data.status?.total);
       }
-    } catch (err) {
-      console.error("Polling error:", err);
+    } catch {
+      console.error("Polling error");
     }
   };
 
@@ -112,7 +112,7 @@ export default function AdminFailedImports() {
       await API.post("/admin/songs/retry-all");
       pollRetryStatus();
       fetchData(true);
-    } catch (err) {
+    } catch {
       alert("Failed to start retry all. Job might already be running or queue is empty.");
     }
   };
@@ -124,7 +124,7 @@ export default function AdminFailedImports() {
       setSelectedIds([]);
       pollRetryStatus();
       fetchData(true);
-    } catch (err) {
+    } catch {
       alert("Failed to start retry selected.");
     }
   };
@@ -152,7 +152,7 @@ export default function AdminFailedImports() {
       if (res.data.success) {
         fetchData();
       }
-    } catch (err) {
+    } catch {
       alert("Failed to delete record.");
     }
   };
@@ -187,15 +187,6 @@ export default function AdminFailedImports() {
       return "Just now";
   };
 
-  const getReasonType = (r, http) => {
-      const text = (r || "").toLowerCase();
-      if (text.includes("404") || http === 404) return "404";
-      if (text.includes("invalid url")) return "Invalid URL";
-      if (text.includes("unsupported") || text.includes("not a song page")) return "Unsupported Provider";
-      if (text.includes("too short") || text.includes("empty lyrics")) return "Parser Error";
-      return "Manual Review";
-  };
-
   const getProviderColor = (provider) => {
       const p = (provider || "").toLowerCase();
       if (p.includes("world tamil")) return "bg-blue-50 text-blue-700 border-blue-200";
@@ -206,10 +197,8 @@ export default function AdminFailedImports() {
       return "bg-slate-50 text-slate-700 border-slate-200"; // fallback
   };
 
-  const formatReasonBadge = (reason, httpStatus) => {
-     const type = getReasonType(reason, httpStatus);
-     
-     // The requirements say: Status Badge -> 🔴 Permanent, 🟡 Recovering, 🟢 Recovered
+  const formatReasonBadge = () => {
+     // The requirements say: Status Badge -> Ã°Å¸â€Â´ Permanent, Ã°Å¸Å¸Â¡ Recovering, Ã°Å¸Å¸Â¢ Recovered
      // But this is for the filter chips vs reason types. Since the page only shows Permanent Failures, we can just use Permanent.
      return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-sm">
@@ -239,7 +228,9 @@ export default function AdminFailedImports() {
                 // Replace hyphens with spaces and capitalize
                 return lastSegment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             }
-         } catch(e) {}
+         } catch (error) {
+            void error;
+         }
      }
      
      // 2. Recover from first lyric line
@@ -447,7 +438,7 @@ export default function AdminFailedImports() {
                                         <td className="px-4 py-3 max-w-xs">
                                             <div className="flex flex-col">
                                                 <span className={`font-bold text-sm mb-0.5 truncate flex items-center gap-2 ${title === 'Title unavailable' ? 'text-slate-400 italic' : 'text-slate-800'}`}>
-                                                    <span className="text-lg opacity-80">🎵</span> {title}
+                                                    <span className="text-lg opacity-80">Ã°Å¸Å½Âµ</span> {title}
                                                 </span>
                                                 <a href={song.sourceUrl || song.url} target="_blank" rel="noreferrer" className="text-[11px] font-medium text-slate-400 hover:text-indigo-600 hover:underline truncate" title={song.sourceUrl || song.url}>
                                                     {song.sourceUrl || song.url}
@@ -491,7 +482,7 @@ export default function AdminFailedImports() {
                                                 <CheckCircle size={32} />
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-black text-slate-800">✅ Great! No failed imports.</h3>
+                                                <h3 className="text-lg font-black text-slate-800">Ã¢Å“â€¦ Great! No failed imports.</h3>
                                                 <p className="text-sm font-medium text-slate-500 max-w-sm mx-auto mt-1">Background importer is healthy and running smoothly.</p>
                                             </div>
                                         </div>
@@ -552,7 +543,7 @@ export default function AdminFailedImports() {
                 <div className="p-5 flex-1 overflow-y-auto max-h-[600px] admin-scrollbar">
                     {Object.keys(groupedTimeline).length > 0 ? (
                         <div className="space-y-6">
-                            {Object.entries(groupedTimeline).map(([time, events], i) => {
+                            {Object.entries(groupedTimeline).map(([time, events]) => {
                                 // Count events by type
                                 let failed = 0;
                                 let recovered = 0;

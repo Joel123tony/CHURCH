@@ -150,7 +150,7 @@ async function importSongs() {
     const fileData = await fs.readFile(dataFilePath, "utf-8");
     songsToImport = JSON.parse(fileData);
     console.log(`Loaded ${songsToImport.length} songs from data/songs.json`);
-  } catch (error) {
+  } catch {
     console.log("No data/songs.json found. Using default seed array.");
   }
 

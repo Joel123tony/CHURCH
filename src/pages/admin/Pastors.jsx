@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   FaCamera,
@@ -15,7 +15,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import API from "../../api/axios";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { useConfirm } from "../../context/ConfirmContext";
 import { getFallbackAvatar, handleImageError } from "../../utils/avatarFallback";
 import "react-toastify/dist/ReactToastify.css";
@@ -44,19 +44,6 @@ const educationOptions = [
   "M.A Theology",
   "Other",
 ];
-
-const formatBytes = (bytes) => {
-  if (!bytes) return "0 KB";
-
-  const units = ["B", "KB", "MB", "GB"];
-  const index = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1
-  );
-  const value = bytes / 1024 ** index;
-
-  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
-};
 
 // Compression is now handled on the backend
 const normalizeEducationSelection = (education) => {
@@ -94,8 +81,7 @@ export default function Pastors() {
 
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [imageInfo, setImageInfo] = useState(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingImage] = useState(false);
   const [uploadStats, setUploadStats] = useState(null);
 
   const [educations, setEducations] = useState([""]);
@@ -232,7 +218,6 @@ export default function Pastors() {
     setEditId(null);
     setFile(null);
     setPreview(null);
-    setImageInfo(null);
     setEducations([""]);
     setCustomEducation("");
   };

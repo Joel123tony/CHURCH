@@ -18,6 +18,41 @@ import API from "../../api/axios";
 import { toast } from "react-toastify";
 import DonationDetailsModal from "./DonationDetailsModal";
 
+const StatCard = ({ title, value, icon: Icon, colorClass, isMoney = false }) => (
+  <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm transition-all hover:shadow-md">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-slate-500">{title}</p>
+        <h3 className="mt-2 text-2xl font-bold text-[#531B24]">
+          {isMoney ? `â‚¹${value.toLocaleString()}` : value}
+        </h3>
+      </div>
+      <div className={`flex h-12 w-12 items-center justify-center rounded-full ${colorClass}`}>
+        <Icon className="h-6 w-6" />
+      </div>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status }) => {
+  const isSuccess = status === "Successful";
+  const isFailed = status === "Failed";
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+        isSuccess ? "bg-green-100 text-green-700" :
+        isFailed ? "bg-red-100 text-red-700" :
+        "bg-orange-100 text-orange-700"
+      }`}
+    >
+      {isSuccess && <CheckCircle2 className="h-3 w-3" />}
+      {isFailed && <XCircle className="h-3 w-3" />}
+      {status}
+    </span>
+  );
+};
+
 export default function Donations() {
   const [donations, setDonations] = useState([]);
   const [stats, setStats] = useState({
@@ -47,16 +82,12 @@ export default function Donations() {
   // Modal
   const [selectedDonation, setSelectedDonation] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [search, filterStatus, sortBy, startDate, endDate, minAmount, maxAmount]);
 
-  const fetchData = async () => {
+  async function fetchData() {
     console.log("[DEBUG] fetchData started on device. User Agent:", navigator.userAgent);
     const token = localStorage.getItem("token");
     console.log("[DEBUG] Current localStorage token:", token ? "Exists (hidden for security)" : "Missing");
@@ -86,7 +117,11 @@ export default function Donations() {
       setLoading(false);
       console.log("[DEBUG] Loading state set to false");
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filteredDonations = donations
     .filter(d => {
@@ -168,39 +203,6 @@ export default function Donations() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const StatCard = ({ title, value, icon: Icon, colorClass, isMoney = false }) => (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm transition-all hover:shadow-md">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <h3 className="mt-2 text-2xl font-bold text-[#531B24]">
-            {isMoney ? `₹${value.toLocaleString()}` : value}
-          </h3>
-        </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-full ${colorClass}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-    </div>
-  );
-
-  const StatusBadge = ({ status }) => {
-    const isSuccess = status === 'Successful';
-    const isFailed = status === 'Failed';
-    
-    return (
-      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-        isSuccess ? 'bg-green-100 text-green-700' :
-        isFailed ? 'bg-red-100 text-red-700' :
-        'bg-orange-100 text-orange-700'
-      }`}>
-        {isSuccess && <CheckCircle2 className="h-3 w-3" />}
-        {isFailed && <XCircle className="h-3 w-3" />}
-        {status}
-      </span>
-    );
   };
 
   return (
@@ -319,14 +321,14 @@ export default function Donations() {
             />
             <input
               type="number"
-              placeholder="Min Amount (₹)"
+              placeholder="Min Amount (â‚¹)"
               value={minAmount}
               onChange={(e) => setMinAmount(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-white py-2 px-4 text-sm outline-none transition-all focus:border-[#531B24]"
             />
             <input
               type="number"
-              placeholder="Max Amount (₹)"
+              placeholder="Max Amount (â‚¹)"
               value={maxAmount}
               onChange={(e) => setMaxAmount(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-white py-2 px-4 text-sm outline-none transition-all focus:border-[#531B24]"
@@ -373,7 +375,7 @@ export default function Donations() {
                         {donation.email && <p className="text-xs text-slate-500 mt-0.5">{donation.email}</p>}
                       </td>
                       <td className="px-6 py-4 font-bold text-slate-800">
-                        ₹{donation.amount.toLocaleString()}
+                        â‚¹{donation.amount.toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge status={donation.paymentStatus} />
@@ -410,7 +412,7 @@ export default function Donations() {
                       <p className="text-xs text-slate-500">{new Date(donation.transactionDate).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-slate-800 text-base">₹{donation.amount.toLocaleString()}</p>
+                      <p className="font-bold text-slate-800 text-base">â‚¹{donation.amount.toLocaleString()}</p>
                       <div className="mt-1">
                         <StatusBadge status={donation.paymentStatus} />
                       </div>

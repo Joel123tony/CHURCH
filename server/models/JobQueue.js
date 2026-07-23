@@ -8,12 +8,19 @@ const jobQueueSchema = new mongoose.Schema(
       index: true,
       enum: [
         "discovery",
+        "provider_discovery",
+        "adaptive_scrape",
         "import",
         "ai_cleaning",
         "validation",
         "duplicate_detection",
         "recovery",
-        "indexing"
+        "indexing",
+        "knowledge_graph",
+        "moderation",
+        "backup",
+        "monitoring",
+        "reindex"
       ]
     },
     payload: {

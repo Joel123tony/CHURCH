@@ -106,7 +106,6 @@ export default function GalleryUpload({ onSuccess }) {
           },
         });
 
-        const { originalSize, compressedSize, savings, savingsPercentage, status } = res.data;
         // Keep the file in the UI but update its stats
         setFiles(prev => prev.map((f, i) => i === index ? { ...f, compressionStats: res.data } : f));
         

@@ -36,7 +36,7 @@ export const cleanYouTubeTitle = (title) => {
         clean = clean.replace(regex, "");
     }
     
-    clean = clean.replace(/[|\-\[\]\(\)]/g, " ");
+    clean = clean.replace(/[|()[\]-]/g, " ");
     clean = clean.replace(/\s+/g, " ").trim();
     
     return clean;
@@ -47,7 +47,7 @@ export const normalizeForComparison = (str) => {
     return str.toLowerCase().replace(/[^a-z0-9\u0B80-\u0BFF]/g, "").trim();
 };
 
-export const isDuplicate = async (cleanTitle, artist) => {
+export const isDuplicate = async (cleanTitle) => {
     const exactMatch = await Song.findOne({ titleTamil: cleanTitle });
     if (exactMatch) return true;
     
@@ -89,7 +89,7 @@ export const runTrendingDiscovery = async () => {
                 
                 if (cleanTitle.length < 3) continue;
                 
-                const duplicate = await isDuplicate(cleanTitle, video.channelTitle);
+                const duplicate = await isDuplicate(cleanTitle);
                 if (duplicate) {
                     console.log(`[YT-Discovery] Skipping duplicate: ${cleanTitle}`);
                     continue;

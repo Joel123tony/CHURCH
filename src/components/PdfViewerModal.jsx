@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import { FaTimes, FaExternalLinkAlt, FaDownload } from "react-icons/fa";
+import { useEffect } from "react";
 import PdfBookReader from "./PdfBookReader";
 
 /**
@@ -68,4 +67,3 @@ export default function PdfViewerModal({ isOpen, onClose, pdfUrl, title }) {
     </div>
   );
 }
-

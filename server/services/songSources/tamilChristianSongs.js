@@ -1,6 +1,7 @@
-import axios from "axios";
+import { resilientFetch } from "../../utils/resilientFetch.js";
 import * as cheerio from "cheerio";
 import { extractSongsFromHtml } from "../../utils/lyricsExtractor.js";
+import { calculateSimilarity } from "../../utils/searchNormalizer.js";
 export const isCollectionPage = (url) => {
     if (!url) return false;
     const lower = url.toLowerCase();
@@ -16,8 +17,8 @@ export const isSongPage = (url) => {
 
 export const extractCollection = async (url) => {
     try {
-        const res = await axios.get(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
+        const res = await resilientFetch(url, {
+            
             timeout: 15000
         });
         const $ = cheerio.load(res.data);
@@ -39,11 +40,11 @@ export const extractCollection = async (url) => {
 
 export const extractSong = async (songUrl) => {
     try {
-        const songRes = await axios.get(songUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, timeout: 15000 });
+        const songRes = await resilientFetch(songUrl, {  timeout: 15000 });
         const extractedSongs = await extractSongsFromHtml(songRes.data, songUrl);
         
         if (!extractedSongs || extractedSongs.length === 0) {
-            throw new Error("Lyrics could not be found or were rejected by the sanitizer.");
+            throw new Error("Lyrics could not be found or were rejected by the sanitizer.", { cause: new Error("extractSongsFromHtml returned no songs") });
         }
 
         return extractedSongs.map(extracted => ({
@@ -57,25 +58,28 @@ export const extractSong = async (songUrl) => {
         }));
     } catch (error) {
         console.error("TCS extractSong Error:", error.message);
-        throw new Error(`TCS Provider Error: ${error.message}`);
+        throw new Error(`TCS Provider Error: ${error.message}`, { cause: error });
     }
 };
 
 export const searchSong = async (query) => {
     try {
         const searchUrl = `https://tamilchristiansongs.in/?s=${encodeURIComponent(query)}`;
-        const searchRes = await axios.get(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, timeout: 10000 });
+        const searchRes = await resilientFetch(searchUrl, {  timeout: 10000 });
         
         const $q = cheerio.load(searchRes.data);
         let bestUrl = null;
-        let rawTitle = "";
+        let bestScore = 0;
         
-        $q('article').each((i, el) => {
-            const loc = $q(el).find('.entry-title a').attr('href');
-            const title = $q(el).find('.entry-title a').text().trim();
-            if (loc && loc.includes("/tamil/lyrics/") && !bestUrl) {
-                bestUrl = loc;
-                rawTitle = title;
+        $q('.entry-title a').each((i, el) => {
+            const loc = $q(el).attr('href');
+            const title = $q(el).text().trim();
+            if (loc && loc.includes("/lyrics/")) {
+                const score = calculateSimilarity(query, title);
+                if (score > bestScore && score >= 0.85) {
+                    bestScore = score;
+                    bestUrl = loc;
+                }
             }
         });
 
@@ -94,7 +98,7 @@ export const searchSong = async (query) => {
 export const discoverLatest = async () => {
     try {
         const indexUrl = "https://tamilchristiansongs.in/category/tamil-christian-songs/";
-        const indexRes = await axios.get(indexUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, timeout: 10000 });
+        const indexRes = await resilientFetch(indexUrl, {  timeout: 10000 });
         const $ = cheerio.load(indexRes.data);
         const urls = [];
         $('.entry-title a').each((i, el) => {
@@ -121,8 +125,8 @@ export const discoverAll = async (progressCallback) => {
                 ? "https://tamilchristiansongs.in/category/tamil-christian-songs/"
                 : `https://tamilchristiansongs.in/category/tamil-christian-songs/page/${page}/`;
                 
-            const res = await axios.get(pageUrl, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
+            const res = await resilientFetch(pageUrl, {
+                
                 timeout: 15000
             });
             

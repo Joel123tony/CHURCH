@@ -1,12 +1,11 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import useSWR from "swr";
 import API from "../../api/axios";
 import { 
   Music, Globe, DownloadCloud, RefreshCw, XCircle, HeartPulse, 
-  Search, Save, AlertCircle, Play, Calendar, User, Folder, Clock, Activity, 
-  AlertTriangle, FileText, Check, ChevronLeft, ChevronRight, X, Plus,
-  Server, ListOrdered, BarChart2, Radio, ServerCrash, Loader, CheckCircle, UploadCloud
+  Search, Save, AlertCircle, Play, Activity, X,
+  Server, ListOrdered, BarChart2, Radio, Loader, CheckCircle, UploadCloud
 } from "lucide-react";
 
 // SWR Fetcher
@@ -15,31 +14,42 @@ const fetcher = (url) => API.get(url).then((res) => res.data);
 // Custom Animated Number Hook
 const AnimatedNumber = ({ value, duration = 1000 }) => {
   const [count, setCount] = useState(0);
-  
+  const rafRef = useRef(null);
+  const countRef = useRef(0);
+
   useEffect(() => {
     let startTime = null;
-    const startValue = count;
-    const endValue = value || 0;
-    
-    if (startValue === endValue) return;
+    const startValue = countRef.current;
+    const endValue = Number(value || 0);
+
+    if (startValue === endValue) {
+      setCount(endValue);
+      return undefined;
+    }
 
     const animate = (currentTime) => {
       if (!startTime) startTime = currentTime;
       const progress = Math.min((currentTime - startTime) / duration, 1);
-      
-      // easeOutExpo
       const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      
-      setCount(Math.floor(startValue + (endValue - startValue) * easeProgress));
-      
+      const nextValue = Math.floor(startValue + (endValue - startValue) * easeProgress);
+      countRef.current = nextValue;
+      setCount(nextValue);
+
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        rafRef.current = requestAnimationFrame(animate);
       } else {
+        countRef.current = endValue;
         setCount(endValue);
       }
     };
-    
-    requestAnimationFrame(animate);
+
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
   }, [value, duration]);
 
   return <span>{count.toLocaleString()}</span>;
@@ -70,7 +80,7 @@ const SkeletonSection = ({ h = "h-48" }) => (
   </div>
 );
 
-const AdminSongs = React.memo(() => {
+const AdminSongs = () => {
   // Manual Import State
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -78,8 +88,7 @@ const AdminSongs = React.memo(() => {
   const [preview, setPreview] = useState(null);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
-  const [lastFetchTime, setLastFetchTime] = useState(Date.now());
-  const [timeSinceFetch, setTimeSinceFetch] = useState(0);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
 
   // Data Fetching with SWR
   const { data, error, mutate, isValidating } = useSWR("/admin/songs/dashboard", fetcher, {
@@ -90,16 +99,8 @@ const AdminSongs = React.memo(() => {
     },
     onSuccess: () => {
         setLastFetchTime(Date.now());
-        setTimeSinceFetch(0);
     }
   });
-
-  useEffect(() => {
-      const interval = setInterval(() => {
-          setTimeSinceFetch(Math.floor((Date.now() - lastFetchTime) / 1000));
-      }, 1000);
-      return () => clearInterval(interval);
-  }, [lastFetchTime]);
 
   const dashboardData = data || {};
   const isInitialLoading = !data && !error;
@@ -178,7 +179,16 @@ const AdminSongs = React.memo(() => {
     return Math.floor(seconds) + " secs ago";
   }, []);
 
-  const { stats = {}, sourceBreakdown = [], scheduler = {}, scanProgress = {}, queueMetrics = {}, workers = [], lastImport = {} } = dashboardData;
+  const { stats = {}, sourceBreakdown = [], scanProgress = {}, queueMetrics = {}, workers = [], lastImport = {} } = dashboardData;
+  const providerHealth = Array.isArray(dashboardData.providerHealth)
+    ? dashboardData.providerHealth
+    : (Array.isArray(stats.providerHealth) ? stats.providerHealth : []);
+  const mergeSuccessRate = dashboardData.mergeSuccessRate || stats.mergeSuccessRate || 0;
+  const aiCacheHitRate = dashboardData.aiCacheHitRate || stats.aiCacheHitRate || 0;
+  const moderationQueue = dashboardData.moderationQueue || stats.moderationQueue || 0;
+  const providerRegistryCount = dashboardData.providerRegistryCount || stats.providerRegistryCount || 0;
+  const relationshipCount = dashboardData.relationshipCount || stats.relationshipCount || 0;
+  const platformMetrics = dashboardData.platformMetrics || stats.platformMetrics || {};
 
   const healthData = useMemo(() => {
     if (error) {
@@ -210,6 +220,7 @@ const AdminSongs = React.memo(() => {
 
   const totalProgressPercent = scanProgress.totalDiscovered ? 
     Math.min(100, Math.round(((scanProgress.totalImported + scanProgress.totalDuplicates + scanProgress.totalFailed) / scanProgress.totalDiscovered) * 100)) : 0;
+  const topAiProvider = (stats.aiProviders || [])[0];
 
   // Sorting Source Breakdown descending
   const sortedSourceBreakdown = useMemo(() => {
@@ -398,6 +409,108 @@ const AdminSongs = React.memo(() => {
             </>
           )}
         </div>
+
+        {/* AI Intelligence Metrics */}
+        {!isInitialLoading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">AI Processed</div>
+              <div className="mt-3 text-3xl font-black text-slate-900"><AnimatedNumber value={stats.aiProcessed || 0} /></div>
+              <div className="mt-1 text-sm text-slate-500">Songs cleaned and normalized by the AI engine.</div>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Songs Needing Review</div>
+              <div className="mt-3 text-3xl font-black text-amber-600"><AnimatedNumber value={stats.aiNeedsReview || 0} /></div>
+              <div className="mt-1 text-sm text-slate-500">Low-confidence or structurally incomplete lyrics.</div>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Average Confidence</div>
+              <div className="mt-3 text-3xl font-black text-emerald-600">{stats.avgConfidence || 0}%</div>
+              <div className="mt-1 text-sm text-slate-500">Across all published songs.</div>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Average AI Time</div>
+              <div className="mt-3 text-3xl font-black text-slate-900">{stats.avgProcessingTime || 0}ms</div>
+              <div className="mt-1 text-sm text-slate-500">{stats.aiQueue || 0} in AI queue · {stats.recoveryQueue || 0} in recovery</div>
+              <div className="mt-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                Top Provider: {topAiProvider?._id || "N/A"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isInitialLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Moderation Queue</div>
+              <div className="mt-3 text-3xl font-black text-amber-600"><AnimatedNumber value={moderationQueue || 0} /></div>
+              <div className="mt-1 text-sm text-slate-500">Songs waiting for approval or correction.</div>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Provider Registry</div>
+              <div className="mt-3 text-3xl font-black text-slate-900"><AnimatedNumber value={providerRegistryCount || 0} /></div>
+              <div className="mt-1 text-sm text-slate-500">Discovered providers awaiting or holding approval.</div>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Graph Links</div>
+              <div className="mt-3 text-3xl font-black text-slate-900"><AnimatedNumber value={relationshipCount || 0} /></div>
+              <div className="mt-1 text-sm text-slate-500">Canonical relationships across titles, themes and scripture.</div>
+            </div>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">DB Latency</div>
+              <div className="mt-3 text-3xl font-black text-slate-900">{platformMetrics?.runtime?.dbLatencyMs || 0}ms</div>
+              <div className="mt-1 text-sm text-slate-500">System snapshot from the health endpoint.</div>
+            </div>
+          </div>
+        )}
+
+        {!isInitialLoading && (
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+            <div className="flex items-center justify-between gap-4 mb-5">
+              <h2 className="text-base font-bold flex items-center gap-2 text-slate-800">
+                <Server className="text-indigo-500" size={20} strokeWidth={2.5} />
+                Provider Health
+              </h2>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+                <span className="px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600">Merge {mergeSuccessRate}%</span>
+                <span className="px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-slate-600">Cache {aiCacheHitRate}%</span>
+              </div>
+            </div>
+            {providerHealth.length > 0 ? (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {providerHealth.slice(0, 6).map((provider) => (
+                  <div key={provider.provider || provider._id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-bold text-slate-800">{provider.provider || "Unknown Provider"}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{provider.reliabilityBand || "Unknown"} reliability</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-black text-slate-900">{provider.healthScore || 0}</div>
+                        <div className="text-[10px] uppercase tracking-widest text-slate-400">Score</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-xl bg-white border border-slate-200 p-2">
+                        <div className="text-slate-400 uppercase tracking-widest text-[10px]">Success</div>
+                        <div className="font-bold text-slate-700">{provider.successRate || 0}%</div>
+                      </div>
+                      <div className="rounded-xl bg-white border border-slate-200 p-2">
+                        <div className="text-slate-400 uppercase tracking-widest text-[10px]">Avg Confidence</div>
+                        <div className="font-bold text-slate-700">{provider.avgConfidence || 0}%</div>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-[11px] text-slate-500">
+                      Failures {provider.failureRate || 0}% · Processing {provider.avgProcessingTimeMs || 0}ms
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-slate-500">No provider health data has been recorded yet.</div>
+            )}
+          </div>
+        )}
 
         {/* Dense 2-Column Layout */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -701,6 +814,6 @@ const AdminSongs = React.memo(() => {
       )}
     </div>
   );
-});
+};
 
 export default AdminSongs;

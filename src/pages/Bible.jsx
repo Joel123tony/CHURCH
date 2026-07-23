@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef, memo, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, memo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import {
   ChevronLeft, ChevronRight, Search, Moon, Sun,
-  ZoomIn, ZoomOut, BookOpen, Copy, Check, ChevronDown, Minus, Plus, RotateCcw
+  Copy, Check, ChevronDown, Minus, Plus, RotateCcw
 } from "lucide-react";
 
 // Tamil Book Names Mapping
@@ -59,7 +59,7 @@ const VerseItem = memo(({ verseNum, text, zoomLevel, fontIndex, isDark, onCopy, 
   );
 });
 
-const CustomSelect = ({ value, options, onChange, isDark, label, minWidth = "160px" }) => {
+const CustomSelect = ({ value, options, onChange, isDark }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownStyles, setDropdownStyles] = useState({});
   const buttonRef = useRef(null);

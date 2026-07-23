@@ -1,6 +1,7 @@
-import axios from "axios";
+import { resilientFetch } from "../../utils/resilientFetch.js";
 import * as cheerio from "cheerio";
 import { extractSongsFromHtml } from "../../utils/lyricsExtractor.js";
+import { calculateSimilarity } from "../../utils/searchNormalizer.js";
 export const isCollectionPage = (url) => {
     if (!url) return false;
     const lower = url.toLowerCase();
@@ -15,7 +16,7 @@ export const isSongPage = (url) => {
 
 export const extractCollection = async (url) => {
     try {
-        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
+        const res = await resilientFetch(url, {  timeout: 15000 });
         const $ = cheerio.load(res.data);
         const childUrls = new Set();
         
@@ -35,15 +36,15 @@ export const extractCollection = async (url) => {
 
 export const extractSong = async (songUrl) => {
     try {
-        const res = await axios.get(songUrl, { 
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, 
+        const res = await resilientFetch(songUrl, { 
+             
             timeout: 15000 
         });
         
         const extractedSongs = await extractSongsFromHtml(res.data, songUrl);
         
         if (!extractedSongs || extractedSongs.length === 0) {
-            throw new Error("Page does not contain song lyrics");
+            throw new Error("Page does not contain song lyrics", { cause: new Error("extractSongsFromHtml returned no songs") });
         }
 
         return extractedSongs.map(extracted => ({ 
@@ -58,15 +59,15 @@ export const extractSong = async (songUrl) => {
         }));
     } catch (err) {
         console.error("TamilChristianCom extractSong Error:", err.message);
-        throw new Error(`TamilChristianCom Provider Error: ${err.message}`);
+        throw new Error(`TamilChristianCom Provider Error: ${err.message}`, { cause: err });
     }
 }
 
 export const discoverLatest = async () => {
     try {
         // Fetch the main lyrics index
-        const indexRes = await axios.get("https://www.tamilchristian.com/lyrics-page/", {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        const indexRes = await resilientFetch("https://www.tamilchristian.com/lyrics-page/", {
+            
             timeout: 15000
         });
         
@@ -88,8 +89,8 @@ export const discoverLatest = async () => {
         // To prevent timeout or memory issues, we limit concurrency or do it sequentially
         for (const subCat of uniqueSubcategories) {
             try {
-                const subRes = await axios.get(subCat, {
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+                const subRes = await resilientFetch(subCat, {
+                    
                     timeout: 10000
                 });
                 const $sub = cheerio.load(subRes.data);
@@ -138,21 +139,32 @@ export const searchSong = async (query) => {
         // We will simulate search by fetching a Google Custom Search or crawling index.
         // Since we don't have a Google API key handy, we will do a basic scrape of the site's default search.
         const searchUrl = `https://www.tamilchristian.com/?s=${encodeURIComponent(query)}`;
-        const searchRes = await axios.get(searchUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        const searchRes = await resilientFetch(searchUrl, {
+            
             timeout: 15000
         });
         
         const $ = cheerio.load(searchRes.data);
         let bestUrl = null;
+        let bestScore = 0;
         
-        $('a').each((i, el) => {
+        $('.entry-title a, .post-title a, h2 a, h3 a, article a').each((i, el) => {
             const href = $(el).attr('href');
-            // Assuming search results point to regular pages without /category/
-            if (href && href.includes('tamilchristian.com') && !href.includes('/category/') && href.split('/').length > 4 && !bestUrl) {
-                // Avoid picking up random UI elements by checking if it's inside an article or content block
-                // (Very broad fallback check)
-                bestUrl = href;
+            const title = $(el).text().trim();
+            if (
+                href && 
+                href.includes('tamilchristian.com') && 
+                !href.includes('/category/') && 
+                !href.includes('/tag/') && 
+                !href.includes('/author/') && 
+                !href.includes('lyrics-page') && 
+                href.split('/').length > 4
+            ) {
+                const score = calculateSimilarity(query, title);
+                if (score > bestScore && score >= 0.85) {
+                    bestScore = score;
+                    bestUrl = href;
+                }
             }
         });
         

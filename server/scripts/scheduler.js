@@ -3,6 +3,9 @@ import { providers } from '../services/songSources/adapterManager.js';
 import Song from '../models/Song.js';
 import { runTrendingDiscovery } from '../services/youtubeDiscovery.js';
 import { runLyricsRecovery } from '../services/lyricsRecovery.js';
+import { discoverProviderCandidates, upsertDiscoveredProvider } from '../services/providerDiscovery.js';
+import { refreshGraphForLibrary } from '../services/knowledgeGraph.js';
+import { createBackupCheckpoint } from '../services/backupService.js';
 
 export const initSchedulers = () => {
     // Daily Discovery from Existing Providers (2 AM)
@@ -43,6 +46,22 @@ export const initSchedulers = () => {
         }
     });
 
+    // Daily Autonomous Provider Discovery (1:30 AM)
+    cron.schedule('30 1 * * *', async () => {
+        console.log("[Scheduler] Running Autonomous Provider Discovery...");
+        try {
+            const seedUrls = providers
+                .map(({ domain }) => domain ? `https://${domain.replace(/^https?:\/\//, '').replace(/^www\./, '')}` : null)
+                .filter(Boolean);
+            const discovered = await discoverProviderCandidates(seedUrls);
+            for (const candidate of discovered) {
+                await upsertDiscoveredProvider(candidate);
+            }
+        } catch (err) {
+            console.error("[Scheduler] Provider discovery failed:", err.message);
+        }
+    });
+
     // Daily Trending YouTube Discovery (3 AM)
     cron.schedule('0 3 * * *', async () => {
         console.log("[Scheduler] Running Daily YouTube Trending Discovery...");
@@ -53,6 +72,26 @@ export const initSchedulers = () => {
     cron.schedule('0 4 * * *', async () => {
         console.log("[Scheduler] Running Daily Lyrics Recovery...");
         await runLyricsRecovery();
+    });
+
+    // Daily Knowledge Graph Refresh (4:30 AM)
+    cron.schedule('30 4 * * *', async () => {
+        console.log("[Scheduler] Refreshing knowledge graph...");
+        try {
+            await refreshGraphForLibrary(100);
+        } catch (err) {
+            console.error("[Scheduler] Knowledge graph refresh failed:", err.message);
+        }
+    });
+
+    // Nightly Backup Checkpoint (1 AM)
+    cron.schedule('0 1 * * *', async () => {
+        console.log("[Scheduler] Creating platform backup checkpoint...");
+        try {
+            await createBackupCheckpoint("nightly");
+        } catch (err) {
+            console.error("[Scheduler] Backup checkpoint failed:", err.message);
+        }
     });
 
     // Monthly Cleanup (5 AM on the 1st)

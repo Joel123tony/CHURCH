@@ -1,7 +1,6 @@
 import Song from "../models/Song.js";
 import { detectProvider } from "./songSources/adapterManager.js";
-
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import { buildSongPayload } from "../utils/songNormalization.js";
 
 const RETRY_INTERVALS_SEC = [0, 30, 120, 300, 900, 1800, 3600, 7200];
 
@@ -116,18 +115,68 @@ class RetryService {
                         }
                         
                         // Successfully fetched, update the record
-                        song.title = songData.titleTamil || songData.titleEnglish || songData.title;
-                        song.titleTamil = songData.titleTamil;
-                        song.titleEnglish = songData.titleEnglish;
-                        song.lyrics = songData.lyricsTamil;
-                        song.lyricsTamil = songData.lyricsTamil;
-                        song.lyricsEnglish = songData.lyricsEnglish;
-                        song.artist = songData.artist || song.artist || "";
-                        song.album = songData.album || song.album || "";
+                        const payload = buildSongPayload({
+                            ...song.toObject(),
+                            ...songData,
+                            title: songData.titleTamil || songData.titleEnglish || songData.title || song.title,
+                            titleTamil: songData.titleTamil || song.titleTamil,
+                            titleEnglish: songData.titleEnglish || song.titleEnglish || "",
+                            lyrics: songData.lyricsTamil || songData.lyrics || song.lyrics,
+                            originalLyrics: songData.originalLyrics || song.originalLyrics || song.lyrics || "",
+                            cleanLyrics: songData.cleanLyrics || songData.lyricsTamil || song.lyrics,
+                            cleanedLyrics: songData.cleanedLyrics || songData.lyricsTamil || song.lyrics,
+                            lyricsEnglish: songData.lyricsEnglish || song.lyricsEnglish || "",
+                            artist: songData.artist || song.artist || "",
+                            album: songData.album || song.album || "",
+                            author: songData.author || song.author || "",
+                            composer: songData.composer || song.composer || "",
+                            language: songData.language || song.language || "Tamil",
+                            source: songData.source || song.source || "",
+                            sourceUrl: songData.sourceUrl || song.sourceUrl || song.url || "",
+                            aiStatus: songData.aiStatus || song.aiStatus || "fallback",
+                            aiProvider: songData.aiProvider || song.aiProvider || "heuristic",
+                            aiConfidence: songData.aiConfidence || song.aiConfidence || 0,
+                            aiMetadata: songData.aiMetadata || song.aiMetadata || {},
+                            themes: songData.themes || song.themes || [],
+                            keywords: songData.keywords || song.keywords || [],
+                            bibleReferences: songData.bibleReferences || song.bibleReferences || []
+                        }, {
+                            source: songData.source || song.source || "",
+                            sourceUrl: songData.sourceUrl || song.sourceUrl || song.url || "",
+                            category: song.category
+                        });
+
+                        song.title = payload.title;
+                        song.titleTamil = payload.titleTamil;
+                        song.titleEnglish = payload.titleEnglish;
+                        song.lyrics = payload.lyrics;
+                        song.lyricsTamil = payload.lyricsTamil;
+                        song.lyricsEnglish = payload.lyricsEnglish;
+                        song.originalLyrics = payload.originalLyrics;
+                        song.cleanLyrics = payload.cleanLyrics;
+                        song.cleanedLyrics = payload.cleanedLyrics;
+                        song.artist = payload.artist;
+                        song.album = payload.album;
+                        song.author = payload.author;
+                        song.composer = payload.composer;
+                        song.language = payload.language;
+                        song.keywords = payload.keywords;
+                        song.themes = payload.themes;
+                        song.bibleReferences = payload.bibleReferences;
+                        song.searchKey = payload.searchKey;
+                        song.normalizedTitle = payload.normalizedTitle;
+                        song.normalizedLyrics = payload.normalizedLyrics;
+                        song.slug = payload.slug || song.slug;
+                        song.aiStatus = payload.aiStatus;
+                        song.aiProvider = payload.aiProvider;
+                        song.aiConfidence = payload.aiConfidence;
+                        song.aiProcessedAt = payload.aiProcessedAt || new Date();
+                        song.aiMetadata = payload.aiMetadata;
                         song.status = "completed";
                         song.isPublished = true;
                         song.failReason = "";
                         song.httpStatus = 200;
+                        song.recoveredAt = new Date();
                         await song.save();
 
                         this.status.recovered++;

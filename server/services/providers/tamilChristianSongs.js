@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 
-export const searchTamilChristianSongs = async (query, category) => {
+export const searchTamilChristianSongs = async (query) => {
   try {
     // If category is strict Keerthanai/Paamalai and this provider doesn't match perfectly, we can still search
     // But tamilchristiansongs.in has a variety of songs. We'll mark them as "Worship" by default 

@@ -2,6 +2,7 @@ import { providers } from "./songSources/adapterManager.js";
 import Song from "../models/Song.js";
 import { retryService } from "./retryService.js";
 import { normalizeTitle } from "../utils/lyricsExtractor.js";
+import { buildSongPayload } from "../utils/songNormalization.js";
 
 const getFingerprint = (lyrics) => {
     if (!lyrics) return "";
@@ -69,7 +70,7 @@ class BackgroundScanner {
         // Strip out internal queue/known properties before sending to client
         const safeProviders = {};
         for (const [name, data] of Object.entries(this.status.providers)) {
-            const { queue, known, totalExtractionTime, extractions, ...safeData } = data;
+            const safeData = { ...data };
             const successRate = data.extractions > 0 ? ((data.imported / data.extractions) * 100).toFixed(1) : 0;
             const avgTime = data.extractions > 0 ? (data.totalExtractionTime / data.extractions).toFixed(0) : 0;
             
@@ -141,8 +142,8 @@ class BackgroundScanner {
                 }
                 pStatus.discoveryDone = true;
                 this.updateTotals();
-            }).catch(e => {
-                console.error(`[BackgroundScanner] Discovery error for ${name}:`, e.message);
+            }).catch(() => {
+                console.error(`[BackgroundScanner] Discovery error for ${name}`);
                 pStatus.discoveryDone = true;
             });
 
@@ -264,13 +265,16 @@ class BackgroundScanner {
                 }
 
                 // Save
-                await Song.create({
-                    title: songData.titleTamil || songData.titleEnglish || "Unknown Title",
-                    titleTamil: songData.titleTamil,
-                    titleEnglish: songData.titleEnglish,
-                    lyrics: songData.lyricsTamil,
-                    lyricsTamil: songData.lyricsTamil,
-                    lyricsEnglish: songData.lyricsEnglish,
+                const payload = buildSongPayload({
+                    ...songData,
+                    title: songData.titleTamil || songData.titleEnglish || songData.title || "Unknown Title",
+                    titleTamil: songData.titleTamil || songData.title || "",
+                    titleEnglish: songData.titleEnglish || "",
+                    lyrics: songData.lyricsTamil || songData.lyrics || "",
+                    originalLyrics: songData.originalLyrics || songData.lyricsTamil || songData.lyrics || "",
+                    cleanLyrics: songData.cleanLyrics || songData.lyricsTamil || songData.lyrics || "",
+                    cleanedLyrics: songData.cleanedLyrics || songData.lyricsTamil || songData.lyrics || "",
+                    lyricsEnglish: songData.lyricsEnglish || "",
                     category: "Tamil Christian Songs",
                     source: songData.source || name,
                     url: songData.sourceUrl || url,
@@ -278,8 +282,19 @@ class BackgroundScanner {
                     artist: songData.artist || "",
                     scrapeStatus: "success",
                     status: "completed",
-                    isPublished: true
+                    isPublished: true,
+                    aiStatus: songData.aiStatus || "processed",
+                    aiProvider: songData.aiProvider || "heuristic",
+                    aiConfidence: songData.aiConfidence || songData.confidenceScore || 0,
+                    aiMetadata: songData.aiMetadata || {},
+                    providerHistory: songData.providerHistory || [{ source: songData.source || name, url: songData.sourceUrl || url, status: "success", checkedAt: new Date() }]
+                }, {
+                    source: songData.source || name,
+                    sourceUrl: songData.sourceUrl || url,
+                    category: "Tamil Christian Songs"
                 });
+
+                await Song.create(payload);
 
                 console.log(`[Scanner] [${name}] Saved successfully: ${songData.titleTamil || "Song"}`);
                 pStatus.imported++;
@@ -294,7 +309,7 @@ class BackgroundScanner {
                 const isRec = retryService.isRecoverable(err.message, httpStatus);
                 const docStatus = isRec ? "recovering" : "failed";
                 
-                await Song.create({
+                await Song.create(buildSongPayload({
                     title: "Failed Import",
                     category: "Unknown",
                     source: name,
@@ -306,9 +321,19 @@ class BackgroundScanner {
                     status: docStatus,
                     retryCount: 0,
                     nextRetryAt: isRec ? new Date() : null,
-                    isPublished: false
-                });
-            } catch(e) {}
+                    isPublished: false,
+                    aiStatus: "failed",
+                    aiProvider: "heuristic",
+                    aiConfidence: 0,
+                    aiMetadata: {}
+                }, {
+                    source: name,
+                    sourceUrl: url,
+                    category: "Unknown"
+                }));
+            } catch {
+              // If the failure record cannot be persisted, continue scan recovery flow.
+            }
         } finally {
             const timeTaken = Date.now() - startTime;
             pStatus.totalExtractionTime += timeTaken;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import PrayerRequestModal from "./PrayerRequestModal";
 import DonationModal from "./DonationModal";
 import { useLanguage } from "../context/LanguageContext";
-import { HandCoins, Heart } from "lucide-react";
+import { HandCoins } from "lucide-react";
 
 import {
   FaFacebookF,
@@ -29,9 +29,7 @@ export default function Contact() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 lg:gap-5">
-            <div
-              className="flex flex-col h-full rounded-3xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 sm:p-6 bg-[#F4EFE7] border-0 border-transparent"
-            >
+            <div className="flex flex-col h-full rounded-3xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 sm:p-6 bg-[#F4EFE7] border-0 border-transparent">
               <div className="mb-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#54091b] text-[#F4EFE7]">
                 <FaMapMarkerAlt size={18} />
               </div>
@@ -58,9 +56,7 @@ export default function Contact() {
               </button>
             </div>
 
-            <div
-              className="flex flex-col h-full rounded-3xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 sm:p-6 bg-[#F4EFE7] border-0 border-transparent"
-            >
+            <div className="flex flex-col h-full rounded-3xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 sm:p-6 bg-[#F4EFE7] border-0 border-transparent">
               <div className="mb-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#54091b] text-[#F4EFE7]">
                 <FaEnvelope size={18} />
               </div>
@@ -85,9 +81,7 @@ export default function Contact() {
               </a>
             </div>
 
-            <div
-              className="flex flex-col h-full rounded-3xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 sm:p-6 bg-[#F4EFE7] border-0 border-transparent"
-            >
+            <div className="flex flex-col h-full rounded-3xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 sm:p-6 bg-[#F4EFE7] border-0 border-transparent">
               <div className="mb-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#54091b] text-[#F4EFE7]">
                 <FaPrayingHands size={18} />
               </div>
@@ -112,9 +106,7 @@ export default function Contact() {
               </button>
             </div>
 
-            <div
-              className="group flex flex-col h-full rounded-3xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 sm:p-6 bg-[#F4EFE7] border-0 border-transparent"
-            >
+            <div className="group flex flex-col h-full rounded-3xl p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 sm:p-6 bg-[#F4EFE7] border-0 border-transparent">
               <div className="mb-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#54091b] text-[#F4EFE7]">
                 <HandCoins size={24} />
               </div>

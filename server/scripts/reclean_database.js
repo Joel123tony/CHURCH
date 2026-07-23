@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import Song from "../models/Song.js";

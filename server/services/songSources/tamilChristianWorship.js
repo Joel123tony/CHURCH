@@ -1,6 +1,7 @@
-import axios from "axios";
+import { resilientFetch } from "../../utils/resilientFetch.js";
 import * as cheerio from "cheerio";
 import { extractSongsFromHtml } from "../../utils/lyricsExtractor.js";
+import { calculateSimilarity } from "../../utils/searchNormalizer.js";
 export const isCollectionPage = (url) => {
     if (!url) return false;
     const lower = url.toLowerCase();
@@ -16,7 +17,7 @@ export const isSongPage = (url) => {
 
 export const extractCollection = async (url) => {
     try {
-        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
+        const res = await resilientFetch(url, {  timeout: 15000 });
         const $ = cheerio.load(res.data);
         
         const links = new Set();
@@ -39,15 +40,15 @@ export const extractCollection = async (url) => {
 
 export const extractSong = async (songUrl) => {
     try {
-        const res = await axios.get(songUrl, { 
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, 
+        const res = await resilientFetch(songUrl, { 
+             
             timeout: 15000 
         });
         
         const extractedSongs = await extractSongsFromHtml(res.data, songUrl);
         
         if (!extractedSongs || extractedSongs.length === 0) {
-            throw new Error("Page does not contain song lyrics");
+            throw new Error("Page does not contain song lyrics", { cause: new Error("extractSongsFromHtml returned no songs") });
         }
 
         return extractedSongs.map(extracted => ({ 
@@ -62,14 +63,14 @@ export const extractSong = async (songUrl) => {
         }));
     } catch (err) {
         console.error("TCW extractSong Error:", err.message);
-        throw new Error(`TCW Provider Error: ${err.message}`);
+        throw new Error(`TCW Provider Error: ${err.message}`, { cause: err });
     }
 }
 
 export const discoverLatest = async () => {
     try {
         const url = "http://tamilchristianworship.com/newpraiselinks.html";
-        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
+        const res = await resilientFetch(url, {  timeout: 15000 });
         const $ = cheerio.load(res.data);
         
         const links = [];
@@ -93,7 +94,7 @@ export const discoverLatest = async () => {
 export const discoverAll = async (progressCallback) => {
     try {
         const url = "http://tamilchristianworship.com/newpraiselinks.html";
-        const res = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
+        const res = await resilientFetch(url, {  timeout: 15000 });
         const $ = cheerio.load(res.data);
         
         const links = new Set();
@@ -121,22 +122,25 @@ export const searchSong = async (query) => {
     try {
         // TCW does not have a robust built-in search via query params for this specific section,
         // so we will simulate search by scraping the index and matching the text of the links.
-        const indexRes = await axios.get("http://tamilchristianworship.com/newpraiselinks.html", {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        const indexRes = await resilientFetch("http://tamilchristianworship.com/newpraiselinks.html", {
+            
             timeout: 15000
         });
         
         const $ = cheerio.load(indexRes.data);
         let bestUrl = null;
-        
-        const lowerQuery = query.toLowerCase();
+        let bestScore = 0;
         
         $('a').each((i, el) => {
             const href = $(el).attr('href');
-            const text = $(el).text().toLowerCase();
+            const title = $(el).text().trim();
             
-            if (href && href.endsWith('.html') && text.includes(lowerQuery) && !bestUrl) {
-                bestUrl = href.startsWith('http') ? href : `http://tamilchristianworship.com/${href}`;
+            if (href && href.endsWith('.html')) {
+                const score = calculateSimilarity(query, title);
+                if (score > bestScore && score >= 0.85) {
+                    bestScore = score;
+                    bestUrl = href.startsWith('http') ? href : `http://tamilchristianworship.com/${href}`;
+                }
             }
         });
         

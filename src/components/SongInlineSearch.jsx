@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Music } from "lucide-react";
 import API from "../api/axios";
@@ -46,7 +46,7 @@ export default function SongInlineSearch({ className = "" }) {
       setLoading(true);
       try {
         const res = await API.get(`/songs?search=${encodeURIComponent(query)}&limit=8`);
-        const songs = res.data.success ? res.data.data : [];
+        const songs = res.data.songs || res.data.data || [];
         cache.current[query] = songs;
         setResults(songs);
         setIsOpen(true);
@@ -102,7 +102,7 @@ export default function SongInlineSearch({ className = "" }) {
           onKeyDown={handleKeyDown}
           onFocus={() => { if (query.trim()) setIsOpen(true); }}
           placeholder="Search another song..."
-          className="w-full bg-white border border-[#E8DCCB] rounded-[10px] pl-10 pr-4 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
+          className="w-full bg-white border border-[#E8DCCB] rounded-[12px] pl-10 pr-4 py-3 min-h-11 text-[15px] sm:text-sm font-medium text-slate-700 focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
         />
         {loading && (
           <div className="absolute right-4 w-4 h-4 border-2 border-slate-200 border-t-[#D4AF37] rounded-full animate-spin"></div>
@@ -111,9 +111,9 @@ export default function SongInlineSearch({ className = "" }) {
 
       {/* Dropdown Results */}
       {isOpen && query.trim() && (
-        <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-[16px] border border-[#E8DCCB] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-[16px] border border-[#E8DCCB] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[60vh] sm:max-h-none">
           {results.length > 0 ? (
-            <div className="max-h-[320px] overflow-y-auto p-1.5">
+            <div className="max-h-[60vh] sm:max-h-[320px] overflow-y-auto p-1.5">
               {results.map((song, idx) => (
                 <button
                   key={song._id || idx}

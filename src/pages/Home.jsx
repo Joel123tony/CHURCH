@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Hero from "../components/Hero";
 import History from "../components/History";
 import Events from "../components/Events";
@@ -32,7 +32,6 @@ export default function Home() {
 
           // Build the final middle by: keep loaded sections in their saved order,
           // then inject any missing ones at their canonical position.
-          const resultMiddle = [...defaultMiddle]; // start from canonical order
           // Re-sort to match the user-saved order where possible
           const savedMiddle = loadedArray.filter(sec => defaultMiddle.includes(sec));
           const unsaved = defaultMiddle.filter(sec => !savedMiddle.includes(sec));
@@ -150,39 +149,59 @@ export default function Home() {
       }
     }
 
-    let component = null;
     switch (id) {
       case "hero":
-        component = <Hero />;
-        break;
+        return (
+          <div key={id} className={`cms-sec-${id}`}>
+            {styleBlock}
+            <Hero />
+          </div>
+        );
       case "history":
-        component = <History />;
-        break;
+        return (
+          <div key={id} className={`cms-sec-${id}`}>
+            {styleBlock}
+            <History />
+          </div>
+        );
       case "events":
-        component = <Events />;
-        break;
+        return (
+          <div key={id} className={`cms-sec-${id}`}>
+            {styleBlock}
+            <Events />
+          </div>
+        );
       case "gallery":
-        component = <Gallery />;
-        break;
+        return (
+          <div key={id} className={`cms-sec-${id}`}>
+            {styleBlock}
+            <Gallery />
+          </div>
+        );
       case "pastor":
-        component = <Pastor />;
-        break;
+        return (
+          <div key={id} className={`cms-sec-${id}`}>
+            {styleBlock}
+            <Pastor />
+          </div>
+        );
       case "testimonials":
-        component = <Testimonials />;
-        break;
+        return (
+          <div key={id} className={`cms-sec-${id}`}>
+            {styleBlock}
+            <Testimonials />
+          </div>
+        );
       case "youtube":
-        component = <YoutubeSection />;
-        break;
+        return (
+          <div key={id} className={`cms-sec-${id}`}>
+            {styleBlock}
+            <YoutubeSection />
+          </div>
+        );
       default:
         return null;
     }
-
-    return (
-      <div key={id} className={`cms-sec-${id}`}>
-        {styleBlock}
-        {component}
-      </div>
-    );
   };
 
   const renderLayout = () => {

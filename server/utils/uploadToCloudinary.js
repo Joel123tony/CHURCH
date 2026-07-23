@@ -1,9 +1,6 @@
 import cloudinary from "../config/cloudinary.js";
 import { compressImage, compressVideo } from "./compressMedia.js";
 
-/* ================================
-   SAFE CLOUDINARY UPLOAD
-================================ */
 export const uploadToCloudinary = async (rawBuffer, options = {}) => {
   const normalizedOptions =
     typeof options === "string" ? { folder: options } : options || {};
@@ -21,43 +18,41 @@ export const uploadToCloudinary = async (rawBuffer, options = {}) => {
     ...restOptions
   } = normalizedOptions;
 
-  // Perform Local Smart Compression
   let processedData;
 
   try {
     if (resource_type === "image") {
-
       processedData = await compressImage(rawBuffer);
-
     } else if (resource_type === "video") {
-
       processedData = await compressVideo(rawBuffer);
-
     } else {
-      processedData = { buffer: rawBuffer, originalSize: rawBuffer.length, compressedSize: rawBuffer.length, isCompressed: false };
+      processedData = {
+        buffer: rawBuffer,
+        originalSize: rawBuffer.length,
+        compressedSize: rawBuffer.length,
+        isCompressed: false
+      };
     }
-  } catch (compErr) {
-
-    // fallback to original buffer on crash
-    processedData = { buffer: rawBuffer, originalSize: rawBuffer.length, compressedSize: rawBuffer.length, isCompressed: false };
+  } catch {
+    processedData = {
+      buffer: rawBuffer,
+      originalSize: rawBuffer.length,
+      compressedSize: rawBuffer.length,
+      isCompressed: false
+    };
   }
 
   const { buffer, originalSize, compressedSize, isCompressed } = processedData;
 
-
-
   return new Promise((resolve, reject) => {
     if (!buffer) {
-
       return reject(new Error("No file buffer provided"));
     }
 
-    // Safety timeout: 5 minutes max for Cloudinary upload
     const timeoutId = setTimeout(() => {
       console.error("[UPLOAD TRACE] X. Cloudinary upload timed out after 5 minutes");
       reject(new Error("Cloudinary upload timed out. Please try again."));
     }, 5 * 60 * 1000);
-
 
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -87,8 +82,6 @@ export const uploadToCloudinary = async (rawBuffer, options = {}) => {
         const savings = originalSize - compressedSize;
         const savingsPercentage = originalSize > 0 ? Math.round((savings / originalSize) * 100) : 0;
 
-
-
         resolve({
           url: result.secure_url,
           optimized_url:
@@ -111,13 +104,11 @@ export const uploadToCloudinary = async (rawBuffer, options = {}) => {
       }
     );
 
-    // safety wrapper (prevents infinite hang)
-    uploadStream.on("error", (err) => {
+    uploadStream.on("error", (error) => {
       clearTimeout(timeoutId);
-      console.error("[UPLOAD TRACE] X. Stream Error event emitted:", err);
-      reject(err);
+      console.error("[UPLOAD TRACE] X. Stream Error event emitted:", error);
+      reject(error);
     });
-
 
     uploadStream.end(buffer);
   });

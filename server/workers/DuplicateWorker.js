@@ -17,22 +17,63 @@ export class DuplicateWorker extends BaseWorker {
 
         console.log(`[DuplicateWorker] Checking duplicates for: ${song.title}`);
 
-        // Simple duplicate detection for now: Check exact title match 
-        // (Excluding the current song itself and already marked duplicates)
-        const possibleDupe = await Song.findOne({
+        // Advanced duplicate detection using AI canonical signals
+        let possibleDupe = await Song.findOne({
             _id: { $ne: song._id },
-            title: song.title,
-            duplicateOf: null
+            $or: [
+                { canonicalHash: song.canonicalHash },
+                { normalizedTitle: song.normalizedTitle }
+            ],
+            duplicateOf: null,
+            status: "completed"
         });
+
+        if (!possibleDupe) {
+            // Fuzzy matching using title similarity, alternate spellings, and transliterations
+            const stringSimilarity = (await import('string-similarity')).default || (await import('string-similarity'));
+            const candidates = await Song.find({
+                _id: { $ne: song._id },
+                duplicateOf: null,
+                status: "completed"
+            }).select("title titleEnglish titleTamil");
+
+            const songTitle = (song.titleEnglish || song.title || "").toLowerCase();
+            
+            if (songTitle && candidates.length > 0) {
+                let bestMatch = null;
+                let highestScore = 0;
+
+                for (const candidate of candidates) {
+                    const cTitle = (candidate.titleEnglish || candidate.title || "").toLowerCase();
+                    if (!cTitle) continue;
+                    
+                    const score = stringSimilarity.compareTwoStrings(songTitle, cTitle);
+                    if (score > highestScore) {
+                        highestScore = score;
+                        bestMatch = candidate;
+                    }
+                }
+
+                if (highestScore > 0.85) {
+                    console.log(`[DuplicateWorker] Fuzzy match found: ${songTitle} == ${bestMatch.titleEnglish || bestMatch.title} (${highestScore})`);
+                    possibleDupe = await Song.findById(bestMatch._id);
+                }
+            }
+        }
 
         if (possibleDupe) {
             console.log(`[DuplicateWorker] Found duplicate! Merging ${song.title} under ${possibleDupe._id}`);
             song.duplicateOf = possibleDupe._id;
             // Transfer metadata if missing on primary
-            if (!possibleDupe.youtubeUrl && song.youtubeUrl) {
-                possibleDupe.youtubeUrl = song.youtubeUrl;
-                await possibleDupe.save();
+            if (!possibleDupe.youtubeUrl && song.youtubeUrl) possibleDupe.youtubeUrl = song.youtubeUrl;
+            if (!possibleDupe.sourceUrl && song.sourceUrl) possibleDupe.sourceUrl = song.sourceUrl;
+            
+            // Push provider history
+            if (song.providerHistory && song.providerHistory.length > 0) {
+                possibleDupe.providerHistory = [...(possibleDupe.providerHistory || []), ...song.providerHistory];
             }
+            
+            await possibleDupe.save();
         }
 
         song.status = "completed"; // Final successful state

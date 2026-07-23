@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { FaExclamationTriangle, FaQuestionCircle, FaCheckCircle, FaInfoCircle, FaTimesCircle } from "react-icons/fa";
 
 const ConfirmContext = createContext(null);
@@ -20,6 +20,7 @@ export function useAlert() {
 }
 
 export function ConfirmProvider({ children }) {
+  const resolveRef = useRef(null);
   const [modalState, setModalState] = useState({
     isOpen: false,
     type: "confirm", // "confirm" or "alert"
@@ -34,6 +35,7 @@ export function ConfirmProvider({ children }) {
 
   const confirm = (options = {}) => {
     return new Promise((resolve) => {
+      resolveRef.current = resolve;
       setModalState({
         isOpen: true,
         type: "confirm",
@@ -50,6 +52,7 @@ export function ConfirmProvider({ children }) {
 
   const alert = (options = {}) => {
     return new Promise((resolve) => {
+      resolveRef.current = resolve;
       let defaultIcon = "info";
       if (options.title?.includes("❌")) defaultIcon = "error";
       if (options.title?.includes("✅")) defaultIcon = "success";
@@ -68,12 +71,13 @@ export function ConfirmProvider({ children }) {
     });
   };
 
-  const handleClose = (value) => {
-    if (modalState.resolve) {
-      modalState.resolve(value);
+  const handleClose = useCallback((value) => {
+    if (resolveRef.current) {
+      resolveRef.current(value);
+      resolveRef.current = null;
     }
     setModalState((prev) => ({ ...prev, isOpen: false, resolve: null }));
-  };
+  }, []);
 
   // Accessibility: Listen to ESC key
   useEffect(() => {
@@ -86,7 +90,7 @@ export function ConfirmProvider({ children }) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [modalState.isOpen]);
+  }, [modalState.isOpen, handleClose]);
 
   const confirmButtonRef = useRef(null);
 

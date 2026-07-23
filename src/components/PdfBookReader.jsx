@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import HTMLFlipBook from "react-pageflip";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.js";
 import PdfPage from "./PdfPage";

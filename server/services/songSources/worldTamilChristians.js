@@ -1,6 +1,7 @@
-import axios from "axios";
+import { resilientFetch } from "../../utils/resilientFetch.js";
 import * as cheerio from "cheerio";
 import { extractSongsFromHtml } from "../../utils/lyricsExtractor.js";
+import { calculateSimilarity } from "../../utils/searchNormalizer.js";
 export const isCollectionPage = (url) => {
     if (!url) return false;
     const lower = url.toLowerCase();
@@ -15,8 +16,8 @@ export const isSongPage = (url) => {
 
 export const extractCollection = async (url) => {
     try {
-        const res = await axios.get(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
+        const res = await resilientFetch(url, {
+            
             timeout: 15000
         });
         const $ = cheerio.load(res.data);
@@ -38,11 +39,14 @@ export const extractCollection = async (url) => {
 
 export const extractSong = async (songUrl) => {
     try {
-        const res = await axios.get(songUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, timeout: 15000 });
+        const res = await resilientFetch(songUrl, { 
+             
+            timeout: 15000 
+        });
         const extractedSongs = await extractSongsFromHtml(res.data, songUrl);
         
         if (!extractedSongs || extractedSongs.length === 0) {
-            throw new Error("Lyrics could not be found or were rejected by the sanitizer.");
+            throw new Error("Lyrics could not be found or were rejected by the sanitizer.", { cause: new Error("extractSongsFromHtml returned no songs") });
         }
 
         return extractedSongs.map(extracted => ({ 
@@ -56,20 +60,35 @@ export const extractSong = async (songUrl) => {
         }));
     } catch (err) {
         console.error("WTC extractSong Error:", err.message);
-        throw new Error(`WTC Provider Error: ${err.message}`);
+        throw new Error(`WTC Provider Error: ${err.message}`, { cause: err });
     }
 }
 
 export const searchSong = async (query) => {
     try {
-        const searchRes = await axios.get(`https://www.worldtamilchristians.com/?s=${encodeURIComponent(query)}`, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, timeout: 10000 });
+        const searchRes = await resilientFetch(`https://www.worldtamilchristians.com/?s=${encodeURIComponent(query)}`, { 
+             
+            timeout: 10000 
+        });
         const $q = cheerio.load(searchRes.data);
         
+        if (searchRes.data.includes('grecaptcha') || searchRes.data.includes('403 Forbidden')) {
+            console.warn(`[WTC] WAF Bot Verification blocked search for "${query}". Returning null.`);
+            return null;
+        }
+
         let bestUrl = null;
-        $q('article').each((i, el) => {
-            const loc = $q(el).find('.entry-title a').attr('href');
-            if (loc && !bestUrl) {
-                bestUrl = loc;
+        let bestScore = 0;
+        
+        $q('.post-title a, .entry-title a, h2 a, h3 a').each((i, el) => {
+            const loc = $q(el).attr('href');
+            const title = $q(el).text().trim();
+            if (loc && loc.includes('worldtamilchristians.com')) {
+                const score = calculateSimilarity(query, title);
+                if (score > bestScore && score >= 0.85) {
+                    bestScore = score;
+                    bestUrl = loc;
+                }
             }
         });
 
@@ -77,8 +96,13 @@ export const searchSong = async (query) => {
             const songs = await extractSong(bestUrl);
             return songs.length > 0 ? songs[0] : null;
         }
+        
         return null;
     } catch (error) {
+        if (error.message.includes('403') || error.message.includes('503')) {
+            console.warn(`[WTC] WAF blocked search for "${query}". Returning null.`);
+            return null;
+        }
         console.error("WTC searchSong Error:", error.message);
         return null;
     }
@@ -86,8 +110,8 @@ export const searchSong = async (query) => {
 
 export const discoverLatest = async () => {
     try {
-        const indexRes = await axios.get("https://www.worldtamilchristians.com/category/tamil-christians-songs/", {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
+        const indexRes = await resilientFetch("https://www.worldtamilchristians.com/category/tamil-christians-songs/", {
+            
             timeout: 10000
         });
         const $ = cheerio.load(indexRes.data);
@@ -115,8 +139,8 @@ export const discoverAll = async (progressCallback) => {
                 ? "https://www.worldtamilchristians.com/category/tamil-christians-songs/"
                 : `https://www.worldtamilchristians.com/category/tamil-christians-songs/page/${page}/`;
                 
-            const res = await axios.get(pageUrl, {
-                headers: { 'User-Agent': 'Mozilla/5.0' },
+            const res = await resilientFetch(pageUrl, {
+                
                 timeout: 15000
             });
             

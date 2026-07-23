@@ -13,7 +13,7 @@ if (contentDiv.length) {
         const pHtml = $(el).html();
         if (pHtml) {
            // replace <br> with newline
-           const pText = $(el).html().replace(/<br\s*[\/]?>/gi, '\n');
+           const pText = $(el).html().replace(/<br\s*\/?>/gi, '\n');
            const textNode = cheerio.load(pText).text().trim();
            if (textNode) {
                lyricsText += textNode + "\n\n";
@@ -23,4 +23,3 @@ if (contentDiv.length) {
     console.log("Lyrics extracted:\n");
     console.log(lyricsText.substring(0, 1000));
 }
-

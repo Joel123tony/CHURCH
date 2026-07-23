@@ -112,6 +112,10 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 /* =========================
    ROUTES
 ========================= */
@@ -128,6 +132,26 @@ app.use("/api/youtube", youtubeRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/books", bookRoutes);
 app.use("/api/donations", donationRoutes);
+
+app.get("/api/temp-cleanup", async (req, res) => {
+    try {
+        const { default: Song } = await import("./models/Song.js");
+        const { default: SongSearchCache } = await import("./models/SongSearchCache.js");
+        
+        const query = { $or: [
+          { title: { $regex: /Ummai|Thuthiyin|Enna|Pudhiya|kalvaariyil|Aarathippen/i } },
+          { title: { $regex: /உம்மை|துதியின்|என்ன|புதிய|ஆராதிப்பேன்/i } },
+          { titleTamil: { $regex: /உம்மை|துதியின்|என்ன|புதிய|ஆராதிப்பேன்/i } },
+          { searchKey: { $regex: /Ummai|Thuthiyin|Enna|Pudhiya|kalvaariyil|Aarathippen/i } }
+        ] };
+        const delSongs = await Song.deleteMany(query);
+        const delCaches = await SongSearchCache.deleteMany({});
+        
+        res.json({ deletedSongs: delSongs.deletedCount, clearedCaches: delCaches.deletedCount });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 /* =========================
    404 HANDLER

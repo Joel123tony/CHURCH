@@ -1,8 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
-const containsTamil = (text) => /[\u0B80-\u0BFF]/.test(text);
-
 async function test() {
     const res = await axios.get('https://www.worldtamilchristians.com/en-samugam-un-mun-sentridum-song-lyrics/');
     const $ = cheerio.load(res.data);
@@ -11,7 +9,7 @@ async function test() {
 
     let rawHtml = contentDiv.html() || "";
     rawHtml = rawHtml.replace(/<\/(p|div|h[1-6]|li)>/gi, '\n');
-    rawHtml = rawHtml.replace(/<br\s*[\/]?>/gi, '\n');
+    rawHtml = rawHtml.replace(/<br\s*\/?>/gi, '\n');
     
     let rawText = cheerio.load(rawHtml).text();
     let lines = rawText.split('\n');

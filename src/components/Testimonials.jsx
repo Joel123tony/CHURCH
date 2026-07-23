@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getBlock } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -41,7 +41,7 @@ function MessageCard({ item, index, visible, t }) {
   return (
     <article
       style={{ animationDelay: `${index * 90}ms` }}
-      className={`group relative flex flex-col overflow-hidden rounded-[24px] bg-white border border-slate-100 p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] ${visible ? "animate-event-card-in" : "opacity-0"}`}
+      className={`group relative flex flex-col overflow-hidden rounded-[24px] bg-[#F4EFE7] border border-[#d8cbb7] p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] ${visible ? "animate-event-card-in" : "opacity-0"}`}
     >
       {/* Decorative top border highlight on hover */}
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ee0039] to-[#54091b] opacity-40 transition-opacity duration-300 group-hover:opacity-100" />
@@ -52,17 +52,17 @@ function MessageCard({ item, index, visible, t }) {
       </svg>
 
       {/* Quote */}
-      <p className="flex-1 text-base leading-relaxed text-slate-600 mb-8 font-medium">
+      <p className="flex-1 text-base leading-relaxed text-[#54091b] mb-8 font-medium">
         "{t(item.quote)}"
       </p>
 
       {/* Author */}
       <div className="flex items-center gap-4 pt-5 border-t border-slate-100/60">
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#54091b]/5 text-base font-bold text-[#54091b] ring-1 ring-[#54091b]/10 group-hover:bg-[#54091b]/10 transition-colors duration-300 shadow-sm">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#54091b]/10 text-base font-bold text-[#54091b] ring-1 ring-[#54091b]/10 group-hover:bg-[#54091b]/15 transition-colors duration-300 shadow-sm">
           {getInitials(item.author) || "?"}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-base font-bold text-slate-900 transition-colors duration-300 group-hover:text-[#54091b]">
+          <p className="truncate text-base font-bold text-[#54091b] transition-colors duration-300 group-hover:text-[#54091b]">
             {item.author}
           </p>
           {item.role && (
@@ -107,13 +107,13 @@ export default function Testimonials() {
     <section
       id="pastor-message"
       ref={sectionRef}
-      className="py-16 overflow-hidden bg-[#F4EFE7]"
+      className="py-16 overflow-hidden bg-[#5b1320]"
     >
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
 
         {/* ── Heading ── */}
         <div className="mb-6 lg:mb-8">
-          <h2 className="text-3xl font-bold text-[#54091b]">
+          <h2 className="text-3xl font-bold text-[#F4EFE7]">
             {t("Pastor's Message")}
           </h2>
           
@@ -128,7 +128,7 @@ export default function Testimonials() {
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
-                  className="h-52 animate-pulse rounded-3xl shadow-sm bg-[#FFFFFF]"
+                  className="h-52 animate-pulse rounded-3xl shadow-sm bg-[#F4EFE7]"
                 />
               ))}
             </div>
@@ -158,7 +158,7 @@ export default function Testimonials() {
                 opacity: visible ? 1 : 0,
                 transition: "opacity 0.5s ease",
               }}
-              className="text-center text-base text-[#1E293B]"
+              className="text-center text-base text-[#F4EFE7]/90"
             >
               {t("No messages yet.")}
             </p>

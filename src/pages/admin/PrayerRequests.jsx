@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import API from "../../api/axios";
 import {
-  FaCheckCircle,
   FaCheckDouble,
   FaCopy,
   FaEye,
@@ -11,7 +10,7 @@ import {
   FaWhatsapp,
   FaCheck
 } from "react-icons/fa";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { useConfirm } from "../../context/ConfirmContext";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -188,15 +187,9 @@ export default function PrayerRequests() {
     setActiveSuggestionIndex(-1);
   };
 
-  const selectedItems = useMemo(
-    () => requests.filter((r) => selectedRequests.includes(r._id)),
-    [requests, selectedRequests]
-  );
+  const selectedItems = requests.filter((r) => selectedRequests.includes(r._id));
 
-  const visibleRequestIds = useMemo(
-    () => filteredRequests.map((request) => request._id),
-    [filteredRequests]
-  );
+  const visibleRequestIds = filteredRequests.map((request) => request._id);
 
   const isAllVisibleSelected =
     visibleRequestIds.length > 0 &&

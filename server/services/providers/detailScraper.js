@@ -30,7 +30,6 @@ export const scrapeSongDetails = async (url) => {
     possibleSelectors.push("body");
 
     let finalHtml = "";
-    let usedSelector = "";
 
     for (const sel of possibleSelectors) {
       if ($(sel).length > 0) {
@@ -87,7 +86,6 @@ export const scrapeSongDetails = async (url) => {
         // Validate content (meaningful lyrics block should have at least 2 lines)
         if (validLines >= 2) {
           finalHtml = cleanHtml.html();
-          usedSelector = sel;
           console.log(`[Scraper] ${domain}: Success with selector "${sel}"`);
           break;
         } else {

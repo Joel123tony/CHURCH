@@ -26,7 +26,7 @@ export default function Hero() {
         }
         return { videoId: newVideoId, title: newTitle };
       });
-    } catch (err) {
+    } catch {
       // Intentionally ignoring errors (e.g. ad blockers blocking /youtube route)
       // to keep console clean as requested.
       setVideo((prev) => {
@@ -75,7 +75,7 @@ export default function Hero() {
               </div>
             ) : (
               <iframe
-                className="absolute left-0 top-0 h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                className="absolute left-0 top-0 h-full w-full"
                 src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
                 title={video.title || "YouTube Video"}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"

@@ -1,5 +1,3 @@
-import React from "react";
-
 const formatBytes = (bytes) => {
   if (!bytes) return "0 KB";
   const units = ["B", "KB", "MB", "GB"];
@@ -15,29 +13,23 @@ export default function CompressionBadge({ stats }) {
   if (!stats) return null;
 
   const { status, savingsPercentage, savings, originalSize, compressedSize } = stats;
+  const badgeConfig =
+    status === "Compressed" && savingsPercentage > 0
+      ? { className: "bg-green-600/90", label: `✓ Saved ${savingsPercentage}%` }
+      : status === "Already Optimized"
+        ? { className: "bg-slate-700/90", label: "✓ Already Optimized" }
+        : status === "Error" || status === "Failed"
+          ? { className: "bg-red-600/90", label: "⚠ Compression Failed" }
+          : null;
 
-  let bgColor = "bg-gray-500/90";
-  let text = "";
-
-  if (status === "Compressed" && savingsPercentage > 0) {
-    bgColor = "bg-green-600/90";
-    text = `✓ Saved ${savingsPercentage}%`;
-  } else if (status === "Already Optimized") {
-    bgColor = "bg-slate-700/90";
-    text = "✓ Already Optimized";
-  } else if (status === "Error" || status === "Failed") {
-    bgColor = "bg-red-600/90";
-    text = "⚠ Compression Failed";
-  } else {
-    return null;
-  }
+  if (!badgeConfig) return null;
 
   return (
     <div className="absolute top-2 left-2 z-20 group animate-in fade-in duration-300">
       <div
-        className={`rounded-md px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md border border-white/10 ${bgColor}`}
+        className={`rounded-md px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm backdrop-blur-md border border-white/10 ${badgeConfig.className}`}
       >
-        {text}
+        {badgeConfig.label}
       </div>
 
       {status === "Compressed" && (

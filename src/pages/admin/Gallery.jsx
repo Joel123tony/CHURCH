@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import API from "../../api/axios";
 import GalleryUpload from "./GalleryUpload";
 import MediaCard from "../../components/MediaCard";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { useConfirm } from "../../context/ConfirmContext";
 import "react-toastify/dist/ReactToastify.css";
 import {
