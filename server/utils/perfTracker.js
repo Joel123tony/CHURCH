@@ -114,7 +114,7 @@ export const perfMiddleware = (req, res, next) => {
             logStage("TOTAL", perfObj.total);
             console.log("================================\n");
 
-            const shouldExposePerf = process.env.ENABLE_PERF_LOGS === 'true' || process.env.NODE_ENV === 'development';
+            const shouldExposePerf = process.env.ENABLE_PERF_LOGS === 'true' || process.env.NODE_ENV === 'development' || req.query.ENABLE_PERF_LOGS === 'true';
             if (shouldExposePerf && typeof body === 'object' && body !== null) {
                 // Ensure performance block respects original format requested
                 body.performance = {
