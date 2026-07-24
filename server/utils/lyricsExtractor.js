@@ -376,13 +376,15 @@ export const extractSongsFromHtml = async (html, sourceUrl = "") => {
     // Specific noise removal
     contentArea.find("p, div, span, h1, h2, h3, h4, h5, h6").each((i, el) => {
         const text = $(el).text().toLowerCase().trim();
-        if (text.startsWith("keyboard chords for") || 
+        if (text.length < 150 && (
+            text.startsWith("keyboard chords for") || 
             text.startsWith("chords for") || 
             text.includes("click here to download") ||
             text.includes("added to wishlist") ||
             text.includes("related songs") ||
             text.includes("other songs") ||
-            text.includes("download")) {
+            text.includes("download")
+        )) {
             $(el).remove();
         }
     });

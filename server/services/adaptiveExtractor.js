@@ -67,9 +67,7 @@ const noisePatterns = [
   /\b1\s+2\s+3\s+4\b/,
   /\bview count/i,
   /\bcomment(s)?\b/i,
-  /\bsearch\b/i,
-  /\btamil christian songs?\b/i,
-  /\bgod medias\b/i
+  /\bsearch\b/i
 ];
 
 const COLLECTION_PATTERNS = [
