@@ -151,7 +151,10 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
       }
     }
 
-    if (!primaryCandidate) return null;
+    if (!primaryCandidate) {
+      await upsertSearchCache(searchKey, null, "Not Found");
+      return null;
+    }
 
     const providerCandidates = candidates.filter(Boolean);
     const sourceText = primaryCandidate.lyricsTamil || primaryCandidate.cleanedLyrics || primaryCandidate.lyrics || primaryCandidate.lyricsEnglish || "";
@@ -168,6 +171,8 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
       {
         ...primaryCandidate,
         ...processed,
+        status: "completed",
+        isPublished: true,
         providerCandidates
       },
       {
@@ -324,12 +329,32 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
       console.log(`[SongService] Cache hit for "${searchQuery}"`);
       dbSongs = [cached.results, ...dbSongs]; // Prepend cached result
       totalCount += 1;
+    } else if (cached && cached.results === null) {
+      console.log(`[SongService] Cached negative result for "${searchQuery}". Returning empty immediately.`);
+      return {
+        success: true,
+        status: "completed",
+        songs: [],
+        totalSongs: 0,
+        currentPage: 1,
+        totalPages: 1
+      };
     } else {
       if (cached && !cached.results) {
         console.log(`[SongService] Cached miss for "${searchQuery}" will be retried against providers.`);
       }
       console.log(`[SongService] No strong local results for "${searchQuery}". Launching background search...`);
       
+      // DEBUG: Allow synchronous waiting to extract stack trace on Render
+      if (query === "DEBUG_KIRUBA") {
+          try {
+              const res = await importSongOnDemand("Kiruba Kiruba", selectedCategories);
+              return { success: true, status: "debug_success", result: res };
+          } catch (e) {
+              return { success: false, status: "debug_error", error: e.message, stack: e.stack };
+          }
+      }
+
       // Fire and forget
       importSongOnDemand(searchQuery, selectedCategories).catch(err => {
         console.error(`[SongService] On-demand import error:`, err.stack);

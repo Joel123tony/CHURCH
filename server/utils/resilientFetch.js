@@ -27,6 +27,8 @@ async function fetchWithPuppeteer(url) {
       args: [
         '--no-sandbox', 
         '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
         '--disable-blink-features=AutomationControlled',
         '--disable-infobars',
         '--window-position=0,0',
@@ -79,7 +81,7 @@ async function fetchWithPuppeteer(url) {
 export const resilientFetch = async (url, options = {}) => {
   const {
     maxRetries = 3,
-    baseTimeout = 10000,
+    baseTimeout = 15000,
     backoffMs = 2000,
     headers = {},
     ...axiosOptions
@@ -115,10 +117,10 @@ export const resilientFetch = async (url, options = {}) => {
 
       return res;
     } catch (error) {
-      const isRateLimitOrBlocked = error.response && [403, 429, 503].includes(error.response.status);
+      const isRateLimitOrBlocked = (error.response && [403, 429, 503].includes(error.response.status)) || error.code === 'ECONNABORTED' || error.message.includes('timeout');
       
       if (isRateLimitOrBlocked) {
-        console.warn(`[resilientFetch] HTTP 403/503 detected for ${url}. Falling back to Puppeteer...`);
+        console.warn(`[resilientFetch] HTTP Block or Timeout detected for ${url}. Falling back to Puppeteer...`);
         try {
            const pupRes = await withPerfTimer("htmlDownload", () => fetchWithPuppeteer(url));
            return pupRes;
