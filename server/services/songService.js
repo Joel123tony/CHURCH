@@ -169,6 +169,7 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
 
     const payload = buildSongPayload(
       {
+        title: primaryCandidate.title || query,
         ...primaryCandidate,
         ...processed,
         status: "completed",
