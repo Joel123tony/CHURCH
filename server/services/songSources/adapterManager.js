@@ -6,8 +6,8 @@ import * as tgmProvider from "./theGodsMusic.js";
 import * as ytProvider from "./youtubeDiscovery.js";
 import { getCached, setCached } from "../../utils/cache.js";
 import { recordProviderHealth } from "../ai/providerHealth.js";
-
 import { getProviderHealthSnapshot } from "../ai/providerHealth.js";
+import { withPerfTimer, recordPerf } from "../../utils/perfTracker.js";
 
 // Ordered by priority
 const baseProviders = [
@@ -92,7 +92,7 @@ export const searchOnlineSources = async (query) => {
                 setTimeout(() => reject(new Error("timeout")), 3000)
             );
             
-            const searchPromise = provider.searchSong(query);
+            const searchPromise = withPerfTimer(name, () => provider.searchSong(query), true);
             const result = await Promise.race([searchPromise, timeoutPromise]);
             
             if (result && result.lyricsTamil) {
@@ -185,7 +185,7 @@ export const searchOnlineSourcesAcrossProviders = async (query, maxResults = 3) 
             const { name, provider } = activeProviders[currentIndex++];
             const start = Date.now();
             try {
-                const result = await provider.searchSong(query);
+                const result = await withPerfTimer(name, () => provider.searchSong(query), true);
                 if (result && result.lyricsTamil) {
                     await recordProviderHealth({
                         provider: name,

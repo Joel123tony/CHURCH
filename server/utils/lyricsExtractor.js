@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import { cleanLyricsWithAI } from "../services/aiLyricsCleaner.js";
 import { buildSongPayload, normalizeLyricsText } from "./songNormalization.js";
 import { extractAdaptiveLyrics, sanitizeScrapedHtml } from "../services/adaptiveExtractor.js";
+import { recordPerf } from "./perfTracker.js";
 
 const cleanTitle = (rawTitle) => {
     let title = rawTitle.replace(/[^\w\s\u0B80-\u0BFF]/g, " ").replace(/\s+/g, " ").trim();
@@ -178,6 +179,7 @@ export const isMissingTitle = (title) => {
 };
 
 export const extractLyricsFromHtml = async (html, sourceUrl = "") => {
+    const extractionStart = process.hrtime.bigint();
     const sanitizedHtml = sanitizeScrapedHtml(html);
     const $ = cheerio.load(sanitizedHtml);
 
@@ -257,11 +259,19 @@ export const extractLyricsFromHtml = async (html, sourceUrl = "") => {
     const plainText = canonicalText;
     const extractionConfidence = adaptive.confidence || 0;
     
+    const extractionEnd = process.hrtime.bigint();
+    recordPerf("parsing", Number(extractionEnd - extractionStart) / 1000000);
+    
     console.log(`[Lyrics Extractor] Running advanced regex cleanup pipeline for: ${titleTamil || titleEnglish || sourceUrl}`);
     
+    const cleaningStart = process.hrtime.bigint();
     const cleanLyrics = advancedLyricsCleanup(normalizeLyricsText(plainText));
+    const cleaningEnd = process.hrtime.bigint();
+    recordPerf("cleaning", Number(cleaningEnd - cleaningStart) / 1000000);
+    
     const resolvedTitle = titleTamil || titleEnglish || rawTitle || "";
 
+    const validationStart = process.hrtime.bigint();
     const lowerLyrics = cleanLyrics.toLowerCase();
 
     if (lowerLyrics.includes("added to wishlist") || 
@@ -279,6 +289,9 @@ export const extractLyricsFromHtml = async (html, sourceUrl = "") => {
     const lyricsLines = cleanLyrics.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
     if (lyricsLines.length < 2) throw new Error("Hard Reject: Lyrics too short (< 2 lines)");
     if (cleanLyrics.length < 50) throw new Error("Hard Reject: Lyrics too short (< 50 chars)");
+    
+    const validationEnd = process.hrtime.bigint();
+    recordPerf("validation", Number(validationEnd - validationStart) / 1000000);
 
     console.log(`[Lyrics Extractor] Validation Passed for ${resolvedTitle}`);
 

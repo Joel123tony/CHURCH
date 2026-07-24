@@ -2,6 +2,7 @@ import { searchSongs } from "../services/songService.js";
 import { getCached, setCached } from "../utils/cache.js";
 import Song from "../models/Song.js";
 import { prepareSongForClient, normalizeLyricsText } from "../utils/songNormalization.js";
+import { withPerfTimer, recordPerf } from "../utils/perfTracker.js";
 
 /* =========================
    SEARCH MULTI-SOURCE
@@ -17,7 +18,11 @@ export const searchSongsController = async (req, res) => {
     
     // Cache Key
     const cacheKey = `songs_search_${query}_${category}_${sortOrder}_${page}_${limit}`;
+    const cacheStart = process.hrtime.bigint();
     const cachedData = getCached(cacheKey);
+    const cacheEnd = process.hrtime.bigint();
+    recordPerf("cacheLookup", Number(cacheEnd - cacheStart) / 1000000);
+    
     if (cachedData) {
       console.log(`[SongController] Search "${query}" resolved from ultra-fast cache in ${Date.now() - reqStart}ms`);
       return res.json(cachedData);

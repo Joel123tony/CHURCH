@@ -97,6 +97,12 @@ app.use(express.json({ limit: "2000mb" }));
 app.use(express.urlencoded({ extended: true, limit: "2000mb" }));
 
 /* =========================
+   PERFORMANCE LOGGING
+========================= */
+import { perfMiddleware } from "./utils/perfTracker.js";
+app.use(perfMiddleware);
+
+/* =========================
    TRANSLATE & SONGS (no DB required)
 ========================= */
 app.use("/api/translate", translateRoutes);

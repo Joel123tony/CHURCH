@@ -7,6 +7,7 @@ import { buildSongPayload, prepareSongForClient } from "../utils/songNormalizati
 import { processLyricsWithAi } from "./ai/index.js";
 import { refreshSongRelationships } from "./knowledgeGraph.js";
 import { queueSongForReview } from "./reviewWorkflow.js";
+import { withPerfTimer, recordPerf } from "../utils/perfTracker.js";
 
 const normalizeScoreText = (value = "") => normalizeTanglish(String(value || "")).toLowerCase().trim();
 const onDemandImportLocks = new Map();
@@ -128,7 +129,7 @@ const findExistingSongRecord = async (songData = {}, query = "") => {
     }
   }
 
-  const existing = await Song.findOne({ $or: queryParts }).lean();
+  const existing = await withPerfTimer("merge", () => Song.findOne({ $or: queryParts }).lean());
   return existing || null;
 };
 
@@ -183,7 +184,7 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
     }
 
     const song = new Song(payload);
-    await song.save();
+    await withPerfTimer("save", () => song.save());
 
     // Queue AI cleaning in the background asynchronously
     const { QueueManager } = await import("../utils/queueManager.js");
@@ -295,10 +296,10 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
       findOperation.sort({ publishedDate: -1, createdAt: -1 });
     }
     
-    [dbSongs, totalCount] = await Promise.all([
+    [dbSongs, totalCount] = await withPerfTimer("mongoLookup", () => Promise.all([
       findOperation.skip(skip).limit(limit).lean(),
       Song.countDocuments(dbQuery)
-    ]);
+    ]));
     console.log(`[SongService] MongoDB lookup for "${searchQuery}" completed in ${Date.now() - mongoStart}ms`);
   } catch (err) {
     console.error("[SongService] MongoDB Error:", err);

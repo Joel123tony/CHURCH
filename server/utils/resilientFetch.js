@@ -3,6 +3,7 @@ import { wrapper } from 'axios-cookiejar-support';
 import { CookieJar } from 'tough-cookie';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { withPerfTimer, recordPerf } from "./perfTracker.js";
 
 puppeteer.use(StealthPlugin());
 
@@ -105,12 +106,12 @@ export const resilientFetch = async (url, options = {}) => {
         ...headers
       };
 
-      const res = await client.get(url, {
+      const res = await withPerfTimer("htmlDownload", () => client.get(url, {
         ...axiosOptions,
         headers: mergedHeaders,
         timeout: baseTimeout,
         validateStatus: status => status < 500 && status !== 403 
-      });
+      }));
 
       return res;
     } catch (error) {
@@ -119,7 +120,7 @@ export const resilientFetch = async (url, options = {}) => {
       if (isRateLimitOrBlocked) {
         console.warn(`[resilientFetch] HTTP 403/503 detected for ${url}. Falling back to Puppeteer...`);
         try {
-           const pupRes = await fetchWithPuppeteer(url);
+           const pupRes = await withPerfTimer("htmlDownload", () => fetchWithPuppeteer(url));
            return pupRes;
         } catch (pupError) {
            lastError = pupError;
