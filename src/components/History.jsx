@@ -21,7 +21,7 @@ export default function History() {
       ];
 
   return (
-    <section id="church-history" className="overflow-hidden bg-[#F4EFE7]">
+    <section id="history" className="overflow-hidden bg-[#F4EFE7]">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="pt-16 lg:pt-24">
           <h2 className="mb-6 lg:mb-8 text-3xl font-bold text-[#54091b]">

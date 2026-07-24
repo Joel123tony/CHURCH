@@ -346,10 +346,30 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
       console.log(`[SongService] No strong local results for "${searchQuery}". Launching background search...`);
       
       // DEBUG: Allow synchronous waiting to extract stack trace on Render
-      if (query === "DEBUG_KIRUBA") {
+      if (query === "DEBUG_YOUTUBE") {
           try {
-              const res = await importSongOnDemand("Kiruba Kiruba", selectedCategories);
-              return { success: true, status: "debug_success", result: res };
+              const { searchSong } = await import("./songSources/youtubeDiscovery.js");
+              const hasKey = !!process.env.YOUTUBE_API_KEY;
+              const keyPrefix = hasKey ? process.env.YOUTUBE_API_KEY.substring(0, 5) : "MISSING";
+              
+              // We will run resilientFetch manually to capture exact HTTP status
+              const { resilientFetch } = await import("../../utils/resilientFetch.js");
+              const encQuery = encodeURIComponent("test song");
+              const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encQuery}&type=video&key=${process.env.YOUTUBE_API_KEY}`;
+              
+              let fetchResult = "none";
+              try {
+                  const res = await resilientFetch(url, { timeout: 10000 });
+                  fetchResult = { status: res.status, data: res.data };
+              } catch (err) {
+                  fetchResult = { 
+                      error: err.message, 
+                      status: err.response?.status, 
+                      data: err.response?.data 
+                  };
+              }
+              
+              return { success: true, status: "debug_youtube", hasKey, keyPrefix, fetchResult };
           } catch (e) {
               return { success: false, status: "debug_error", error: e.message, stack: e.stack };
           }
