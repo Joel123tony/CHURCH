@@ -118,7 +118,32 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
+  if (req.query.youtube) {
+    try {
+      const { resilientFetch } = await import("./utils/resilientFetch.js");
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      const hasKey = !!apiKey;
+      const keyPrefix = hasKey ? apiKey.substring(0, 5) : "MISSING";
+      const encQuery = encodeURIComponent("test song");
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encQuery}&type=video&key=${apiKey}`;
+      
+      let fetchResult = "none";
+      try {
+          const ytRes = await resilientFetch(url, { timeout: 10000 });
+          fetchResult = { status: ytRes.status, data: ytRes.data };
+      } catch (err) {
+          fetchResult = { 
+              error: err.message, 
+              status: err.response?.status, 
+              data: err.response?.data 
+          };
+      }
+      return res.status(200).json({ status: "ok", hasKey, keyPrefix, fetchResult });
+    } catch (e) {
+      return res.status(500).json({ status: "error", error: e.message });
+    }
+  }
   res.status(200).json({ status: "ok" });
 });
 
