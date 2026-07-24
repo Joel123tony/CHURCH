@@ -93,18 +93,17 @@ export default function Navbar() {
     e.preventDefault();
     setMenuOpen(false);
 
-    if (pathname !== "/") {
-      navigate(href);
-      // Let MainLayout route change to home, then scroll to section after mount
-      setTimeout(() => {
-        const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    } else {
+    const targetHash = href.replace("/", "");
+    if (pathname === "/" && window.location.hash === targetHash) {
+      // Already on the same page and same hash. Just force scroll.
       const el = document.getElementById(id);
       if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
+        const yOffset = -80; 
+        const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
+        window.scrollTo({ top: y, behavior: "smooth" });
       }
+    } else {
+      navigate(href);
     }
   };
 

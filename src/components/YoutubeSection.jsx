@@ -113,7 +113,7 @@ export default function YoutubeSection() {
                   </div>
 
                   <div className="p-4">
-                    <div className="youtube-title !text-[#531B24]" role="heading" aria-level="3">
+                    <div className="youtube-title !text-[#54091b]" role="heading" aria-level="3">
                       {video.title}
                     </div>
 

@@ -26,8 +26,8 @@ function GalleryTile({ item, onClick, compact = false, t }) {
   const isVideo = item.mediaType === "video";
   const [loading, setLoading] = useState(true);
 
-  // Use a fixed aspect ratio so all cards are completely uniform
-  const frameClass = "aspect-[4/3]";
+  // Use a fixed aspect ratio so all cards are completely uniform (16:9)
+  const frameClass = "aspect-video";
 
   return (
     <div
@@ -40,9 +40,9 @@ function GalleryTile({ item, onClick, compact = false, t }) {
           onClick?.();
         }
       }}
-      className="group flex flex-col h-full w-full cursor-pointer text-left rounded-3xl overflow-hidden shadow-lg transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b] bg-[#54091b]"
+      className="group flex flex-col h-full w-full cursor-pointer text-left rounded-2xl overflow-hidden shadow-md transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b] bg-[#54091b]"
     >
-      <div className={`relative overflow-hidden bg-[#0f172a] ${frameClass}`}>
+      <div className={`relative overflow-hidden bg-[#54091b] ${frameClass}`}>
         {isVideo ? (
           compact ? (
             <img
@@ -84,7 +84,7 @@ function GalleryTile({ item, onClick, compact = false, t }) {
         )}
 
         {isVideo && (
-          <div className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-white backdrop-blur-sm">
+          <div className="absolute right-3 top-3 rounded-full bg-[#F4EFE7] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#54091b] shadow-sm">
             Video
           </div>
         )}
@@ -93,14 +93,14 @@ function GalleryTile({ item, onClick, compact = false, t }) {
       <div className={`${compact ? "p-3 sm:p-4" : "p-4 sm:p-5"} flex flex-col flex-1`}>
         <div className="flex items-start justify-between gap-3">
           <h3
-            className="min-w-0 flex-1 truncate text-[15px] sm:text-base font-semibold text-[#f4efe7]"
+            className="min-w-0 flex-1 truncate text-[15px] sm:text-base font-semibold text-[#F4EFE7]"
           >
             {item.title ? t(item.title) : t("Untitled")}
           </h3>
 
           {item.eventDate && !compact && (
             <span 
-              className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold bg-[#f4efe7] text-[#54091b]" 
+              className="shrink-0 text-[12px] font-medium text-[#F4EFE7]/80" 
             >
               {formatMediaDate(item.eventDate)}
             </span>
@@ -108,7 +108,7 @@ function GalleryTile({ item, onClick, compact = false, t }) {
         </div>
 
         {!compact && item.createdAt && !item.eventDate && (
-          <p className="mt-1 text-xs text-[#f4efe7]">
+          <p className="mt-1 text-xs font-medium text-[#F4EFE7]/80">
             {formatMediaDate(item.createdAt)}
           </p>
         )}
@@ -299,34 +299,34 @@ export default function Gallery() {
 
   return (
     <>
-      <section id="gallery" className="py-16 bg-[#54091b]">
+      <section id="gallery" className="py-16 bg-[#F4EFE7]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-8 flex items-center justify-between gap-4">
-            <h2 className="text-3xl font-bold text-[#F4EFE7]">
+            <h2 className="text-3xl font-bold text-[#54091b]">
               {t("Gallery")}
             </h2>
 
             <button
               onClick={() => setOpenModal(true)}
-              className="rounded-full bg-[#F4EFE7] px-5 py-2.5 text-sm font-semibold text-[#54091b] transition hover:bg-[#e8dac9] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4EFE7]/40"
+              className="rounded-full border border-[#54091b] bg-[#F4EFE7] px-5 py-2.5 text-sm font-bold text-[#54091b] transition hover:bg-[#54091b] hover:text-[#F4EFE7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/40"
             >
               {t("All Media")}
             </button>
           </div>
 
           {loading ? (
-            <div className="flex snap-x snap-mandatory overflow-x-auto pb-4 gap-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
-              {[1, 2, 3, 4].map((i) => (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="snap-center shrink-0 w-[85vw] sm:w-auto h-72 rounded-3xl animate-pulse bg-[#e5e5e5]"
+                  className="h-72 w-full rounded-2xl animate-pulse bg-[#e5e5e5]"
                 />
               ))}
             </div>
           ) : (
-            <div className="flex snap-x snap-mandatory overflow-x-auto pb-6 gap-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {featuredMedia.map((item) => (
-                <div key={item._id} className="snap-center shrink-0 w-[85vw] sm:w-auto">
+                <div key={item._id} className="w-full">
                   <GalleryTile
                     item={item}
                     onClick={() => setSelectedMedia(item)}
@@ -343,7 +343,7 @@ export default function Gallery() {
         <div className="fixed inset-0 z-50 bg-black/70">
           <div className="flex h-full flex-col">
             <div
-              className="border-b border-[#6f2335] bg-[#54091b] px-4 py-4 shadow-sm sm:px-6 text-[#f4efe7]"
+              className="border-b border-[#d9cfbf] bg-[#F4EFE7] px-4 py-4 shadow-sm sm:px-6 text-[#54091b]"
             >
               <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="min-w-0">
@@ -363,7 +363,7 @@ export default function Gallery() {
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       list="gallery-title-suggestions"
-                      className="h-12 w-full rounded-full border border-[#d9cfbf] px-5 pr-12 outline-none transition focus:ring-2 focus:ring-[#f4efe7]/20 bg-[#FFFFFF] text-[#54091b]"
+                      className="h-12 w-full rounded-full border border-[#d9cfbf] px-5 pr-12 outline-none transition focus:ring-2 focus:ring-[#54091b]/20 bg-[#FFFFFF] text-[#54091b]"
                     />
 
                     <datalist id="gallery-title-suggestions">
@@ -376,7 +376,7 @@ export default function Gallery() {
                   <button
                     onClick={closeModal}
                     aria-label="Close gallery"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#f4efe7]/45 bg-transparent transition hover:bg-[#f4efe7]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f4efe7]/25 text-[#f4efe7]"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#54091b]/20 bg-transparent transition hover:bg-[#54091b]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/25 text-[#54091b]"
                   >
                     <FaTimes size={17} />
                   </button>
@@ -384,9 +384,9 @@ export default function Gallery() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain bg-[#54091b] px-4 py-5 sm:px-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain bg-[#F4EFE7] px-4 py-5 sm:px-6">
               <div className="mx-auto max-w-7xl">
-                <div className="mb-4 flex items-center justify-between text-sm text-[#F4EFE7]">
+                <div className="mb-4 flex items-center justify-between text-sm font-semibold text-[#54091b]">
                   <span>
                     {filteredMedia.length}{" "}
                     {filteredMedia.length === 1 ? "item" : "items"}
@@ -395,19 +395,20 @@ export default function Gallery() {
                 </div>
 
                 {filteredMedia.length === 0 ? (
-                  <div className="rounded-3xl border border-[#6f2335] bg-[#F4EFE7] px-6 py-16 text-center text-[#54091b] shadow-sm">
+                  <div className="rounded-3xl border border-[#d9cfbf] bg-white px-6 py-16 text-center font-medium text-[#54091b] shadow-sm">
                     {t("No media found")}
                   </div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredMedia.map((item) => (
-                      <GalleryTile
-                        key={item._id}
-                        item={item}
-                        compact
-                        onClick={() => setSelectedMedia(item)}
-                        t={t}
-                      />
+                      <div key={item._id} className="w-full">
+                        <GalleryTile
+                          item={item}
+                          compact
+                          onClick={() => setSelectedMedia(item)}
+                          t={t}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}

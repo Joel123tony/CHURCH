@@ -137,7 +137,7 @@ export const searchSong = async (query) => {
             
             if (href && href.endsWith('.html')) {
                 const score = calculateSimilarity(query, title);
-                if (score > bestScore && score >= 0.85) {
+                if (score > bestScore && score >= 0.90) {
                     bestScore = score;
                     bestUrl = href.startsWith('http') ? href : `http://tamilchristianworship.com/${href}`;
                 }

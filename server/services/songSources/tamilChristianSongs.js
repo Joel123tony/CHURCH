@@ -76,7 +76,7 @@ export const searchSong = async (query) => {
             const title = $q(el).text().trim();
             if (loc && loc.includes("/lyrics/")) {
                 const score = calculateSimilarity(query, title);
-                if (score > bestScore && score >= 0.85) {
+                if (score > bestScore && score >= 0.90) {
                     bestScore = score;
                     bestUrl = loc;
                 }

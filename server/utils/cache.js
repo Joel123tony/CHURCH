@@ -1,5 +1,6 @@
-// Simple in-memory cache for API optimization
+// LRU in-memory cache for API optimization
 const cacheStore = new Map();
+const MAX_CACHE_SIZE = 1000;
 
 /**
  * Get an item from the cache.
@@ -15,6 +16,11 @@ export const getCached = (key) => {
     cacheStore.delete(key);
     return null;
   }
+  
+  // LRU behavior: Re-insert to push to the back (most recently used)
+  cacheStore.delete(key);
+  cacheStore.set(key, item);
+
   return item.data;
 };
 
@@ -25,6 +31,14 @@ export const getCached = (key) => {
  * @param {number} ttlSeconds Time to live in seconds (default 60)
  */
 export const setCached = (key, data, ttlSeconds = 60) => {
+  if (cacheStore.has(key)) {
+    cacheStore.delete(key);
+  } else if (cacheStore.size >= MAX_CACHE_SIZE) {
+    // Evict least recently used (first item in Map)
+    const firstKey = cacheStore.keys().next().value;
+    cacheStore.delete(firstKey);
+  }
+
   cacheStore.set(key, {
     data,
     expiresAt: Date.now() + (ttlSeconds * 1000)

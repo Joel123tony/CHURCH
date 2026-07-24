@@ -210,7 +210,7 @@ export default function Home() {
 
   return (
     <>
-      <h1 className="bg-[#F4EFE7] text-2xl font-bold text-center py-10 text-[#5b1320]">
+      <h1 className="bg-[#F4EFE7] text-2xl font-bold text-center py-10 text-[#54091b]">
         {t("Holy Life , Gospel Ministry")}
       </h1>
 

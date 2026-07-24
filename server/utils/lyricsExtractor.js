@@ -18,7 +18,7 @@ export const normalizeTitle = (title) => {
     return normalized.replace(/\s+/g, " ").trim();
 };
 
-export const removeProviderBranding = (text) => {
+export const advancedLyricsCleanup = (text) => {
     if (!text) return "";
     
     // Specifically block listed strings
@@ -27,17 +27,44 @@ export const removeProviderBranding = (text) => {
         "world tamil christians", "keyboard chords", "song lyrics", 
         "lyrics", "subscribe", "share", "download", "whatsapp", 
         "facebook", "youtube", "telegram", "click here", "chords for",
-        "tamil christian worship song"
+        "tamil christian worship song", "added to wishlist", "removed from wishlist",
+        "christian song lyrics", "tamil christian song lyrics", "christian song in tamil",
+        "christian song in english", "other songs from", "related songs", "similar songs",
+        "song details", "wishlist", "views", "likes", "downloads", "previous song",
+        "next song", "other songs", "breadcrumbs", "save saved removed", "faith score"
     ];
     
+    // Remove hashtags
+    let processedText = text.replace(/#[\w\u0B80-\u0BFF]+/g, "");
+
     // Split into lines to evaluate and clean
-    const lines = text.split('\n');
+    const lines = processedText.split('\n');
     const cleanedLines = [];
     
+    const truncatePhrases = [
+        "other songs", "related songs", "similar songs", "click here to download"
+    ];
+
     for (let line of lines) {
         let lowerLine = line.toLowerCase().trim();
         let skipLine = false;
         
+        // Truncate everything after related songs
+        if (truncatePhrases.some(phrase => lowerLine.includes(phrase))) {
+            break; // Stop processing further lines
+        }
+        
+        // Skip metadata lines
+        if (lowerLine.startsWith("artist:") || lowerLine.startsWith("artist ") || lowerLine === "artist" ||
+            lowerLine.startsWith("album:") || lowerLine.startsWith("album ") || lowerLine === "album" ||
+            lowerLine.startsWith("composer:") || lowerLine.startsWith("composer ") || lowerLine === "composer" ||
+            lowerLine.startsWith("music:") || lowerLine.startsWith("music ") || lowerLine === "music" ||
+            lowerLine.startsWith("lyrics by:") || lowerLine.startsWith("lyrics by ") || lowerLine === "lyrics by" ||
+            lowerLine.startsWith("sung by:") || lowerLine.startsWith("sung by ") || lowerLine === "sung by" ||
+            lowerLine.startsWith("song by:") || lowerLine.startsWith("song by ") || lowerLine === "song by") {
+            continue;
+        }
+
         // If the entire line is just one of the blocked phrases, drop it completely
         for (const phrase of blockedPhrases) {
             if (lowerLine === phrase || lowerLine.startsWith(phrase + " :") || lowerLine.startsWith(phrase + " -")) {
@@ -46,27 +73,76 @@ export const removeProviderBranding = (text) => {
             }
         }
         
+        // Some plugins put counts like "Save Saved Removed 2"
+        if (lowerLine.includes("save saved removed") || lowerLine.includes("faith score") || lowerLine.includes("added to wishlist")) {
+            skipLine = true;
+        }
+        
         if (skipLine) continue;
         
-        // Otherwise, just replace the phrases within the line
+        // Replace phrases within the line
         let tempLine = line;
         for (const phrase of blockedPhrases) {
             const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
             tempLine = tempLine.replace(regex, "");
         }
         
-        // Also remove attribution patterns like "Lyrics & Tune by Pr. Beviston"
+        // Remove attribution patterns
         tempLine = tempLine.replace(/(?:Lyrics|Tune|Music|Sung)\s*(?:&|and)?\s*(?:Lyrics|Tune|Music|Sung)?\s*by[:\s]*[A-Za-z\.\s]+/gi, "");
         
-        // Trim any leftover dashes or colons at the start/end
-        tempLine = tempLine.replace(/^[\s\-\:]+|[\s\-\:]+$/g, "").trim();
+        // Trim leftover noise (including numbers at the end of line left by buttons)
+        tempLine = tempLine.replace(/^[\s\-\:]+|[\s\-\:\d]+$/g, "").trim();
         
         if (tempLine.length > 0) {
             cleanedLines.push(tempLine);
         }
     }
     
-    return cleanedLines.join('\n');
+    // Remove duplicate lyric blocks
+    const seenBlocks = new Set();
+    const finalLines = [];
+    let currentBlock = [];
+    
+    // Helper to flush current block
+    const flushBlock = () => {
+        if (currentBlock.length > 0) {
+            const blockStr = currentBlock.join('\n').toLowerCase();
+            // Optional section headers are allowed, but we don't treat them as unique text for duplication
+            // We ignore Verse/Chorus headers when checking for block duplication
+            const normalizedBlockStr = blockStr.replace(/^(verse\s*\d+|chorus|bridge|intro|outro|repeat)\s*\n/gi, '').trim();
+            
+            if (normalizedBlockStr.length > 10) { // Only deduplicate substantial blocks
+                if (!seenBlocks.has(normalizedBlockStr)) {
+                    seenBlocks.add(normalizedBlockStr);
+                    finalLines.push(...currentBlock);
+                    finalLines.push(""); // Add spacing
+                }
+            } else {
+                finalLines.push(...currentBlock);
+                finalLines.push("");
+            }
+            currentBlock = [];
+        }
+    };
+
+    for (let i = 0; i < cleanedLines.length; i++) {
+        const line = cleanedLines[i];
+        const lowerLine = line.toLowerCase();
+        
+        // Treat Verse/Chorus/etc as block boundaries, OR if it's the start
+        if (lowerLine.match(/^(verse\s*\d+|chorus|bridge|intro|outro|repeat)$/i)) {
+            flushBlock();
+            currentBlock.push(line);
+        } 
+        // If we see a big gap in meaning (not easy to detect without AI, so we rely on Verse/Chorus or blank lines if they existed)
+        // Since we split by \n and removed blanks, everything is contiguous. Let's just group by 4-6 lines if no headers.
+        else {
+            currentBlock.push(line);
+        }
+    }
+    flushBlock();
+    
+    return finalLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 };
 
 export const isInvalidSongTitle = (title) => {
@@ -167,64 +243,36 @@ export const extractLyricsFromHtml = async (html, sourceUrl = "") => {
         titleHint: titleTamil || titleEnglish || rawTitle || "",
         sourceUrl
     });
+
     if (adaptive.isCollectionPage || adaptive.multipleSongSignals) {
         throw new Error("Collection page detected. Refusing to import unrelated song listings.");
     }
+    
     const canonicalText = adaptive.blockText || adaptive.lyrics || "";
     if (!contentArea.length && !canonicalText) return null;
     if (!canonicalText) {
         throw new Error("No canonical song block found.");
     }
 
-    contentArea.find(".sidebar, .widget, .related-posts, .related-songs, .advertisement, .adsbygoogle, .a-z-index, .category-list, .sharedaddy, .yarpp-related, #comments, .nav-links, .menu, header, footer, .author-box, style, script, .breadcrumb, aside, nav, iframe, .rp4wp-related-posts, .post-tags, .entry-meta, .post-categories, .crp_related, .wpcnt, .page-links, .navigation, .social-share, .addtoany_share_save_container").remove();
-    
-    // TGM specific noise removal
-    contentArea.find("p, div, span").each((i, el) => {
-        const text = $(el).text().toLowerCase().trim();
-        if (text.startsWith("keyboard chords for") || text.startsWith("chords for") || text.includes("click here to download")) {
-            $(el).remove();
-        }
-    });
-
     const plainText = canonicalText;
     const extractionConfidence = adaptive.confidence || 0;
-    console.log("=== PLAINTEXT SENT TO AI ===");
-    console.log(plainText.substring(0, 500));
-    console.log("============================");
-
-    console.log(`[Lyrics Extractor] Running cleanup pipeline for: ${titleTamil || titleEnglish || sourceUrl}`);
-    const aiResult = await cleanLyricsWithAI(plainText, {
-        title: titleTamil || titleEnglish || rawTitle || "",
-        titleTamil,
-        titleEnglish,
-        sourceUrl,
-        extractedFrom: adaptive.matchedSelector ? "canonical-block" : "canonical-text",
-        extractionConfidence,
-        extractionSelectors: adaptive.selectorsTried || [],
-        extractionMode: adaptive.matchedSelector ? "adaptive" : "canonical",
-        extractionBlockSelector: adaptive.matchedSelector || ""
-    });
-
-    if (aiResult.valid === false && !aiResult.multiSong) {
-        throw new Error(`AI Rejected Import: ${aiResult.reason || "Dirty content or archive page."}`);
-    }
-
-    const resolvedTitle = aiResult.title || titleTamil || titleEnglish;
-    const cleanLyrics = removeProviderBranding(normalizeLyricsText(aiResult.lyrics || ""));
-
-    let score = 100;
-    if (aiResult.containsSeo) score -= 30;
-    if (aiResult.containsRelatedSongs) score -= 30;
-    if (aiResult.containsMetadata) score -= 20;
-    if (aiResult.containsChords) score -= 20;
+    
+    console.log(`[Lyrics Extractor] Running advanced regex cleanup pipeline for: ${titleTamil || titleEnglish || sourceUrl}`);
+    
+    const cleanLyrics = advancedLyricsCleanup(normalizeLyricsText(plainText));
+    const resolvedTitle = titleTamil || titleEnglish || rawTitle || "";
 
     const lowerLyrics = cleanLyrics.toLowerCase();
-    if (lowerLyrics.includes("trending")) score -= 30;
-    if (lowerLyrics.includes("god medias") || lowerLyrics.includes("tamil christians songs")) score -= 30;
 
-    if (aiResult.containsRelatedSongs) throw new Error("Hard Reject: Contains Related Songs");
-    if (aiResult.containsSeo) throw new Error("Hard Reject: Contains SEO");
-    if (aiResult.containsMetadata) throw new Error("Hard Reject: Contains Metadata");
+    if (lowerLyrics.includes("added to wishlist") || 
+        lowerLyrics.includes("tamil christian songs") || 
+        lowerLyrics.includes("related songs") || 
+        lowerLyrics.includes("share") || 
+        lowerLyrics.includes("download") || 
+        lowerLyrics.includes("subscribe")) {
+        throw new Error("Hard Reject: Contains Wishlist/SEO/Spam after cleanup");
+    }
+    
     if (isMissingTitle(resolvedTitle)) throw new Error("Hard Reject: Invalid Title");
     if (resolvedTitle.length < 2) throw new Error("Hard Reject: Title too short");
 
@@ -232,46 +280,42 @@ export const extractLyricsFromHtml = async (html, sourceUrl = "") => {
     if (lyricsLines.length < 2) throw new Error("Hard Reject: Lyrics too short (< 2 lines)");
     if (cleanLyrics.length < 50) throw new Error("Hard Reject: Lyrics too short (< 50 chars)");
 
-    if (score < 90) {
-        throw new Error(`Hard Reject: Lyrics Quality Score too low (${score}/100)`);
-    }
-
-    console.log(`[Lyrics Extractor] AI Validation Passed. Quality Score: ${score}/100`);
+    console.log(`[Lyrics Extractor] Validation Passed for ${resolvedTitle}`);
 
     const songRecord = buildSongPayload({
         title: resolvedTitle,
-        titleTamil: resolvedTitle,
-        titleEnglish: aiResult.alternateTitle || titleEnglish,
+        titleTamil: titleTamil || resolvedTitle,
+        titleEnglish: titleEnglish || "",
         lyrics: cleanLyrics,
-        originalLyrics: aiResult.originalLyrics || plainText,
-        cleanLyrics,
+        originalLyrics: plainText,
+        cleanLyrics: cleanLyrics,
         cleanedLyrics: cleanLyrics,
-        lyricsEnglish: aiResult.language === "English" ? cleanLyrics : "",
+        lyricsEnglish: "", // Will be populated by AI worker
         sourceUrl,
-        language: aiResult.language || "Tamil",
-        aiStatus: aiResult.aiStatus || (aiResult.aiUsed ? "processed" : "fallback"),
-        aiProvider: aiResult.aiProvider || (aiResult.aiUsed ? "gemini" : "heuristic"),
-        aiConfidence: aiResult.confidenceScore || 0,
-        aiProcessedAt: aiResult.aiProcessedAt || null,
-        aiMetadata: aiResult.metadata || {},
+        language: "Tamil",
+        aiStatus: "pending",
+        aiProvider: "heuristic",
+        aiConfidence: extractionConfidence,
+        aiProcessedAt: null,
+        aiMetadata: {},
         extractionConfidence,
         extractionMode: adaptive.matchedSelector ? "adaptive" : "dom",
         extractionSelectors: adaptive.selectorsTried || [],
-        keywords: aiResult.tags || [],
-        themes: aiResult.themes || [],
-        bibleReferences: aiResult.scriptureReferences || [],
-        author: aiResult.author || "",
-        composer: aiResult.composer || "",
-        album: aiResult.album || "",
-        year: aiResult.year || "",
-        lyricsStatus: "found",
+        keywords: [],
+        themes: [],
+        bibleReferences: [],
+        author: "",
+        composer: "",
+        album: "",
+        year: "",
+        lyricsStatus: "pending", // Important: Set pending so frontend polls while AI cleans
         scrapeStatus: "success",
         status: "completed",
         isPublished: true
     }, {
         sourceUrl,
         category: "Tamil Christian Songs",
-        source: aiResult.aiProvider || "Unknown"
+        source: "Regex Extractor"
     });
 
     return [songRecord];
@@ -313,9 +357,19 @@ export const extractSongsFromHtml = async (html, sourceUrl = "") => {
 
     contentArea.find(".sidebar, .widget, .related-posts, .related-songs, .advertisement, .adsbygoogle, .a-z-index, .category-list, .sharedaddy, .yarpp-related, #comments, .nav-links, .menu, header, footer, .author-box, style, script, .breadcrumb, aside, nav, iframe, .rp4wp-related-posts, .post-tags, .entry-meta, .post-categories, .crp_related, .wpcnt, .page-links, .navigation, .social-share, .addtoany_share_save_container").remove();
     
-    contentArea.find("p, div, span").each((i, el) => {
+    // Aggressive DOM removal for noise
+    contentArea.find(".wishlist-btn, .wishlist-text, [class*='wishlist'], .song-details, .metadata, .breadcrumbs, [class*='share'], [class*='social'], [id*='related']").remove();
+
+    // Specific noise removal
+    contentArea.find("p, div, span, h1, h2, h3, h4, h5, h6").each((i, el) => {
         const text = $(el).text().toLowerCase().trim();
-        if (text.startsWith("keyboard chords for") || text.startsWith("chords for") || text.includes("click here to download")) {
+        if (text.startsWith("keyboard chords for") || 
+            text.startsWith("chords for") || 
+            text.includes("click here to download") ||
+            text.includes("added to wishlist") ||
+            text.includes("related songs") ||
+            text.includes("other songs") ||
+            text.includes("download")) {
             $(el).remove();
         }
     });

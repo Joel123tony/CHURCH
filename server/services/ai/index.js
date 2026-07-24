@@ -237,7 +237,13 @@ const buildResult = (rawText, context = {}, aiResponse = null) => {
 
 export const processLyricsWithAi = async (rawText, context = {}) => {
   const start = Date.now();
-  let baseText = cleanLyricsText(rawText || "");
+  let baseText = rawText || "";
+  try {
+    JSON.parse(baseText);
+    // It's JSON, leave it alone for the AI
+  } catch(e) {
+    baseText = cleanLyricsText(baseText);
+  }
   let providerHistory = context.providerHistory || [];
   let originalVersions = context.originalVersions || [];
   let mergedVersion = context.mergedVersion || null;

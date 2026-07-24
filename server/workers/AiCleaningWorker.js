@@ -93,7 +93,8 @@ export class AiCleaningWorker extends BaseWorker {
         });
 
         if (aiResult.valid === false) {
-            throw new Error(`Hard Reject: AI Rejected Import: ${aiResult.reason || "Archive Page"}`);
+            console.error(`[AiCleaningWorker] AI validation failed for ${song.title}. Issues:`, aiResult.aiReviewReasons);
+            throw new Error(`Hard Reject: AI Rejected Import: ${aiResult.reason || "Validation Failed: " + (aiResult.aiReviewReasons || []).join(", ")}`);
         }
 
         if (aiResult.multiSong && aiResult.songs && aiResult.songs.length > 0) {

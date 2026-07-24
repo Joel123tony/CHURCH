@@ -12,10 +12,10 @@ import { getProviderHealthSnapshot } from "../ai/providerHealth.js";
 // Ordered by priority
 const baseProviders = [
     { name: "World Tamil Christians", provider: wtcProvider, domain: "worldtamilchristians.com" },
-    { name: "TamilChristianSongs.in", provider: tcsProvider, domain: "tamilchristiansongs.in" },
-    { name: "TamilChristian.com", provider: tcProvider, domain: "tamilchristian.com" },
-    { name: "TamilChristianWorship", provider: tcwProvider, domain: "tamilchristianworship.com" },
     { name: "The God's Music", provider: tgmProvider, domain: "thegodsmusic.com" },
+    { name: "TamilChristianSongs.in", provider: tcsProvider, domain: "tamilchristiansongs.in" },
+    { name: "TamilChristianWorship", provider: tcwProvider, domain: "tamilchristianworship.com" },
+    { name: "TamilChristian.com", provider: tcProvider, domain: "tamilchristian.com" },
     { name: "YouTube", provider: ytProvider, domain: "youtube.com" }
 ];
 
@@ -74,71 +74,94 @@ export const searchOnlineSources = async (query) => {
     
     console.log(`[AdapterManager] Initiating online search for: "${query}"`);
     
-    const searchPromise = (async () => {
-        const activeProviders = await getActiveProviders();
-        for (const { name, provider } of activeProviders) {
-            console.log(`[AdapterManager] Trying source: ${name}...`);
-            const start = Date.now();
-            try {
-                const result = await provider.searchSong(query);
-                
-                if (result && result.lyricsTamil) {
-                    console.log(`[AdapterManager] Success found in ${name}!`);
-                    await recordProviderHealth({
-                        provider: name,
-                        domain: result.sourceUrl || "",
-                        success: true,
-                        parsed: true,
-                        confidence: result.confidenceScore || result.aiConfidence || 0,
-                        processingTimeMs: Date.now() - start,
-                        missingLyrics: false,
-                        missingVerse: false,
-                        merged: false,
-                        note: `query:${query}`
-                    });
-                    setCached(cacheKey, result, 60 * 60 * 6);
-                    return result; 
-                }
+    const activeProviders = await getActiveProviders();
+    
+    // Group providers: Tier 1 (Priority) and Tier 2 (Others)
+    const tier1Names = ["World Tamil Christians", "The God's Music"];
+    const tier1 = activeProviders.filter(p => tier1Names.includes(p.name));
+    const tier2 = activeProviders.filter(p => !tier1Names.includes(p.name));
 
+    // Helper to run a single provider with a strict 3-second timeout
+    const fetchFromProvider = async (providerObj) => {
+        const { name, provider } = providerObj;
+        const start = Date.now();
+        console.log(`[AdapterManager] Trying source: ${name}...`);
+        
+        try {
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("timeout")), 3000)
+            );
+            
+            const searchPromise = provider.searchSong(query);
+            const result = await Promise.race([searchPromise, timeoutPromise]);
+            
+            if (result && result.lyricsTamil) {
+                console.log(`[AdapterManager] Success found in ${name}! (${Date.now() - start}ms)`);
                 await recordProviderHealth({
                     provider: name,
-                    domain: result?.sourceUrl || "",
-                    success: false,
+                    domain: result.sourceUrl || "",
+                    success: true,
                     parsed: true,
-                    confidence: result?.confidenceScore || 0,
+                    confidence: result.confidenceScore || result.aiConfidence || 0,
                     processingTimeMs: Date.now() - start,
-                    missingLyrics: true,
-                    note: `empty result for query:${query}`
+                    missingLyrics: false,
+                    missingVerse: false,
+                    merged: false,
+                    note: `query:${query}`
                 });
-            } catch (err) {
-                console.error(`[AdapterManager] Error in ${name}:`, err.message);
-                await recordProviderHealth({
-                    provider: name,
-                    success: false,
-                    parsed: false,
-                    processingTimeMs: Date.now() - start,
-                    note: err.message
-                });
+                return result; 
             }
+            
+            await recordProviderHealth({
+                provider: name,
+                domain: result?.sourceUrl || "",
+                success: false,
+                parsed: true,
+                confidence: result?.confidenceScore || 0,
+                processingTimeMs: Date.now() - start,
+                missingLyrics: true,
+                note: `empty result for query:${query}`
+            });
+            throw new Error("No lyrics found"); // Throw to trigger Promise.any rejection
+        } catch (err) {
+            console.error(`[AdapterManager] Error/Timeout in ${name}:`, err.message);
+            await recordProviderHealth({
+                provider: name,
+                success: false,
+                parsed: false,
+                processingTimeMs: Date.now() - start,
+                note: err.message
+            });
+            throw err;
         }
-        return null;
-    })();
+    };
 
-    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ error: 'timeout' }), 8000));
-    
-    const finalResult = await Promise.race([searchPromise, timeoutPromise]);
-    
-    if (finalResult && finalResult.error === 'timeout') {
-        console.error(`[AdapterManager] Search for "${query}" timed out after 8 seconds.`);
-        return null;
+    // Run Tier 1 in parallel and return the first successful result
+    try {
+        const result = await Promise.any(tier1.map(fetchFromProvider));
+        if (result) {
+            setCached(cacheKey, result, 60 * 60 * 6);
+            return result;
+        }
+    } catch (e) {
+        console.log(`[AdapterManager] Tier 1 providers failed for "${query}". Falling back to Tier 2...`);
     }
     
-    if (!finalResult) {
-        console.log(`[AdapterManager] Exhausted all sources. No results found for "${query}".`);
+    // Run Tier 2 sequentially (or in parallel) if Tier 1 failed
+    for (const providerObj of tier2) {
+        try {
+            const result = await fetchFromProvider(providerObj);
+            if (result) {
+                setCached(cacheKey, result, 60 * 60 * 6);
+                return result;
+            }
+        } catch (e) {
+            // ignore and try next
+        }
     }
-    if (finalResult) setCached(cacheKey, finalResult, 60 * 60 * 6);
     
-    return finalResult;
+    console.log(`[AdapterManager] Exhausted all sources. No results found for "${query}".`);
+    return null;
 };
 
 export const searchOnlineSourcesAcrossProviders = async (query, maxResults = 3) => {
@@ -152,67 +175,88 @@ export const searchOnlineSourcesAcrossProviders = async (query, maxResults = 3) 
 
     const results = [];
     const activeProviders = await getActiveProviders();
-    const searchPromises = activeProviders.map(async ({ name, provider }) => {
-        const start = Date.now();
-        try {
-            const result = await provider.searchSong(query);
-            if (result && result.lyricsTamil) {
+    
+    let foundHighConfidence = false;
+    let currentIndex = 0;
+    const CONCURRENCY_LIMIT = 2;
+
+    const worker = async () => {
+        while (currentIndex < activeProviders.length && !foundHighConfidence) {
+            const { name, provider } = activeProviders[currentIndex++];
+            const start = Date.now();
+            try {
+                const result = await provider.searchSong(query);
+                if (result && result.lyricsTamil) {
+                    await recordProviderHealth({
+                        provider: name,
+                        domain: result.sourceUrl || "",
+                        success: true,
+                        parsed: true,
+                        confidence: result.confidenceScore || result.aiConfidence || 0,
+                        processingTimeMs: Date.now() - start,
+                        note: `candidate query:${query}`
+                    });
+                    
+                    const formattedResult = {
+                        ...result,
+                        source: result.source || name,
+                        provider: name
+                    };
+                    
+                    results.push(formattedResult);
+                    
+                    // If we found a real text result (not pending_fetch) with high confidence, stop others
+                    if (formattedResult.lyricsTamil !== "pending_fetch" && (!formattedResult.confidenceScore || formattedResult.confidenceScore >= 0.85)) {
+                        foundHighConfidence = true;
+                    }
+                } else {
+                    await recordProviderHealth({
+                        provider: name,
+                        success: false,
+                        parsed: true,
+                        processingTimeMs: Date.now() - start,
+                        missingLyrics: true,
+                        note: `candidate miss query:${query}`
+                    });
+                }
+            } catch (err) {
+                console.error(`[AdapterManager] Candidate search failed in ${name}:`, err.message);
                 await recordProviderHealth({
                     provider: name,
-                    domain: result.sourceUrl || "",
-                    success: true,
-                    parsed: true,
-                    confidence: result.confidenceScore || result.aiConfidence || 0,
+                    success: false,
+                    parsed: false,
                     processingTimeMs: Date.now() - start,
-                    note: `candidate query:${query}`
+                    note: err.message
                 });
-                return {
-                    ...result,
-                    source: result.source || name,
-                    provider: name
-                };
             }
-            await recordProviderHealth({
-                provider: name,
-                success: false,
-                parsed: true,
-                processingTimeMs: Date.now() - start,
-                missingLyrics: true,
-                note: `candidate miss query:${query}`
-            });
-            return null;
-        } catch (err) {
-            console.error(`[AdapterManager] Candidate search failed in ${name}:`, err.message);
-            await recordProviderHealth({
-                provider: name,
-                success: false,
-                parsed: false,
-                processingTimeMs: Date.now() - start,
-                note: err.message
-            });
-            return null;
         }
-    });
+    };
 
-    const settled = await Promise.allSettled(searchPromises);
-    for (const outcome of settled) {
-        if (outcome.status === 'fulfilled' && outcome.value) {
-            results.push(outcome.value);
-        }
-    }
+    // Run workers in parallel
+    const workers = Array(Math.min(CONCURRENCY_LIMIT, activeProviders.length)).fill(0).map(() => worker());
+    await Promise.all(workers);
 
-    // Sort results to prioritize actual text lyrics over 'pending_fetch' (like YouTube transcripts)
+    // Sort results to prioritize actual text lyrics, then by provider priority, then by confidence
     results.sort((a, b) => {
         const aIsPending = a.lyricsTamil === "pending_fetch" || a.lyrics === "pending_fetch";
         const bIsPending = b.lyricsTamil === "pending_fetch" || b.lyrics === "pending_fetch";
         if (aIsPending && !bIsPending) return 1;
         if (!aIsPending && bIsPending) return -1;
+        
+        // Find indices in activeProviders
+        const aIndex = activeProviders.findIndex(p => p.name === a.provider);
+        const bIndex = activeProviders.findIndex(p => p.name === b.provider);
+        
+        if (aIndex !== bIndex) {
+            return aIndex - bIndex; // Lower index (higher priority) comes first
+        }
+        
         return (b.confidenceScore || 0) - (a.confidenceScore || 0);
     });
 
     // Limit to maxResults
     const finalResults = results.slice(0, maxResults);
 
-    setCached(cacheKey, finalResults, 60 * 60 * 6);
+    setCached(cacheKey, finalResults, 1800); // 30 minutes cache for candidates
     return finalResults;
 };

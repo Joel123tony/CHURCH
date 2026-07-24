@@ -35,7 +35,18 @@ const NOISE_PATTERNS = [
 
 export const validateLyrics = (lyrics = "", sections = [], context = {}) => {
   const clean = cleanLyricsText(lyrics);
-  const original = cleanLyricsText(context.originalLyrics || lyrics || "");
+  
+  let originalRaw = context.originalLyrics || lyrics || "";
+  try {
+    const parsed = JSON.parse(originalRaw);
+    if (parsed.isYouTubeSource || parsed.isAiMergedSource) {
+      originalRaw = parsed.captions || parsed.rawText || lyrics;
+    }
+  } catch (e) {
+    // Not JSON, ignore
+  }
+  
+  const original = cleanLyricsText(originalRaw);
   const sourceUrl = context.sourceUrl || "";
   const lines = clean.split("\n").map((line) => line.trim()).filter(Boolean);
   const originalLines = original.split("\n").map((line) => line.trim()).filter(Boolean);

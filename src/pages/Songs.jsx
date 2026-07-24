@@ -49,21 +49,37 @@ export default function Songs() {
     setSearchParams(params, { replace: true });
   };
 
-  const fetchSongs = async (query, categories, pageNum = 1) => {
-    setLoading(true);
+  const pollTimeout = useRef(null);
+
+  // Clear polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimeout.current) clearTimeout(pollTimeout.current);
+    };
+  }, []);
+
+  const fetchSongs = async (query, categories, pageNum = 1, isPolling = false) => {
+    if (!isPolling) setLoading(true);
     setError(null);
+    if (pollTimeout.current) clearTimeout(pollTimeout.current);
+
     try {
       const categoryParam = categories.includes("All") ? "" : categories.join(",");
       const res = await API.get(
         `/songs?search=${encodeURIComponent(query)}&category=${encodeURIComponent(categoryParam)}&page=${pageNum}&limit=10`
       );
 
-      setSongs(res.data.songs || []);
-      setTotalPages(res.data.totalPages || 1);
+      if (res.data.status === "searching_online") {
+        setLoading(true);
+        pollTimeout.current = setTimeout(() => fetchSongs(query, categories, pageNum, true), 3000);
+      } else {
+        setSongs(res.data.songs || []);
+        setTotalPages(res.data.totalPages || 1);
+        setLoading(false);
+      }
     } catch (err) {
       console.error(err);
       setError("Unable to connect to the server. Please check your internet connection and try again.");
-    } finally {
       setLoading(false);
     }
   };

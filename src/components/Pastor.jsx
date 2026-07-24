@@ -157,7 +157,7 @@ export default function Pastor() {
 
   return (
     <>
-      <section id="pastor" className="py-16 bg-[#5b1320]">
+      <section id="pastor" className="py-16 bg-[#54091b]">
         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
           <div className="mb-6 lg:mb-8">
             <h2 className="text-3xl font-bold text-[#F4EFE7]">{t("Pastor")}</h2>
@@ -199,7 +199,7 @@ export default function Pastor() {
 
                   <div className="flex justify-center">
                     <div className="group rounded-3xl bg-[#f4efe7] p-2 shadow-2xl transition-all duration-500 hover:-translate-y-1 hover:shadow-3xl">
-                      <div className="overflow-hidden rounded-[22px] bg-[#5b1320]">
+                      <div className="overflow-hidden rounded-[22px] bg-[#54091b]">
                         <img
                           src={getImage(currentPastor)}
                           alt={currentPastor.name}
@@ -212,7 +212,7 @@ export default function Pastor() {
                 </div>
               ) : (
                 <div className="py-10 text-center">
-                  <h3 className="text-2xl font-bold text-[#5b1320]">
+                  <h3 className="text-2xl font-bold text-[#54091b]">
                     {t("No Current Pastor Selected")}
                   </h3>
                 </div>
@@ -220,11 +220,11 @@ export default function Pastor() {
             </div>
 
             <div className="rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
-              <h3 className="mb-2 text-center font-bold text-[#5b1320]">
+              <h3 className="mb-2 text-center font-bold text-[#54091b]">
                 {t("Search Pastors")}
               </h3>
 
-              <p className="mb-5 text-center text-sm leading-6 text-[#5b1320]/80">
+              <p className="mb-5 text-center text-sm leading-6 text-[#54091b]/80">
                 {t("Search by name or year to find a pastor quickly.")}
               </p>
 
@@ -243,14 +243,14 @@ export default function Pastor() {
                   />
 
                   {searchName.trim() && filteredNameSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-2xl border border-[#5b1320]/10 bg-[#f4efe7] shadow-2xl">
+                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-2xl border border-[#54091b]/10 bg-[#f4efe7] shadow-2xl">
                       {filteredNameSuggestions.map((name) => (
                         <button
                           key={name}
                           type="button"
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => setSearchName(name)}
-                          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-[#5b1320] transition hover:bg-[#5b1320] hover:text-[#f4efe7]"
+                          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-[#54091b] transition hover:bg-[#54091b] hover:text-[#f4efe7]"
                         >
                           <span>{name}</span>
                           <span className="text-xs opacity-70">Match</span>
@@ -260,8 +260,8 @@ export default function Pastor() {
                   )}
                 </div>
 
-                <div className="relative overflow-hidden rounded-full border border-[#5b1320]/10 bg-white shadow-sm transition focus-within:shadow-md focus-within:ring-2 focus-within:ring-[#5b1320]/15">
-                  <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5b1320]/50" />
+                <div className="relative overflow-hidden rounded-full border border-[#54091b]/10 bg-white shadow-sm transition focus-within:shadow-md focus-within:ring-2 focus-within:ring-[#54091b]/15">
+                  <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-[#54091b]/50" />
                   <input
                     type="number"
                     min="1800"
@@ -282,7 +282,7 @@ export default function Pastor() {
 
                 <button
                   onClick={searchPastors}
-                  className="w-full rounded-full bg-[#5b1320] py-3 font-semibold text-white shadow-lg transition duration-300 hover:-translate-y-0.5 hover:bg-[#441018] hover:shadow-xl"
+                  className="w-full rounded-full bg-[#54091b] py-3 font-semibold text-white shadow-lg transition duration-300 hover:-translate-y-0.5 hover:bg-[#441018] hover:shadow-xl"
                 >
                   {t("Search")}
                 </button>
@@ -305,15 +305,15 @@ export default function Pastor() {
               }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-4 border-b border-[#5b1320]/10 px-5 pb-4 pt-5 sm:px-8 sm:pt-6">
-              <h2 className="text-xl font-bold text-[#5b1320] sm:text-2xl">
+            <div className="flex items-center justify-between gap-4 border-b border-[#54091b]/10 px-5 pb-4 pt-5 sm:px-8 sm:pt-6">
+              <h2 className="text-xl font-bold text-[#54091b] sm:text-2xl">
                 {t("Search Results")}
               </h2>
 
               <button
                 onClick={closeModal}
                 aria-label="Close search results"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#5b1320] text-white shadow-sm transition hover:scale-105 hover:bg-[#3f0d17]"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#54091b] text-white shadow-sm transition hover:scale-105 hover:bg-[#3f0d17]"
               >
                 <FaTimes size={16} />
               </button>
@@ -322,7 +322,7 @@ export default function Pastor() {
             <div className="px-5 pb-6 pt-6 sm:px-8">
               {results.length === 0 ? (
                 <div className="py-12 text-center">
-                  <h3 className="text-3xl font-bold text-[#5b1320]">
+                  <h3 className="text-3xl font-bold text-[#54091b]">
                     {searchYear && !searchName
                       ? t("No pastors served during this year.")
                       : t("No Pastor Found")}
@@ -332,10 +332,10 @@ export default function Pastor() {
                 results.map((p) => (
                   <div
                     key={p._id}
-                    className="mb-6 border-b border-[#5b1320]/15 pb-6 last:mb-0 last:border-b-0"
+                    className="mb-6 border-b border-[#54091b]/15 pb-6 last:mb-0 last:border-b-0"
                   >
                     <div className="flex flex-col gap-5 md:flex-row md:gap-6">
-                      <div className="group shrink-0 overflow-hidden rounded-2xl bg-[#5b1320] shadow-md">
+                      <div className="group shrink-0 overflow-hidden rounded-2xl bg-[#54091b] shadow-md">
                         <img
                           src={getImage(p)}
                           alt={p.name}
@@ -345,7 +345,7 @@ export default function Pastor() {
                       </div>
 
                       <div className="pt-1">
-                        <h3 className="text-lg font-bold text-[#5b1320] sm:text-xl">
+                        <h3 className="text-lg font-bold text-[#54091b] sm:text-xl">
                           {p.name}
                         </h3>
 
@@ -355,11 +355,11 @@ export default function Pastor() {
                           </span>
                         )}
 
-                        <p className="mt-3 text-[#5b1320]">
+                        <p className="mt-3 text-[#54091b]">
                           {p.joinedYear} - {p.leftYear || t("Present")}
                         </p>
 
-                        <p className="mt-3 leading-6 text-[#5b1320]">
+                        <p className="mt-3 leading-6 text-[#54091b]">
                           {p.bio ? t(p.bio) : t("No details available")}
                         </p>
                       </div>

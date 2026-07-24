@@ -107,7 +107,7 @@ export default function Testimonials() {
     <section
       id="pastor-message"
       ref={sectionRef}
-      className="py-16 overflow-hidden bg-[#5b1320]"
+      className="py-16 overflow-hidden bg-[#54091b]"
     >
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
 

@@ -7,6 +7,7 @@ import { prepareSongForClient, normalizeLyricsText } from "../utils/songNormaliz
    SEARCH MULTI-SOURCE
 ========================= */
 export const searchSongsController = async (req, res) => {
+  const reqStart = Date.now();
   try {
     const query = req.query.search || req.query.q || "";
     const category = req.query.category || "";
@@ -18,6 +19,7 @@ export const searchSongsController = async (req, res) => {
     const cacheKey = `songs_search_${query}_${category}_${sortOrder}_${page}_${limit}`;
     const cachedData = getCached(cacheKey);
     if (cachedData) {
+      console.log(`[SongController] Search "${query}" resolved from ultra-fast cache in ${Date.now() - reqStart}ms`);
       return res.json(cachedData);
     }
 
@@ -25,7 +27,7 @@ export const searchSongsController = async (req, res) => {
 
     const result = await searchSongs(query, categories, sortOrder, page, limit);
 
-    if (query && !(result.songs || []).length) {
+    if (query && !(result.songs || []).length && result.status !== "searching_online") {
       const notFoundResponse = {
         success: false,
         message: "Song not found.",
@@ -40,7 +42,9 @@ export const searchSongsController = async (req, res) => {
       data: result.songs || []
     };
 
-    setCached(cacheKey, response, 300); // Cache for 5 minutes
+    // TTL updated to 24 hours (86400 seconds) to ensure long caching for successful queries
+    setCached(cacheKey, response, 86400); 
+    console.log(`[SongController] Search "${query}" completed in ${Date.now() - reqStart}ms`);
     return res.json(response);
   } catch (error) {
     console.error("SEARCH SONGS ERROR:", error);

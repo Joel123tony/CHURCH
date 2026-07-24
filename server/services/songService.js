@@ -154,31 +154,14 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
 
     const providerCandidates = candidates.filter(Boolean);
     const sourceText = primaryCandidate.lyricsTamil || primaryCandidate.cleanedLyrics || primaryCandidate.lyrics || primaryCandidate.lyricsEnglish || "";
-    const processed = await processLyricsWithAi(sourceText, {
-      title: primaryCandidate.titleTamil || primaryCandidate.titleEnglish || primaryCandidate.title || query,
-      titleTamil: primaryCandidate.titleTamil || primaryCandidate.title || "",
-      titleEnglish: primaryCandidate.titleEnglish || "",
-      author: primaryCandidate.author || "",
-      composer: primaryCandidate.composer || "",
-      album: primaryCandidate.album || "",
-      year: primaryCandidate.year || "",
-      language: primaryCandidate.language || "Tamil",
-      source: primaryCandidate.source || "",
-      sourceUrl: primaryCandidate.sourceUrl || "",
-      category: importCategory,
-      providerCandidates,
-      providerHistory: providerCandidates.map((candidate) => ({
-        provider: candidate.provider || candidate.source || "",
-        source: candidate.source || "",
-        sourceUrl: candidate.sourceUrl || "",
-        confidenceScore: candidate.confidenceScore || candidate.aiConfidence || 0,
-        aiStatus: candidate.aiStatus || "processed",
-        checkedAt: candidate.aiProcessedAt || new Date()
-      })),
-      originalVersions: providerCandidates,
-      aiProvider: primaryCandidate.aiProvider || primaryCandidate.source || "heuristic",
-      aiConfidence: primaryCandidate.aiConfidence || primaryCandidate.confidenceScore || 0
-    });
+    
+    // Instead of waiting 20s for AI, create a raw entry immediately.
+    const processed = {
+        lyrics: sourceText,
+        cleanLyrics: sourceText,
+        aiNeedsReview: true,
+        aiStatus: "pending"
+    };
 
     const payload = buildSongPayload(
       {
@@ -202,20 +185,23 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
     const song = new Song(payload);
     await song.save();
 
-    if (song.aiNeedsReview) {
-      await queueSongForReview(song._id, {
-        reason: `Low confidence on-demand import for "${query}"`,
-        notes: ["Imported from provider lookup"],
-        actor: "system"
-      }).catch(() => {});
-    }
-
-    if (song.lyricsTamil === "pending_fetch" || song.lyricsStatus === "pending") {
-      const { QueueManager } = await import("../utils/queueManager.js");
-      await QueueManager.addJob("import", {
-        url: song.sourceUrl || song.url,
-        priority: 1
-      }, song._id);
+    // Queue AI cleaning in the background asynchronously
+    const { QueueManager } = await import("../utils/queueManager.js");
+    if (song.lyricsTamil !== "pending_fetch" && song.lyricsStatus !== "pending") {
+        await QueueManager.addJob("ai_cleaning", {
+            html: sourceText,
+            url: song.sourceUrl || song.url,
+            source: song.source,
+            category: song.category,
+            title: song.title,
+            titleTamil: song.titleTamil,
+            titleEnglish: song.titleEnglish
+        }, song._id).catch(() => {});
+    } else {
+        await QueueManager.addJob("import", {
+            url: song.sourceUrl || song.url,
+            priority: 1
+        }, song._id).catch(() => {});
     }
 
     await refreshSongRelationships(song._id).catch(() => {});
@@ -286,11 +272,11 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
     dbQuery.category = { $in: selectedCategories };
   }
 
-  // 2. Fetch from local MongoDB first
   let dbSongs = [];
   let totalCount = 0;
   
   try {
+    const mongoStart = Date.now();
     const findOperation = Song.find(dbQuery);
     
     // Sort logic
@@ -313,6 +299,7 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
       findOperation.skip(skip).limit(limit).lean(),
       Song.countDocuments(dbQuery)
     ]);
+    console.log(`[SongService] MongoDB lookup for "${searchQuery}" completed in ${Date.now() - mongoStart}ms`);
   } catch (err) {
     console.error("[SongService] MongoDB Error:", err);
   }
@@ -340,31 +327,22 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
       if (cached && !cached.results) {
         console.log(`[SongService] Cached miss for "${searchQuery}" will be retried against providers.`);
       }
-      console.log(`[SongService] No strong local results for "${searchQuery}". Searching enabled providers...`);
-      const startTime = Date.now();
-      let importedSong = null;
-
-      try {
-        importedSong = await importSongOnDemand(searchQuery, selectedCategories);
-      } catch (err) {
+      console.log(`[SongService] No strong local results for "${searchQuery}". Launching background search...`);
+      
+      // Fire and forget
+      importSongOnDemand(searchQuery, selectedCategories).catch(err => {
         console.error(`[SongService] On-demand import error:`, err.stack);
-      }
+      });
 
-      const responseTime = Date.now() - startTime;
-      await SongSearchLog.create({
-        query: searchQuery,
-        found: !!importedSong,
-        source: importedSong ? importedSong.source : "None",
-        responseTime
-      }).catch(() => {});
-
-      if (importedSong) {
-        // Prepend the successfully imported song to the search results
-        // filtering out the imported song if it was already in the list to avoid duplicates
-        const filteredSongs = dbSongs.filter(s => String(s._id) !== String(importedSong._id));
-        dbSongs = [importedSong, ...filteredSongs];
-        totalCount = dbSongs.length;
-      }
+      // Immediately return polling state
+      return {
+        success: true,
+        status: "searching_online",
+        songs: [],
+        totalSongs: 0,
+        currentPage: 1,
+        totalPages: 1
+      };
     }
   }
 

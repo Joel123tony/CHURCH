@@ -179,7 +179,7 @@ const AdminSongs = () => {
     return Math.floor(seconds) + " secs ago";
   }, []);
 
-  const { stats = {}, sourceBreakdown = [], scanProgress = {}, queueMetrics = {}, workers = [], lastImport = {} } = dashboardData;
+  const { stats = {}, sourceBreakdown = [], aiProviders = [], scanProgress = {}, queueMetrics = {}, workers = [], lastImport = {} } = dashboardData;
   const providerHealth = Array.isArray(dashboardData.providerHealth)
     ? dashboardData.providerHealth
     : (Array.isArray(stats.providerHealth) ? stats.providerHealth : []);
@@ -220,7 +220,7 @@ const AdminSongs = () => {
 
   const totalProgressPercent = scanProgress.totalDiscovered ? 
     Math.min(100, Math.round(((scanProgress.totalImported + scanProgress.totalDuplicates + scanProgress.totalFailed) / scanProgress.totalDiscovered) * 100)) : 0;
-  const topAiProvider = (stats.aiProviders || [])[0];
+  const topAiProvider = aiProviders.length > 0 ? aiProviders[0] : null;
 
   // Sorting Source Breakdown descending
   const sortedSourceBreakdown = useMemo(() => {
