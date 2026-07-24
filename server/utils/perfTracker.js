@@ -114,7 +114,8 @@ export const perfMiddleware = (req, res, next) => {
             logStage("TOTAL", perfObj.total);
             console.log("================================\n");
 
-            if (process.env.ENABLE_PERF_LOGS === 'true' && typeof body === 'object' && body !== null) {
+            const shouldExposePerf = process.env.ENABLE_PERF_LOGS === 'true' || process.env.NODE_ENV === 'development';
+            if (shouldExposePerf && typeof body === 'object' && body !== null) {
                 // Ensure performance block respects original format requested
                 body.performance = {
                     mongoLookup: perfObj.mongoLookup,
