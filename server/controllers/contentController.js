@@ -32,7 +32,7 @@ export const saveBlock = async (req, res) => {
     const updated = await ContentBlock.findOneAndUpdate(
       { key },
       { key, data, updatedAt: new Date() },
-      { upsert: true, new: true, lean: true }
+      { upsert: true, returnDocument: 'after', lean: true }
     );
 
     clearCache(`content_${key}`);

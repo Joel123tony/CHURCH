@@ -3,6 +3,7 @@ import API from "../api/axios";
 import { Link, useSearchParams } from "react-router-dom";
 import { Search, Music, ExternalLink, Loader2 } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
+import { FadeUp, StaggerContainer, StaggerItem } from "../components/animations/index.jsx";
 
 export default function Songs() {
   const { t } = useLanguage();
@@ -137,14 +138,16 @@ export default function Songs() {
     <div className="min-h-screen bg-[#F4EFE7] pt-12 pb-24 font-sans">
       <div className="max-w-5xl mx-auto px-5 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-black text-[#54091b] tracking-tight mb-4">
-            {t("Search Christan Songs")}
-          </h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto font-medium">
-            {t("Search for lyrics across multiple trusted sources and hymn books." )}
-          </p>
-        </div>
+        <FadeUp>
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-black text-[#54091b] tracking-tight mb-4">
+              {t("Search Christan Songs")}
+            </h1>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto font-medium">
+              {t("Search for lyrics across multiple trusted sources and hymn books." )}
+            </p>
+          </div>
+        </FadeUp>
 
         {/* Sticky Search & Categories Container */}
         <div
@@ -193,7 +196,7 @@ export default function Songs() {
                       >
                         <Music size={16} className="text-[#54091b]/50 shrink-0" />
                         <div className="flex-1 truncate">
-                          <div className="font-bold text-[#1E293B] truncate">{song.title}</div>
+                          <div className="font-bold text-[#1E293B] truncate">{song.displayTitle || song.title}</div>
                           <div className="text-xs text-slate-500 truncate">{song.lyrics}</div>
                         </div>
                       </li>
@@ -235,57 +238,58 @@ export default function Songs() {
             </button>
           </div>
         ) : songs.length > 0 ? (
-          <div className="space-y-5 max-w-3xl mx-auto">
+          <StaggerContainer className="space-y-5 max-w-3xl mx-auto">
             {songs.map((song, idx) => (
-              <Link
-                to={`/songs/${encodeURIComponent(song.url)}`}
-                state={{ song }}
-                key={idx}
-                className="group block bg-white rounded-[20px] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_30px_-4px_rgba(84,9,27,0.15)] transition-all duration-300 hover:-translate-y-1.5 border border-[#E8DCCB] relative overflow-hidden"
-              >
-                {/* Accent glow on hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#D4AF37]/0 via-[#D4AF37]/0 to-[#D4AF37]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+              <StaggerItem key={idx} animation="fade-up">
+                <Link
+                  to={`/songs/${encodeURIComponent(song.url)}`}
+                  state={{ song }}
+                  className="group block bg-white rounded-[20px] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_30px_-4px_rgba(84,9,27,0.15)] transition-all duration-300 hover:-translate-y-1.5 border border-[#E8DCCB] relative overflow-hidden"
+                >
+                  {/* Accent glow on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#D4AF37]/0 via-[#D4AF37]/0 to-[#D4AF37]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
-                <div className="flex items-start gap-4 sm:gap-6 relative z-10">
-                  <div className="w-12 h-12 rounded-full bg-[#F4EFE7] flex items-center justify-center shrink-0 group-hover:bg-[#54091b] group-hover:shadow-md transition-all duration-300">
-                    <Music className="w-5 h-5 text-[#54091b] group-hover:text-[#F6EFE3] transition-colors" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-1">
-                      <h3 className="text-xl sm:text-2xl font-bold text-[#1E293B] truncate group-hover:text-[#54091b] transition-colors tracking-tight">
-                        {song.titleTamil || song.title}
-                      </h3>
-                      <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-[#D4AF37]/10 transition-colors">
-                        <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#D4AF37] transition-colors" />
-                      </div>
+                  <div className="flex items-start gap-4 sm:gap-6 relative z-10">
+                    <div className="w-12 h-12 rounded-full bg-[#F4EFE7] flex items-center justify-center shrink-0 group-hover:bg-[#54091b] group-hover:shadow-md transition-all duration-300">
+                      <Music className="w-5 h-5 text-[#54091b] group-hover:text-[#F6EFE3] transition-colors" />
                     </div>
 
-                    {song.titleEnglish && (
-                      <div className="text-sm font-medium text-slate-500 mb-2 truncate">
-                        {song.titleEnglish}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-1">
+                        <h3 className="text-xl sm:text-2xl font-bold text-[#1E293B] truncate group-hover:text-[#54091b] transition-colors tracking-tight">
+                          {song.displayTitle || song.titleTamil || song.title}
+                        </h3>
+                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center shrink-0 group-hover:bg-[#D4AF37]/10 transition-colors">
+                          <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#D4AF37] transition-colors" />
+                        </div>
                       </div>
-                    )}
 
-                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-2 font-serif opacity-90 group-hover:opacity-100 transition-opacity mb-4">
-                      {song.lyricsTamil || song.lyrics || t("Lyrics preview not available.")}
-                    </p>
+                      {song.titleEnglish && (
+                        <div className="text-sm font-medium text-slate-500 mb-2 truncate">
+                          {song.titleEnglish}
+                        </div>
+                      )}
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      {song.category && (
-                        <span className="inline-flex items-center gap-1 bg-[#F4EFE7] text-[#54091b]/80 text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider border border-[#E8DCCB]">
-                          {song.category}
-                        </span>
-                      )}
-                      {song.artist && (
-                        <span className="text-xs text-slate-500 font-medium ml-auto">
-                          {song.artist}
-                        </span>
-                      )}
+                      <p className="text-slate-600 text-sm leading-relaxed line-clamp-2 font-serif opacity-90 group-hover:opacity-100 transition-opacity mb-4">
+                        {song.lyricsTamil || song.lyrics || t("Lyrics preview not available.")}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {song.category && (
+                          <span className="inline-flex items-center gap-1 bg-[#F4EFE7] text-[#54091b]/80 text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-wider border border-[#E8DCCB]">
+                            {song.category}
+                          </span>
+                        )}
+                        {song.artist && (
+                          <span className="text-xs text-slate-500 font-medium ml-auto">
+                            {song.artist}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </StaggerItem>
             ))}
 
             {/* Pagination UI */}
@@ -347,7 +351,7 @@ export default function Songs() {
                 </button>
               </div>
             )}
-          </div>
+          </StaggerContainer>
         ) : (
           <div className="text-center py-24 bg-white/50 rounded-[24px] border border-[#E8DCCB] shadow-sm max-w-3xl mx-auto">
             <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-slate-100">

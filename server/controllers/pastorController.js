@@ -385,7 +385,7 @@ export const updatePastor = async (req, res) => {
     console.log("[PASTOR] UPDATE PAYLOAD", updatePayload);
 
     const updated = await Pastor.findByIdAndUpdate(req.params.id, updatePayload, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
       lean: true
     });

@@ -26,10 +26,7 @@ const PastorMessage = lazy(() => import("./pages/admin/PastorMessage"));
 const Books = lazy(() => import("./pages/admin/Books"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Donations = lazy(() => import("./pages/admin/Donations"));
-const AdminSongs = lazy(() => import("./pages/admin/AdminSongs"));
-const AdminFailedImports = lazy(() => import("./pages/admin/AdminFailedImports"));
-
-
+const SongsLayout = lazy(() => import("./pages/admin/songs/SongsLayout"));
 const PageLoader = () => (
   <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f4efe7] px-4">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(238,0,57,0.08),_transparent_40%),radial-gradient(circle_at_bottom,_rgba(239,191,4,0.12),_transparent_36%)]" />
@@ -97,8 +94,7 @@ export default function App() {
                 <Route path="pastor-message" element={<PastorMessage />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="donations" element={<Donations />} />
-                <Route path="songs" element={<AdminSongs />} />
-                <Route path="songs/failed" element={<AdminFailedImports />} />
+                <Route path="songs/*" element={<SongsLayout />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

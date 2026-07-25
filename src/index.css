@@ -453,3 +453,44 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Timeline Scrollbar */
+.timeline-container {
+    overflow-y: auto;
+    scrollbar-width: thin;                 /* Firefox */
+    scrollbar-color: #531B24 #F5F3EF;
+}
+
+/* Chrome / Edge / Safari */
+.timeline-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.timeline-container::-webkit-scrollbar-track {
+    background: #F5F3EF;
+    border-radius: 999px;
+    margin: 6px 0;
+}
+
+.timeline-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+        180deg,
+        #531B24,
+        #6B1F34
+    );
+    border-radius: 999px;
+    border: 2px solid #F5F3EF;
+    transition: all .25s ease;
+}
+
+.timeline-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+        180deg,
+        #D4AF37,
+        #C89B1D
+    );
+}
+
+.timeline-container::-webkit-scrollbar-corner {
+    background: transparent;
+}

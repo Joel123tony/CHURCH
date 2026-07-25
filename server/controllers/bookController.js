@@ -178,7 +178,7 @@ export const updateBook = async (req, res) => {
     }
 
     const updated = await Book.findByIdAndUpdate(req.params.id, updatePayload, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
       lean: true
     });

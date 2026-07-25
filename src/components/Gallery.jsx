@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { FaTimes, FaDownload, FaSpinner, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
+import { FadeUp } from "./animations/index.jsx";
 
 function getMediaDate(item) {
   const value = item?.eventDate || item?.createdAt;
@@ -9,25 +10,9 @@ function getMediaDate(item) {
   return Number.isFinite(time) ? time : 0;
 }
 
-function formatMediaDate(value) {
-  if (!value) return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  return date.toLocaleDateString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function GalleryTile({ item, onClick, compact = false, t }) {
+function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
   const isVideo = item.mediaType === "video";
   const [loading, setLoading] = useState(true);
-
-  // Use a fixed aspect ratio so all cards are completely uniform (16:9)
-  const frameClass = "aspect-video";
 
   return (
     <div
@@ -40,78 +25,40 @@ function GalleryTile({ item, onClick, compact = false, t }) {
           onClick?.();
         }
       }}
-      className="group flex flex-col h-full w-full cursor-pointer text-left rounded-2xl overflow-hidden shadow-md transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b] bg-[#54091b]"
+      className={`group relative ${aspectClass} w-full cursor-pointer overflow-hidden rounded-[10px] sm:rounded-[12px] bg-[#e5ddd3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]`}
     >
-      <div className={`relative overflow-hidden bg-[#54091b] ${frameClass}`}>
-        {isVideo ? (
-          compact ? (
-            <img
-              src={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
-              alt={item.title || "video thumbnail"}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-              onLoad={() => setLoading(false)}
-            />
-          ) : (
-            <video
-              src={item.url}
-              controls={!compact}
-              muted={compact}
-              poster={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
-              preload="metadata"
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-              onLoadedMetadata={() => setLoading(false)}
-            />
-          )
-        ) : (
-          <img
-            src={item.url}
-            alt={item.title || "gallery media"}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-            onLoad={() => setLoading(false)}
-          />
-        )}
+      {isVideo ? (
+        <img
+          src={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
+          alt={item.title || "video thumbnail"}
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+          onLoad={() => setLoading(false)}
+        />
+      ) : (
+        <img
+          src={item.url}
+          alt={item.title || "gallery media"}
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+          onLoad={() => setLoading(false)}
+        />
+      )}
 
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#e5ddd3] animate-pulse"></div>
+      )}
 
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-200/90 animate-pulse">
-            <span className="text-xs font-medium text-slate-500">
-              {compact ? "" : "Loading..."}
-            </span>
-          </div>
-        )}
-
-        {isVideo && (
-          <div className="absolute right-3 top-3 rounded-full bg-[#F4EFE7] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#54091b] shadow-sm">
-            Video
-          </div>
-        )}
-      </div>
-
-      <div className={`${compact ? "p-3 sm:p-4" : "p-4 sm:p-5"} flex flex-col flex-1`}>
-        <div className="flex items-start justify-between gap-3">
-          <h3
-            className="min-w-0 flex-1 truncate text-[15px] sm:text-base font-semibold text-[#F4EFE7]"
-          >
-            {item.title ? t(item.title) : t("Untitled")}
-          </h3>
-
-          {item.eventDate && !compact && (
-            <span 
-              className="shrink-0 text-[12px] font-medium text-[#F4EFE7]/80" 
-            >
-              {formatMediaDate(item.eventDate)}
-            </span>
-          )}
+      {isVideo && (
+        <div className="absolute right-1.5 top-1.5 sm:right-2 sm:top-2 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-white backdrop-blur-md">
+          VIDEO
         </div>
+      )}
 
-        {!compact && item.createdAt && !item.eventDate && (
-          <p className="mt-1 text-xs font-medium text-[#F4EFE7]/80">
-            {formatMediaDate(item.createdAt)}
-          </p>
-        )}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 sm:p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100 hidden md:flex">
+        <p className="truncate text-xs font-medium text-white shadow-sm">
+          {item.title ? t(item.title) : t("Untitled")}
+        </p>
       </div>
     </div>
   );
@@ -128,6 +75,7 @@ export default function Gallery() {
   const [downloading, setDownloading] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [touchStartX, setTouchStartX] = useState(null);
+
   const handleDownload = async (media) => {
     if (downloading || !media?.url) return;
 
@@ -171,7 +119,6 @@ export default function Gallery() {
     const fetchGallery = async () => {
       try {
         setLoading(true);
-
         const [featuredRes, allRes] = await Promise.all([
           API.get("/gallery/client"),
           API.get("/gallery"),
@@ -180,9 +127,7 @@ export default function Gallery() {
         const featured = featuredRes?.data?.data || [];
         const all = allRes?.data?.data || [];
 
-        setFeaturedMedia(
-          [...featured].sort((a, b) => getMediaDate(b) - getMediaDate(a))
-        );
+        setFeaturedMedia([...featured].sort((a, b) => getMediaDate(b) - getMediaDate(a)));
         setAllMedia([...all].sort((a, b) => getMediaDate(b) - getMediaDate(a)));
       } catch (err) {
         console.error("Failed to load gallery data:", err);
@@ -190,7 +135,6 @@ export default function Gallery() {
         setLoading(false);
       }
     };
-
     fetchGallery();
   }, []);
 
@@ -228,12 +172,6 @@ export default function Gallery() {
     };
   }, [openModal, selectedMedia]);
 
-  const titleSuggestions = useMemo(() => {
-    return [...new Set(allMedia.map((item) => item?.title).filter(Boolean))]
-      .slice(0, 12)
-      .sort((a, b) => a.localeCompare(b));
-  }, [allMedia]);
-
   const filteredMedia = useMemo(() => {
     const query = search.toLowerCase().trim();
     const sorted = [...allMedia].sort((a, b) => getMediaDate(b) - getMediaDate(a));
@@ -252,7 +190,6 @@ export default function Gallery() {
     setOpenModal(false);
   };
 
-  // --- Navigation Logic ---
   const activeList = openModal ? filteredMedia : featuredMedia;
   const currentIndex = selectedMedia ? activeList.findIndex((m) => m._id === selectedMedia._id) : -1;
   const hasNext = currentIndex !== -1 && currentIndex < activeList.length - 1;
@@ -266,73 +203,64 @@ export default function Gallery() {
     if (hasPrev) setSelectedMedia(activeList[currentIndex - 1]);
   }, [hasPrev, activeList, currentIndex]);
 
-  const handleTouchStart = (e) => {
-    setTouchStartX(e.targetTouches[0].clientX);
-  };
-
+  const handleTouchStart = (e) => setTouchStartX(e.targetTouches[0].clientX);
   const handleTouchEnd = (e) => {
     if (touchStartX === null) return;
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-
-    if (diff > 50 && hasNext) {
-      handleNext();
-    } else if (diff < -50 && hasPrev) {
-      handlePrev();
-    }
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (diff > 50 && hasNext) handleNext();
+    else if (diff < -50 && hasPrev) handlePrev();
     setTouchStartX(null);
   };
 
-  // Keyboard navigation
   useEffect(() => {
     if (!selectedMedia) return;
-
     const handleKeyDown = (e) => {
       if (e.key === "ArrowRight") handleNext();
       if (e.key === "ArrowLeft") handlePrev();
       if (e.key === "Escape") setSelectedMedia(null);
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedMedia, handleNext, handlePrev]);
 
+  const pinnedGridClasses = "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3";
+  const modalGridClasses = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] sm:gap-[8px]";
+
   return (
     <>
       <section id="gallery" className="py-16 bg-[#F4EFE7]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mb-8 flex items-center justify-between gap-4">
-            <h2 className="text-3xl font-bold text-[#54091b]">
-              {t("Gallery")}
-            </h2>
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
+          <FadeUp>
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <h2 className="text-3xl font-bold text-[#54091b]">
+                {t("Gallery")}
+              </h2>
 
-            <button
-              onClick={() => setOpenModal(true)}
-              className="rounded-full border border-[#54091b] bg-[#F4EFE7] px-5 py-2.5 text-sm font-bold text-[#54091b] transition hover:bg-[#54091b] hover:text-[#F4EFE7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/40"
-            >
-              {t("All Media")}
-            </button>
-          </div>
+              <button
+                onClick={() => setOpenModal(true)}
+                className="rounded-full border border-[#54091b] bg-[#F4EFE7] px-5 py-2.5 text-sm font-bold text-[#54091b] transition hover:bg-[#54091b] hover:text-[#F4EFE7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/40"
+              >
+                {t("All Media")}
+              </button>
+            </div>
+          </FadeUp>
 
           {loading ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-72 w-full rounded-2xl animate-pulse bg-[#e5e5e5]"
-                />
+            <div className={pinnedGridClasses}>
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="aspect-video w-full rounded-[10px] sm:rounded-[12px] animate-pulse bg-[#e5ddd3]" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredMedia.map((item) => (
-                <div key={item._id} className="w-full">
-                  <GalleryTile
-                    item={item}
-                    onClick={() => setSelectedMedia(item)}
-                    t={t}
-                  />
-                </div>
+            <div className={pinnedGridClasses}>
+              {featuredMedia.slice(0, 6).map((item) => (
+                <CompactTile
+                  key={item._id}
+                  item={item}
+                  onClick={() => setSelectedMedia(item)}
+                  t={t}
+                  aspectClass="aspect-video"
+                />
               ))}
             </div>
           )}
@@ -340,79 +268,45 @@ export default function Gallery() {
       </section>
 
       {openModal && (
-        <div className="fixed inset-0 z-50 bg-black/70">
-          <div className="flex h-full flex-col">
-            <div
-              className="border-b border-[#d9cfbf] bg-[#F4EFE7] px-4 py-4 shadow-sm sm:px-6 text-[#54091b]"
-            >
-              <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em]">
-                    {t("All Media")}
-                  </p>
-                  <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
-                    {t("Gallery")}
-                  </h2>
-                </div>
-
-                <div className="flex w-full items-center gap-3 md:max-w-2xl">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      placeholder={t("Search...")}
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      list="gallery-title-suggestions"
-                      className="h-12 w-full rounded-full border border-[#d9cfbf] px-5 pr-12 outline-none transition focus:ring-2 focus:ring-[#54091b]/20 bg-[#FFFFFF] text-[#54091b]"
-                    />
-
-                    <datalist id="gallery-title-suggestions">
-                      {titleSuggestions.map((title) => (
-                        <option key={title} value={title} />
-                      ))}
-                    </datalist>
-                  </div>
-
-                  <button
-                    onClick={closeModal}
-                    aria-label="Close gallery"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#54091b]/20 bg-transparent transition hover:bg-[#54091b]/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/25 text-[#54091b]"
-                  >
-                    <FaTimes size={17} />
-                  </button>
-                </div>
-              </div>
+        <div className="fixed inset-0 z-50 bg-[#F4EFE7] flex flex-col">
+          <div className="border-b border-[#d9cfbf] bg-[#F4EFE7] px-4 py-3 shadow-sm sm:px-6 flex items-center justify-between shrink-0">
+            <h2 className="text-xl font-bold text-[#54091b] hidden sm:block">
+              {t("All Media")}
+            </h2>
+            <div className="flex flex-1 sm:max-w-md items-center gap-2 mx-auto sm:mx-4">
+              <input
+                type="text"
+                placeholder={t("Search gallery...")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-10 w-full rounded-full border border-[#d9cfbf] bg-white px-4 text-sm text-[#54091b] outline-none transition focus:ring-2 focus:ring-[#54091b]/20"
+              />
             </div>
+            <button
+              onClick={closeModal}
+              aria-label="Close gallery"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-[#54091b]/5 text-[#54091b] transition"
+            >
+              <FaTimes size={18} />
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto overscroll-contain bg-[#F4EFE7] px-4 py-5 sm:px-6">
-              <div className="mx-auto max-w-7xl">
-                <div className="mb-4 flex items-center justify-between text-sm font-semibold text-[#54091b]">
-                  <span>
-                    {filteredMedia.length}{" "}
-                    {filteredMedia.length === 1 ? "item" : "items"}
-                  </span>
-                  <span>{t("Newest first")}</span>
+          <div className="flex-1 overflow-y-auto px-2 py-4 sm:p-6 bg-[#F4EFE7]">
+            <div className="mx-auto max-w-[1600px]">
+              {filteredMedia.length === 0 ? (
+                <div className="mt-12 text-center text-[#54091b]/60">{t("No media found")}</div>
+              ) : (
+                <div className={modalGridClasses}>
+                  {filteredMedia.map((item) => (
+                    <CompactTile
+                      key={item._id}
+                      item={item}
+                      onClick={() => setSelectedMedia(item)}
+                      t={t}
+                    />
+                  ))}
                 </div>
-
-                {filteredMedia.length === 0 ? (
-                  <div className="rounded-3xl border border-[#d9cfbf] bg-white px-6 py-16 text-center font-medium text-[#54091b] shadow-sm">
-                    {t("No media found")}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredMedia.map((item) => (
-                      <div key={item._id} className="w-full">
-                        <GalleryTile
-                          item={item}
-                          compact
-                          onClick={() => setSelectedMedia(item)}
-                          t={t}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -420,7 +314,7 @@ export default function Gallery() {
 
       {selectedMedia && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md"
           onClick={() => setSelectedMedia(null)}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -428,64 +322,62 @@ export default function Gallery() {
           {hasPrev && (
             <button
               onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-              className="absolute left-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition md:flex text-[#FFFFFF] bg-[rgba(255,255,255,0.1)]"
+              className="absolute left-2 sm:left-4 top-1/2 z-20 flex h-12 w-12 sm:h-14 sm:w-14 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
             >
-              <FaChevronLeft size={24} />
+              <FaChevronLeft size={20} />
             </button>
           )}
 
           {hasNext && (
             <button
               onClick={(e) => { e.stopPropagation(); handleNext(); }}
-              className="absolute right-4 top-1/2 z-20 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur-md transition md:flex text-[#FFFFFF] bg-[rgba(255,255,255,0.1)]"
+              className="absolute right-2 sm:right-4 top-1/2 z-20 flex h-12 w-12 sm:h-14 sm:w-14 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white shadow-lg backdrop-blur-md transition hover:bg-white/20"
             >
-              <FaChevronRight size={24} />
+              <FaChevronRight size={20} />
             </button>
           )}
 
-          <div
-            className="relative w-full max-w-6xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="absolute right-3 top-3 z-10 flex items-center gap-3">
-              <button
-                onClick={() => handleDownload(selectedMedia)}
-                disabled={downloading}
-                aria-label="Download Media"
-                className="flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition hover:opacity-90 disabled:opacity-50 bg-[#FFFFFF] text-[#0f172a]"
-              >
-                {downloading ? <FaSpinner className="animate-spin" size={16} /> : <FaDownload size={15} />}
-              </button>
-              <button
-                onClick={() => setSelectedMedia(null)}
-                aria-label="Close viewer"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-lg transition hover:bg-white"
-              >
-                <FaTimes size={16} />
-              </button>
-            </div>
+          <div className="absolute top-4 left-4 z-20 text-white/70 text-sm font-medium tracking-wide">
+            {currentIndex + 1} / {activeList.length}
+          </div>
 
-            {toastMessage && (
-              <div className="absolute top-16 right-3 z-20 rounded-xl bg-white/95 px-4 py-3 text-sm font-semibold text-red-600 shadow-xl backdrop-blur-sm sm:right-auto sm:left-1/2 sm:-translate-x-1/2">
-                {toastMessage}
-              </div>
-            )}
+          <div className="absolute right-4 top-4 z-20 flex items-center gap-3">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDownload(selectedMedia); }}
+              disabled={downloading}
+              className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20 disabled:opacity-50"
+            >
+              {downloading ? <FaSpinner className="animate-spin" size={16} /> : <FaDownload size={16} />}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setSelectedMedia(null); }}
+              className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20"
+            >
+              <FaTimes size={18} />
+            </button>
+          </div>
 
+          <div className="relative w-full max-w-7xl px-4 sm:px-16" onClick={(e) => e.stopPropagation()}>
             {selectedMedia.mediaType === "video" ? (
               <video
                 key={selectedMedia._id}
                 src={selectedMedia.url}
                 controls
                 autoPlay
-                className="max-h-[85vh] w-full rounded-2xl bg-black object-contain shadow-2xl"
+                className="max-h-[85vh] w-full rounded-md object-contain"
               />
             ) : (
               <img
                 key={selectedMedia._id}
                 src={selectedMedia.url}
                 alt={selectedMedia.title}
-                className="max-h-[85vh] w-full rounded-2xl bg-black object-contain shadow-2xl"
+                className="max-h-[85vh] w-full rounded-md object-contain"
               />
+            )}
+            {selectedMedia.title && (
+              <div className="absolute bottom-[-40px] left-0 right-0 text-center text-white/90 text-sm">
+                {selectedMedia.title}
+              </div>
             )}
           </div>
         </div>

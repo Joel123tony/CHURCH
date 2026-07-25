@@ -128,7 +128,7 @@ export default function SongInlineSearch({ className = "" }) {
                   </div>
                   <div className="flex-1 truncate">
                     <div className="text-sm font-bold text-slate-800 truncate">
-                      {song.titleTamil || song.title}
+                      {song.displayTitle || song.titleTamil || song.title}
                     </div>
                     {(song.artist || song.category) && (
                       <div className="text-xs font-medium text-slate-500 truncate mt-0.5">

@@ -97,31 +97,14 @@ export class DiscoveryWorker extends BaseWorker {
             return;
         }
 
-        // Generate UUID
-        const uuid = crypto.randomUUID();
+        console.log(`[DiscoveryWorker] Discovered new URL, queuing for import: ${url}`);
 
-        // Save metadata only
-        const newSong = new Song({
-            uuid,
-            title: metadata.title || "",
-            titleTamil: metadata.titleTamil || "",
-            artist: metadata.artist || "",
-            source,
-            sourceUrl: url,
-            url,
-            category: metadata.category || "Unknown",
-            lyricsStatus: "pending",
-            status: "pending",
-            ...metadata
-        });
-
-        await newSong.save();
-        console.log(`[DiscoveryWorker] Discovered and saved metadata for: ${newSong.title}`);
-
-        // Queue for import
+        // Queue for import directly with metadata, DO NOT create a stub in MongoDB
         await QueueManager.addJob("import", {
-            url: newSong.url,
+            url,
+            source,
+            metadata,
             priority: 1
-        }, newSong._id);
+        }, null);
     }
 }

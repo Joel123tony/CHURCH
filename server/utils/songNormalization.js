@@ -268,6 +268,7 @@ export const slugifySongTitle = (title = "", sourceUrl = "") => {
 
 export const buildSongSearchKey = (song = {}) => {
   const sources = [
+    song.displayTitle,
     song.title,
     song.titleTamil,
     song.titleEnglish,
@@ -347,8 +348,15 @@ export const buildSongPayload = (song = {}, context = {}) => {
     ...generateSongTags(`${title} ${cleanedLyrics} ${originalLyrics}`, { ...metadata, ...song.metadata }, themes)
   ])).filter(Boolean);
 
+  const authorStr = metadata.author || song.author || "";
+  const invalidAuthors = ["unknown", "n/a", "traditional", ""];
+  const isInvalidAuthor = invalidAuthors.includes(authorStr.toLowerCase());
+  const displayTitle = isInvalidAuthor ? title : `${title} — ${authorStr}`;
+  const normalizedDisplayTitle = normalizeSongTitle(displayTitle);
+
   const searchKey = buildSongSearchKey({
     title,
+    displayTitle,
     titleTamil,
     titleEnglish,
     lyrics: cleanedLyrics,
@@ -410,7 +418,9 @@ export const buildSongPayload = (song = {}, context = {}) => {
     themes,
     bibleReferences: metadata.scriptureReferences,
     searchKey,
+    displayTitle,
     normalizedTitle: normalizeSongTitle(title),
+    normalizedDisplayTitle,
     normalizedLyrics: normalizeLyricsText(cleanedLyrics),
     slug: song.slug || slugifySongTitle(title, sourceUrl),
     aiStatus: song.aiStatus || (song.aiUsed ? "processed" : "fallback"),

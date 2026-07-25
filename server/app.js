@@ -16,6 +16,7 @@ import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
 import songRoutes from "./routes/songRoutes.js";
+import contentRoutes from "./routes/content.routes.js";
 
 const envPath = fs.existsSync(path.join(process.cwd(), "server", ".env"))
   ? path.join(process.cwd(), "server", ".env")
@@ -56,6 +57,9 @@ app.use("/api/youtube", youtubeRoutes);
 
 /* SONGS */
 app.use("/api/songs", songRoutes);
+
+/* CMS CONTENT */
+app.use("/api/content", contentRoutes);
 
 /* =========================
    EXPORT

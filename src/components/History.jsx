@@ -1,4 +1,5 @@
 import { useLanguage } from "../context/LanguageContext";
+import { FadeLeft, FadeRight, FadeUp } from "./animations/index.jsx";
 
 export default function History() {
   const { t } = useLanguage();
@@ -24,51 +25,57 @@ export default function History() {
     <section id="history" className="overflow-hidden bg-[#F4EFE7]">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="pt-16 lg:pt-24">
-          <h2 className="mb-6 lg:mb-8 text-3xl font-bold text-[#54091b]">
-            {t("Church History")}
-          </h2>
+          <FadeUp>
+            <h2 className="mb-6 lg:mb-8 text-3xl font-bold text-[#54091b]">
+              {t("Church History")}
+            </h2>
+          </FadeUp>
         </div>
 
         <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 xl:gap-24 items-start mt-8 lg:mt-10">
           <div className="order-1">
-            <div className="max-w-2xl lg:pr-8">
-              {hasCmsContent ? (
-                <p 
-                  className="leading-8 md:leading-9 whitespace-pre-line text-base md:text-lg text-[#54091b]"
-                >
-                  {cmsContent}
-                </p>
-              ) : (
-                paragraphs.map((text, idx) => (
-                  <p
-                    key={idx}
-                    className={`${idx > 0 ? "mt-5 " : ""}leading-8 md:leading-9 text-base md:text-lg text-[#54091b]`}
+            <FadeRight delay={150}>
+              <div className="max-w-2xl lg:pr-8">
+                {hasCmsContent ? (
+                  <p 
+                    className="leading-8 md:leading-9 whitespace-pre-line text-base md:text-lg text-[#54091b]"
                   >
-                    {text}
+                    {cmsContent}
                   </p>
-                ))
-              )}
-            </div>
+                ) : (
+                  paragraphs.map((text, idx) => (
+                    <p
+                      key={idx}
+                      className={`${idx > 0 ? "mt-5 " : ""}leading-8 md:leading-9 text-base md:text-lg text-[#54091b]`}
+                    >
+                      {text}
+                    </p>
+                  ))
+                )}
+              </div>
+            </FadeRight>
           </div>
 
           <div className="order-2 flex justify-center lg:justify-end lg:self-end mt-6 lg:mt-0">
-            <img
-              src={imgSrc}
-              alt={t("Methodist Tamil Church")}
-              className="
-                block
-                w-full
-                max-w-[300px]
-                sm:max-w-[360px]
-                md:max-w-[430px]
-                lg:max-w-[520px]
-                xl:max-w-[600px]
-                h-auto
-                object-contain
-                drop-shadow-[0_30px_60px_rgba(0,0,0,0.18)]
-                lg:translate-y-10
-              "
-            />
+            <FadeLeft delay={300}>
+              <img
+                src={imgSrc}
+                alt={t("Methodist Tamil Church")}
+                className="
+                  block
+                  w-full
+                  max-w-[300px]
+                  sm:max-w-[360px]
+                  md:max-w-[430px]
+                  lg:max-w-[520px]
+                  xl:max-w-[600px]
+                  h-auto
+                  object-contain
+                  drop-shadow-[0_30px_60px_rgba(0,0,0,0.18)]
+                  lg:translate-y-10
+                "
+              />
+            </FadeLeft>
           </div>
         </div>
       </div>

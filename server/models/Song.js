@@ -7,6 +7,10 @@ const songSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    displayTitle: {
+      type: String,
+      trim: true,
+    },
     titleTamil: {
       type: String,
       trim: true,
@@ -308,6 +312,11 @@ const songSchema = new mongoose.Schema(
       default: "",
       index: true,
     },
+    normalizedDisplayTitle: {
+      type: String,
+      default: "",
+      index: true,
+    },
     normalizedLyrics: {
       type: String,
       default: "",
@@ -452,6 +461,8 @@ songSchema.pre("validate", function () {
   this.bibleReferences = payload.bibleReferences;
   this.searchKey = payload.searchKey;
   this.normalizedTitle = payload.normalizedTitle;
+  this.displayTitle = payload.displayTitle || payload.title;
+  this.normalizedDisplayTitle = payload.normalizedDisplayTitle || payload.normalizedTitle;
   this.normalizedLyrics = payload.normalizedLyrics;
   this.slug = this.slug || payload.slug;
   this.aiStatus = this.aiStatus || payload.aiStatus || "pending";
@@ -507,12 +518,12 @@ songSchema.pre("validate", function () {
 
 // Create a compound text index on titles, lyrics, and keywords for full-text search
 songSchema.index(
-  { title: "text", titleTamil: "text", titleEnglish: "text", lyrics: "text", lyricsTamil: "text", lyricsEnglish: "text", artist: "text", author: "text", composer: "text", keywords: "text", themes: "text", bibleReferences: "text", searchKey: "text", normalizedTitle: "text" },
+  { displayTitle: "text", normalizedDisplayTitle: "text", title: "text", titleTamil: "text", titleEnglish: "text", lyrics: "text", lyricsTamil: "text", lyricsEnglish: "text", artist: "text", author: "text", composer: "text", keywords: "text", themes: "text", bibleReferences: "text", searchKey: "text", normalizedTitle: "text" },
   { language_override: "dummy_language_override_field" }
 );
 
 // Performance indexes
-songSchema.index({ title: 1, normalizedTitle: 1, sourceUrl: 1, url: 1, slug: 1, publishedDate: -1 });
+songSchema.index({ displayTitle: 1, normalizedDisplayTitle: 1, title: 1, normalizedTitle: 1, sourceUrl: 1, url: 1, slug: 1, publishedDate: -1 });
 songSchema.index({ themes: 1, language: 1, source: 1 });
 songSchema.index({ keywords: 1, language: 1, source: 1 });
 songSchema.index({ aiNeedsReview: 1, aiConfidenceBand: 1, aiStatus: 1, status: 1 });
@@ -521,6 +532,10 @@ songSchema.index({ aiSourceHash: 1, aiEngineVersion: 1 });
 songSchema.index({ canonicalSong: 1, canonicalHash: 1 });
 songSchema.index({ moderationStatus: 1, aiNeedsReview: 1, aiConfidenceBand: 1 });
 songSchema.index({ contentHash: 1, source: 1, sourceUrl: 1 }, { sparse: true });
+songSchema.index({ status: 1, isPublished: 1 });
+songSchema.index({ searchCount: -1 });
+songSchema.index({ createdAt: -1 });
+songSchema.index({ updatedAt: -1 });
 
 songSchema.pre("save", function(next) {
   if (this.failReason && !this.failureCategory) {

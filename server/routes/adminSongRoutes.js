@@ -1,5 +1,19 @@
 import express from "express";
-import { importUrlPreview, importSongSave, getImportStatus, getDashboardData, startLibraryScan, getScanStatus, getFailedImports, deleteFailedImport, getRecentImports, retryAllFailed, retrySelectedFailed, getRetryStatus, getWorkerStatus, getPlatformHealth, getModerationQueue, moderateSong, getProviderRegistry, approveProviderRegistry, rejectProviderRegistry, runProviderDiscovery, refreshKnowledgeGraph, refreshSongGraph, createSystemBackup, getSongDebug } from "../controllers/adminSongController.js";
+import { 
+    importUrlPreview, importSongSave, getImportStatus, getDashboardData, 
+    startLibraryScan, getScanStatus, getFailedImports, deleteFailedImport, 
+    getRecentImports, retryAllFailed, retrySelectedFailed, getRetryStatus, 
+    getWorkerStatus, getPlatformHealth, getModerationQueue, moderateSong, 
+    getProviderRegistry, approveProviderRegistry, rejectProviderRegistry, 
+    runProviderDiscovery, refreshKnowledgeGraph, refreshSongGraph, 
+    createSystemBackup, getSongDebug,
+    
+    // New Library Management System imports
+    getLibrarySongs, updateSong,
+    bulkPublish, bulkDelete,
+    getDuplicates, mergeDuplicates,
+    getAnalytics, getQualityReport
+} from "../controllers/adminSongController.js";
 import auth from "../middleware/auth.js"; 
 
 const router = express.Router();
@@ -28,5 +42,23 @@ router.post("/graph/refresh", auth, refreshKnowledgeGraph);
 router.post("/graph/:id", auth, refreshSongGraph);
 router.post("/backup", auth, createSystemBackup);
 router.get("/song-debug/:id", auth, getSongDebug);
+
+// ---------------------------------------------------------
+// Library Management System Routes
+// ---------------------------------------------------------
+router.get("/library", auth, getLibrarySongs);
+router.put("/library/:id", auth, updateSong);
+
+// Bulk Operations
+router.post("/bulk/publish", auth, bulkPublish);
+router.post("/bulk/delete", auth, bulkDelete);
+
+// Duplicates
+router.get("/duplicates", auth, getDuplicates);
+router.post("/duplicates/merge", auth, mergeDuplicates);
+
+// Analytics & Quality
+router.get("/analytics", auth, getAnalytics);
+router.get("/quality-report", auth, getQualityReport);
 
 export default router;

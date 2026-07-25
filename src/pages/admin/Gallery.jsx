@@ -380,7 +380,7 @@ export default function Gallery() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-[6px] sm:gap-[8px]">
                             {pinnedMedia.map((item, index) => (
                               <div
                                 key={item._id}
@@ -417,7 +417,7 @@ export default function Gallery() {
                             </p>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-[6px] sm:gap-[8px]">
                             {regularMedia.map((item, index) => (
                               <div
                                 key={item._id}

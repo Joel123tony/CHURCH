@@ -13,9 +13,15 @@ export class ValidationWorker extends BaseWorker {
         const { aiResult, url } = job.payload;
         const songId = job.songId;
 
-        const song = await Song.findById(songId);
-        if (!song) {
-            throw new Error(`Song metadata not found for ID: ${songId}`);
+        let song = null;
+        if (songId) {
+            song = await Song.findById(songId);
+            if (!song) throw new Error(`Song metadata not found for ID: ${songId}`);
+        } else {
+            song = job.payload.transientMetadata || {};
+            // Convert to a temporary Mongoose document to use its methods if needed, or just work with payload
+            song = new Song({ ...song });
+            // Don't save it yet!
         }
 
         console.log(`[ValidationWorker] Validating AI output for: ${song.title}`);
@@ -186,7 +192,9 @@ export class ValidationWorker extends BaseWorker {
         song.themes = payload.themes;
         song.bibleReferences = payload.bibleReferences;
         song.searchKey = payload.searchKey;
+        song.displayTitle = payload.displayTitle;
         song.normalizedTitle = payload.normalizedTitle;
+        song.normalizedDisplayTitle = payload.normalizedDisplayTitle;
         song.normalizedLyrics = payload.normalizedLyrics;
         song.slug = payload.slug || song.slug;
         song.aiStatus = payload.aiStatus;
@@ -240,13 +248,86 @@ export class ValidationWorker extends BaseWorker {
         song.qualityScore = score;
         song.lyricsStatus = "found";
         song.isPendingLyrics = false;
-        
-        await song.save();
-        console.log(`[ValidationWorker] Validated and saved lyrics for: ${song.title}`);
 
-        // Queue for Duplicate Detection
-        await QueueManager.addJob("duplicate_detection", {
-            url
-        }, song._id);
+        // Duplicate Detection BEFORE saving
+        console.log(`[ValidationWorker] Checking duplicates for: ${song.title}`);
+        let possibleDupe = await Song.findOne({
+            ...(songId ? { _id: { $ne: song._id } } : {}),
+            $or: [
+                { canonicalHash: song.canonicalHash || "none" },
+                { normalizedDisplayTitle: song.normalizedDisplayTitle || "none" },
+                { normalizedTitle: song.normalizedTitle || "none", author: song.author || "" },
+                { sourceUrl: song.sourceUrl || "none" }
+            ],
+            duplicateOf: null,
+            status: "completed"
+        });
+
+        if (!possibleDupe) {
+            const stringSimilarity = (await import('string-similarity')).default || (await import('string-similarity'));
+            const candidates = await Song.find({
+                ...(songId ? { _id: { $ne: song._id } } : {}),
+                duplicateOf: null,
+                status: "completed"
+            }).select("title titleEnglish titleTamil");
+
+            const songTitle = (song.titleEnglish || song.title || "").toLowerCase();
+            
+            if (songTitle && candidates.length > 0) {
+                let bestMatch = null;
+                let highestScore = 0;
+                for (const candidate of candidates) {
+                    const cTitle = (candidate.titleEnglish || candidate.title || "").toLowerCase();
+                    if (!cTitle) continue;
+                    const score = stringSimilarity.compareTwoStrings(songTitle, cTitle);
+                    if (score > highestScore) {
+                        highestScore = score;
+                        bestMatch = candidate;
+                    }
+                }
+                if (highestScore > 0.85) {
+                    console.log(`[ValidationWorker] Fuzzy match found: ${songTitle} == ${bestMatch.titleEnglish || bestMatch.title} (${highestScore})`);
+                    possibleDupe = await Song.findById(bestMatch._id);
+                }
+            }
+        }
+
+        let finalSongId = song._id;
+
+        if (possibleDupe) {
+            console.log(`[ValidationWorker] Found duplicate! Merging ${song.title} under ${possibleDupe._id}`);
+            
+            // Phase 8: Update Existing Songs
+            if (song.qualityScore > (possibleDupe.qualityScore || 0)) {
+                // The new version is better. Upgrade the existing one!
+                possibleDupe.lyrics = song.lyrics || possibleDupe.lyrics;
+                possibleDupe.cleanedLyrics = song.cleanedLyrics || possibleDupe.cleanedLyrics;
+                possibleDupe.qualityScore = song.qualityScore;
+            }
+
+            if (!possibleDupe.youtubeUrl && song.youtubeUrl) possibleDupe.youtubeUrl = song.youtubeUrl;
+            if (!possibleDupe.sourceUrl && song.sourceUrl) possibleDupe.sourceUrl = song.sourceUrl;
+            
+            if (song.providerHistory && song.providerHistory.length > 0) {
+                possibleDupe.providerHistory = [...(possibleDupe.providerHistory || []), ...song.providerHistory];
+            }
+            
+            await possibleDupe.save();
+            finalSongId = possibleDupe._id;
+
+            // If a stub existed in the DB, mark it as a duplicate
+            if (songId) {
+                song.duplicateOf = possibleDupe._id;
+                song.status = "completed";
+                await song.save();
+            }
+        } else {
+            // Not a duplicate, insert as new
+            await song.save();
+            console.log(`[ValidationWorker] Validated and saved NEW lyrics for: ${song.title}`);
+        }
+
+        // Queue for indexing
+        await QueueManager.addJob("indexing", { url }, finalSongId);
     }
 }

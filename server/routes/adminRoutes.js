@@ -175,7 +175,7 @@ router.put(
           image,
         },
         {
-          new: true,
+          returnDocument: 'after',
           runValidators: true,
         }
       );

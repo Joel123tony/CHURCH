@@ -16,9 +16,19 @@ export class AiCleaningWorker extends BaseWorker {
         const { html, rawText: suppliedRawText, providerCandidates = [], url } = job.payload;
         const songId = job.songId;
 
-        const song = await Song.findById(songId);
-        if (!song) {
-            throw new Error(`Song metadata not found for ID: ${songId}`);
+        let song = null;
+        if (songId) {
+            song = await Song.findById(songId);
+            if (!song) throw new Error(`Song metadata not found for ID: ${songId}`);
+        } else {
+            song = job.payload.transientMetadata || {};
+            song.title = song.title || job.payload.title;
+            song.titleTamil = song.titleTamil || job.payload.titleTamil;
+            song.titleEnglish = song.titleEnglish || job.payload.titleEnglish;
+            song.source = song.source || job.payload.source;
+            song.category = song.category || job.payload.category;
+            song.sourceUrl = song.sourceUrl || url;
+            song.url = song.url || url;
         }
 
         let rawText = suppliedRawText || "";
@@ -122,21 +132,32 @@ export class AiCleaningWorker extends BaseWorker {
                     category: song.category
                 });
 
-                // Create a separate Song record for each
-                const splitSong = new Song({
-                    uuid: crypto.randomUUID(),
-                    ...splitPayload,
-                    title: splitPayload.title || `Split Song ${i + 1}`,
-                    titleTamil: splitPayload.titleTamil || `Split Song ${i + 1}`,
-                    artist: song.artist,
-                    source: song.source,
-                    sourceUrl: url,
-                    url: `${url}#split-${i}`,
-                    category: song.category,
-                    lyricsStatus: "pending",
-                    status: "processing"
-                });
-                await splitSong.save();
+                // Create a separate Song record for each if songId exists, otherwise just pass it transiently
+                let splitSongId = null;
+                if (songId) {
+                    const splitSong = new Song({
+                        uuid: crypto.randomUUID(),
+                        ...splitPayload,
+                        title: splitPayload.title || `Split Song ${i + 1}`,
+                        titleTamil: splitPayload.titleTamil || `Split Song ${i + 1}`,
+                        artist: song.artist || "",
+                        source: song.source || "",
+                        sourceUrl: url,
+                        url: `${url}#split-${i}`,
+                        category: song.category || "",
+                        lyricsStatus: "pending",
+                        status: "processing"
+                    });
+                    await splitSong.save();
+                    splitSongId = splitSong._id;
+                } else {
+                    splitPayload.transientMetadata = {
+                        ...song,
+                        title: splitPayload.title || `Split Song ${i + 1}`,
+                        titleTamil: splitPayload.titleTamil || `Split Song ${i + 1}`,
+                        url: `${url}#split-${i}`
+                    };
+                }
 
                 // Queue each split song for validation immediately
                 // Construct a mock aiResult for validation
@@ -171,8 +192,9 @@ export class AiCleaningWorker extends BaseWorker {
 
                 await QueueManager.addJob("validation", {
                     aiResult: splitAiResult,
-                    url
-                }, splitSong._id);
+                    url,
+                    transientMetadata: splitPayload.transientMetadata || null
+                }, splitSongId);
             }
 
             // Since the original job was just an archive container, we can quarantine the parent
@@ -181,15 +203,16 @@ export class AiCleaningWorker extends BaseWorker {
 
         // Single Song processing
         song.aiStatus = "processed";
-        await song.save();
+        if (songId) await song.save();
 
         // Queue for validation
         await QueueManager.addJob("validation", {
             aiResult,
             url,
             metadata: youtubeMetadata,
-            providerCandidates
-        }, song._id);
+            providerCandidates,
+            transientMetadata: !songId ? song : null
+        }, songId);
 
         console.log(`[AiCleaningWorker] AI completed successfully, queued for validation: ${song.title}`);
     }

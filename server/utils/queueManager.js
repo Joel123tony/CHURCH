@@ -39,7 +39,7 @@ export const QueueManager = {
                     lockedUntil: new Date(now.getTime() + LOCK_TIME_MS)
                 }
             },
-            { sort: { nextRunAt: 1 }, new: true }
+            { sort: { nextRunAt: 1 }, returnDocument: 'after' }
         );
         return job;
     },

@@ -3,6 +3,7 @@ import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
 import { FaFire, FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
+import { FadeUp, FadeLeft, FadeRight, StaggerContainer, StaggerItem } from "./animations/index.jsx";
 
 export default function Events() {
   const { t } = useLanguage();
@@ -77,13 +78,16 @@ export default function Events() {
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row gap-3 justify-between items-start mb-6">
-          <h2 className="text-left text-3xl font-bold text-[#F4EFE7]">{t("Events")}</h2>
-        </div>
+        <FadeUp>
+          <div className="flex flex-col md:flex-row gap-3 justify-between items-start mb-6">
+            <h2 className="text-left text-3xl font-bold text-[#F4EFE7]">{t("Events")}</h2>
+          </div>
+        </FadeUp>
 
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10">
-          <div>
-            <div className="flex items-center gap-3 mb-6">
+          <FadeLeft delay={100}>
+            <div>
+              <div className="flex items-center gap-3 mb-6">
               <FaFire className="text-2xl text-[#F4EFE7]" />
               <h3 className="text-2xl font-bold text-[#F4EFE7]">{t("Featured Event")}</h3>
             </div>
@@ -155,9 +159,11 @@ export default function Events() {
               </div>
             )}
           </div>
+          </FadeLeft>
 
-          <div>
-            <div className="flex items-center justify-between mb-6">
+          <FadeRight delay={200}>
+            <div>
+              <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <FaCalendarAlt className="text-2xl text-[#F4EFE7]" />
                 <h3 className="text-2xl font-bold text-[#F4EFE7]">{t("Upcoming Events")}</h3>
@@ -168,13 +174,13 @@ export default function Events() {
               </span>
             </div>
 
-            <div className="space-y-5 max-h-[650px] overflow-y-auto pr-2">
+            <StaggerContainer className="space-y-5 max-h-[650px] overflow-y-auto pr-2" staggerDelay={60}>
               {upcomingEvents.length > 0 ? (
                 upcomingEvents.map((event) => (
-                  <div
-                    key={event._id}
-                    className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl bg-[#f4efe7]"
-                  >
+                  <StaggerItem key={event._id} animation="scale-in">
+                    <div
+                      className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl bg-[#f4efe7]"
+                    >
                     <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-[28px]" />
 
                     <h4 className="mb-4 text-xl font-semibold text-[#54091b]">
@@ -203,15 +209,17 @@ export default function Events() {
                         <span>{t(event.venue)}</span>
                       </div>
                     </div>
-                  </div>
+                    </div>
+                  </StaggerItem>
                 ))
               ) : (
                 <div className="bg-white/10 backdrop-blur rounded-3xl p-8 text-white">
                   {t("No upcoming events available.")}
                 </div>
               )}
-            </div>
+            </StaggerContainer>
           </div>
+          </FadeRight>
         </div>
       </div>
     </section>

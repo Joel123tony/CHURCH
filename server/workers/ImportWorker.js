@@ -13,13 +13,25 @@ export class ImportWorker extends BaseWorker {
         const { url } = job.payload;
         const songId = job.songId;
 
-        const song = await Song.findById(songId);
-        if (!song) {
-            throw new Error(`Song metadata not found for ID: ${songId}`);
+        let song = null;
+        if (songId) {
+            song = await Song.findById(songId);
+            if (!song) throw new Error(`Song metadata not found for ID: ${songId}`);
+            song.status = "processing";
+            await song.save();
+        } else {
+            // Transient object for discovery-first jobs
+            song = {
+                title: job.payload.metadata?.title || "Unknown Title",
+                titleTamil: job.payload.metadata?.titleTamil || "",
+                titleEnglish: job.payload.metadata?.titleEnglish || "",
+                source: job.payload.source || "Unknown",
+                category: job.payload.metadata?.category || "Unknown",
+                sourceUrl: url,
+                url: url,
+                providerHistory: []
+            };
         }
-
-        song.status = "processing";
-        await song.save();
 
         console.log(`[ImportWorker] Fetching raw HTML for: ${song.title} (${url})`);
 
@@ -83,7 +95,6 @@ export class ImportWorker extends BaseWorker {
                     if (!html) throw new Error("Fallback fetch returned empty content", { cause: err });
                 }
                 
-                // Update song with new source
                 song.sourceUrl = finalUrl;
                 song.url = finalUrl;
                 song.source = fallbackCandidates[0]?.source || fallbackResult?.source || "Fallback Search";
@@ -96,7 +107,7 @@ export class ImportWorker extends BaseWorker {
                         checkedAt: new Date()
                     }))
                 ];
-                await song.save();
+                if (songId) await song.save();
             } else {
                 // If NO fallback is found, check retries
                 console.warn(`[ImportWorker] No sources found for "${song.title}".`);
@@ -114,7 +125,7 @@ export class ImportWorker extends BaseWorker {
                     song.lyricsStatus = "pending";
                 }
                 
-                await song.save();
+                if (songId) await song.save();
                 
                 // We do not throw an error here, because we've handled it.
                 // We just return early and consider this job "completed" in terms of its queue lifecycle.
@@ -130,8 +141,9 @@ export class ImportWorker extends BaseWorker {
             category: song.category,
             title: song.title,
             titleTamil: song.titleTamil,
-            titleEnglish: song.titleEnglish
-        }, song._id);
+            titleEnglish: song.titleEnglish,
+            transientMetadata: !songId ? song : null
+        }, songId);
 
         console.log(`[ImportWorker] Fetched content and queued for AI cleaning: ${song.title}`);
     }

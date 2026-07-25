@@ -164,7 +164,7 @@ router.put("/current/:id", async (req, res) => {
     const pastor = await Pastor.findByIdAndUpdate(
       id,
       { $set: { isCurrent: true } },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
 
     if (!pastor) {

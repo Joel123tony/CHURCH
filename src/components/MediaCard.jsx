@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { FaEdit, FaTrashAlt, FaThumbtack, FaCalendarAlt, FaPlay, FaImage } from "react-icons/fa";
+import { FaEdit, FaTrashAlt, FaThumbtack, FaPlay, FaImage } from "react-icons/fa";
 
 function MediaCard({
   item,
@@ -21,15 +21,12 @@ function MediaCard({
     const handleEsc = (e) => {
       if (e.key === "Escape") setOpen(false);
     };
-
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
   const handleMouseEnter = () => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {});
-    }
+    if (videoRef.current) videoRef.current.play().catch(() => {});
   };
 
   const handleMouseLeave = () => {
@@ -42,128 +39,112 @@ function MediaCard({
   return (
     <>
       <div
-        className={`group flex flex-col h-full overflow-hidden rounded-[20px] bg-white transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl ${
-          selected
-            ? "border-2 border-[#54091b] shadow-md"
-            : "border border-slate-100 shadow-sm"
+        className={`group relative aspect-square w-full cursor-pointer overflow-hidden rounded-[10px] sm:rounded-[12px] bg-slate-200 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+          selected ? "ring-2 ring-indigo-500 scale-[0.98]" : "hover:scale-[1.02]"
         }`}
       >
-        {/* IMAGE/VIDEO WRAPPER - Fixed 4:3 Aspect Ratio */}
-        <div className="relative w-full aspect-[4/3] bg-slate-100 overflow-hidden shrink-0 border-b border-slate-100">
-          {typeof onSelectToggle === "function" && (
-            <label className="absolute left-3 top-3 z-30 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-slate-700 shadow-sm backdrop-blur transition-transform hover:scale-110">
+        {/* MEDIA LAYER */}
+        {isVideo ? (
+          <video
+            ref={videoRef}
+            src={item.url}
+            className="h-full w-full object-cover"
+            muted
+            preload="metadata"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={() => setOpen(true)}
+            onLoadedMetadata={() => setLoading(false)}
+            onError={() => { setLoading(false); setImageError(true); }}
+          />
+        ) : imageError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300">
+            <FaImage className="text-3xl mb-1 opacity-50" />
+          </div>
+        ) : (
+          <img
+            src={item.thumbnail || item.url}
+            alt={item.title}
+            className="h-full w-full object-cover"
+            onClick={() => setOpen(true)}
+            onLoad={() => setLoading(false)}
+            onError={() => { setLoading(false); setImageError(true); }}
+          />
+        )}
+
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-200 animate-pulse"></div>
+        )}
+
+        {/* TOP BADGES */}
+        <div className="absolute top-0 left-0 right-0 p-2 flex items-start justify-between pointer-events-none">
+          {/* CHECKBOX */}
+          <div className="pointer-events-auto">
+            <label className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-sm transition-transform hover:scale-110 ${selected ? 'bg-indigo-500 text-white' : 'opacity-0 group-hover:opacity-100'}`}>
               <input
                 type="checkbox"
                 checked={selected}
                 onChange={() => onSelectToggle(item._id)}
                 onClick={(e) => e.stopPropagation()}
-                className="h-4.5 w-4.5 rounded border-slate-300 text-[#54091b] focus:ring-[#54091b] cursor-pointer"
-                aria-label={`Select ${item.title || "media"}`}
+                className="hidden"
               />
+              {selected && <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
             </label>
-          )}
+          </div>
 
-          {isVideo && (
-            <div className="absolute right-3 top-3 z-20 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold tracking-wider text-white backdrop-blur-md flex items-center gap-1.5 shadow-sm uppercase">
-              <FaPlay size={10} /> Video
-            </div>
-          )}
-
-          {isVideo ? (
-            <video
-              ref={videoRef}
-              src={item.url}
-              className="h-full w-full cursor-pointer object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              muted
-              preload="metadata"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => setOpen(true)}
-              onLoadedMetadata={() => setLoading(false)}
-              onError={() => { setLoading(false); setImageError(true); }}
-            />
-          ) : imageError ? (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-300">
-              <FaImage className="text-4xl mb-2 opacity-50" />
-              <span className="text-xs font-bold uppercase tracking-wider">No Image</span>
-            </div>
-          ) : (
-            <img
-              src={item.url}
-              alt={item.title}
-              className="h-full w-full cursor-pointer object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              onClick={() => setOpen(true)}
-              onLoad={() => setLoading(false)}
-              onError={() => { setLoading(false); setImageError(true); }}
-            />
-          )}
-
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 animate-pulse">
-              <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-400 rounded-full animate-spin"></div>
-            </div>
-          )}
+          {/* STATUS BADGES */}
+          <div className="flex flex-col gap-1 items-end">
+            {isVideo && (
+              <div className="rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white backdrop-blur-md">
+                <FaPlay className="inline-block mr-1 text-[8px]" />
+                VIDEO
+              </div>
+            )}
+            {isPinned && (
+              <div className="rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white backdrop-blur-md flex items-center gap-1 shadow-sm">
+                <FaThumbtack size={8} /> PINNED
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* CARD CONTENT */}
-        <div className="flex flex-1 flex-col p-4 sm:p-5">
-          <h3 className="text-base font-bold text-slate-800 line-clamp-2 leading-snug" title={item.title}>
+        {/* BOTTOM ACTION BAR (Hover) */}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col justify-end">
+          <p className="truncate text-[11px] font-medium text-white mb-2 shadow-sm">
             {item.title || "Untitled Media"}
-          </h3>
-
-          {item.date && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              <FaCalendarAlt className="text-slate-400" />
-              {new Date(item.date).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })}
-            </p>
-          )}
-        </div>
-
-        {/* BOTTOM ACTION BAR */}
-        <div className={`mt-auto border-t border-slate-100 bg-slate-50 grid ${onTogglePin ? 'grid-cols-3' : 'grid-cols-2'} divide-x divide-slate-100`}>
-          <button
-            onClick={() => onEdit(item)}
-            className="py-3.5 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            title="Edit Details"
-          >
-            <FaEdit />
-            <span className="hidden sm:inline">Edit</span>
-          </button>
-
-          {onTogglePin && (
+          </p>
+          <div className="flex items-center gap-1">
             <button
-              onClick={() => onTogglePin(item._id)}
-              className={`py-3.5 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold transition-colors ${
-                isPinned
-                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                  : "text-slate-600 hover:text-emerald-600 hover:bg-emerald-50"
-              }`}
-              title={isPinned ? "Pinned to Homepage" : "Pin to Homepage"}
+              onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+              className="flex-1 flex justify-center py-1.5 rounded bg-white/20 hover:bg-white/40 text-white transition-colors backdrop-blur-md"
+              title="Edit"
             >
-              <FaThumbtack className={isPinned ? "text-emerald-700" : ""} />
-              <span className="hidden sm:inline">{isPinned ? "Pinned" : "Pin"}</span>
+              <FaEdit size={12} />
             </button>
-          )}
-
-          <button
-            onClick={() => onDelete(item._id)}
-            className="py-3.5 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-[#ee0039] hover:bg-rose-50 transition-colors"
-            title="Delete Permanently"
-          >
-            <FaTrashAlt />
-            <span className="hidden sm:inline">Delete</span>
-          </button>
+            {onTogglePin && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onTogglePin(item._id); }}
+                className={`flex-1 flex justify-center py-1.5 rounded transition-colors backdrop-blur-md ${isPinned ? 'bg-emerald-500/80 hover:bg-emerald-600' : 'bg-white/20 hover:bg-white/40 text-white'}`}
+                title={isPinned ? "Unpin" : "Pin"}
+              >
+                <FaThumbtack size={12} className={isPinned ? "text-white" : ""} />
+              </button>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(item._id); }}
+              className="flex-1 flex justify-center py-1.5 rounded bg-white/20 hover:bg-rose-500/80 text-white transition-colors backdrop-blur-md"
+              title="Delete"
+            >
+              <FaTrashAlt size={12} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* FULLSCREEN PREVIEW MODAL */}
       {open && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 sm:p-6 backdrop-blur-md"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 sm:p-6 backdrop-blur-md"
           onClick={() => setOpen(false)}
         >
           <div
@@ -183,15 +164,16 @@ function MediaCard({
                 src={item.url}
                 controls
                 autoPlay
-                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-xl bg-black object-contain shadow-2xl ring-1 ring-white/20"
+                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-md bg-black object-contain shadow-2xl"
               />
             ) : (
               <img
                 src={item.url}
                 alt={item.title}
-                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-xl object-contain shadow-2xl ring-1 ring-white/20"
+                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-md object-contain shadow-2xl"
               />
             )}
+            <div className="absolute bottom-[-30px] text-white/70 text-sm font-medium">{item.title}</div>
           </div>
         </div>
       )}

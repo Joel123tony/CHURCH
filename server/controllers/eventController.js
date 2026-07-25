@@ -50,7 +50,7 @@ export const updateEvent = async (req, res) => {
     const event = await Event.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true, lean: true }
+      { returnDocument: 'after', lean: true }
     );
 
     if (!event) {

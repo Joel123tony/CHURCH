@@ -68,7 +68,7 @@ export const markAsPrayed = async (
           status: "prayed",
         },
         {
-          new: true,
+          returnDocument: 'after',
         }
       );
 

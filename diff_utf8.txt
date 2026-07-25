@@ -1,0 +1,555 @@
+﻿diff --git a/src/components/Events.jsx b/src/components/Events.jsx
+index f5cecbf..2781f21 100644
+--- a/src/components/Events.jsx
++++ b/src/components/Events.jsx
+@@ -3,6 +3,7 @@ import API from "../api/axios";
+ import { useLanguage } from "../context/LanguageContext";
+ 
+ import { FaFire, FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
++import { FadeUp, FadeLeft, FadeRight, StaggerContainer, StaggerItem } from "./animations/index.jsx";
+ 
+ export default function Events() {
+   const { t } = useLanguage();
+@@ -77,16 +78,19 @@ export default function Events() {
+       <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+ 
+       <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+-        <div className="flex flex-col md:flex-row gap-3 justify-between items-start mb-6">
+-          <h2 className="text-left text-3xl font-bold text-[#F4EFE7]">{t("Events")}</h2>
+-        </div>
++        <FadeUp>
++          <div className="flex flex-col md:flex-row gap-3 justify-between items-start mb-6">
++            <h2 className="text-left text-3xl font-bold text-[#F4EFE7]">{t("Events")}</h2>
++          </div>
++        </FadeUp>
+ 
+         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10">
+-          <div>
+-            <div className="flex items-center gap-3 mb-6">
+-              <FaFire className="text-2xl text-[#F4EFE7]" />
+-              <h3 className="text-2xl font-bold text-[#F4EFE7]">{t("Featured Event")}</h3>
+-            </div>
++          <FadeLeft delay={100}>
++            <div>
++              <div className="flex items-center gap-3 mb-6">
++                <FaFire className="text-2xl text-[#F4EFE7]" />
++                <h3 className="text-2xl font-bold text-[#F4EFE7]">{t("Featured Event")}</h3>
++              </div>
+ 
+             {latestEvent ? (
+               <div className="rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 max-w-[620px] bg-[#f4efe7]">
+@@ -153,12 +157,14 @@ export default function Events() {
+               <div className="bg-white/10 backdrop-blur rounded-3xl p-8 text-white">
+                 {t("No latest event available.")}
+               </div>
+-            )}
+-          </div>
++              )}
++            </div>
++          </FadeLeft>
+ 
+-          <div>
+-            <div className="flex items-center justify-between mb-6">
+-              <div className="flex items-center gap-3">
++          <FadeRight delay={200}>
++            <div>
++              <div className="flex items-center justify-between mb-6">
++                <div className="flex items-center gap-3">
+                 <FaCalendarAlt className="text-2xl text-[#F4EFE7]" />
+                 <h3 className="text-2xl font-bold text-[#F4EFE7]">{t("Upcoming Events")}</h3>
+               </div>
+@@ -168,13 +174,13 @@ export default function Events() {
+               </span>
+             </div>
+ 
+-            <div className="space-y-5 max-h-[650px] overflow-y-auto pr-2">
++            <StaggerContainer className="space-y-5 max-h-[650px] overflow-y-auto pr-2" staggerDelay={60}>
+               {upcomingEvents.length > 0 ? (
+                 upcomingEvents.map((event) => (
+-                  <div
+-                    key={event._id}
+-                    className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl bg-[#f4efe7]"
+-                  >
++                  <StaggerItem key={event._id} animation="scale-in">
++                    <div
++                      className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-3xl bg-[#f4efe7]"
++                    >
+                     <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-[28px]" />
+ 
+                     <h4 className="mb-4 text-xl font-semibold text-[#54091b]">
+@@ -201,17 +207,19 @@ export default function Events() {
+                       <div className="flex items-center gap-3">
+                         <FaMapMarkerAlt className="text-primary" />
+                         <span>{t(event.venue)}</span>
++                        </div>
+                       </div>
+                     </div>
+-                  </div>
++                  </StaggerItem>
+                 ))
+               ) : (
+                 <div className="bg-white/10 backdrop-blur rounded-3xl p-8 text-white">
+                   {t("No upcoming events available.")}
+                 </div>
+               )}
+-            </div>
++            </StaggerContainer>
+           </div>
++          </FadeRight>
+         </div>
+       </div>
+     </section>
+diff --git a/src/components/Gallery.jsx b/src/components/Gallery.jsx
+index 6a71c6d..b0f4b94 100644
+--- a/src/components/Gallery.jsx
++++ b/src/components/Gallery.jsx
+@@ -1,7 +1,8 @@
+ import { useEffect, useMemo, useState, useCallback } from "react";
+ import { FaTimes, FaDownload, FaSpinner, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+-import API from "../api/axios";
+ import { useLanguage } from "../context/LanguageContext";
++import API from "../api/axios";
++import { FadeUp, StaggerContainer, StaggerItem } from "./animations/index.jsx";
+ 
+ function getMediaDate(item) {
+   const value = item?.eventDate || item?.createdAt;
+@@ -301,18 +302,20 @@ export default function Gallery() {
+     <>
+       <section id="gallery" className="py-16 bg-[#F4EFE7]">
+         <div className="mx-auto max-w-7xl px-4 sm:px-6">
+-          <div className="mb-8 flex items-center justify-between gap-4">
+-            <h2 className="text-3xl font-bold text-[#54091b]">
+-              {t("Gallery")}
+-            </h2>
++          <FadeUp>
++            <div className="mb-8 flex items-center justify-between gap-4">
++              <h2 className="text-3xl font-bold text-[#54091b]">
++                {t("Gallery")}
++              </h2>
+ 
+-            <button
+-              onClick={() => setOpenModal(true)}
+-              className="rounded-full border border-[#54091b] bg-[#F4EFE7] px-5 py-2.5 text-sm font-bold text-[#54091b] transition hover:bg-[#54091b] hover:text-[#F4EFE7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/40"
+-            >
+-              {t("All Media")}
+-            </button>
+-          </div>
++              <button
++                onClick={() => setOpenModal(true)}
++                className="rounded-full border border-[#54091b] bg-[#F4EFE7] px-5 py-2.5 text-sm font-bold text-[#54091b] transition hover:bg-[#54091b] hover:text-[#F4EFE7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/40"
++              >
++                {t("All Media")}
++              </button>
++            </div>
++          </FadeUp>
+ 
+           {loading ? (
+             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+@@ -324,17 +327,17 @@ export default function Gallery() {
+               ))}
+             </div>
+           ) : (
+-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
++            <StaggerContainer className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={60}>
+               {featuredMedia.map((item) => (
+-                <div key={item._id} className="w-full">
++                <StaggerItem key={item._id} animation="fade-up" className="w-full">
+                   <GalleryTile
+                     item={item}
+                     onClick={() => setSelectedMedia(item)}
+                     t={t}
+                   />
+-                </div>
++                </StaggerItem>
+               ))}
+-            </div>
++            </StaggerContainer>
+           )}
+         </div>
+       </section>
+diff --git a/src/components/Hero.jsx b/src/components/Hero.jsx
+index 120790c..c25724d 100644
+--- a/src/components/Hero.jsx
++++ b/src/components/Hero.jsx
+@@ -1,54 +1,29 @@
+-import { useCallback, useEffect, useRef, useState } from "react";
++import { useRef } from "react";
++import useSWR from "swr";
+ import API from "../api/axios";
+ import { useLanguage } from "../context/LanguageContext";
+ 
++const fetcher = async (url) => {
++  const t0 = performance.now();
++  console.log(`[Hero] API Request Started at ${t0}ms`);
++  const res = await API.get(url);
++  const t1 = performance.now();
++  console.log(`[Hero] Frontend Received Response in ${t1 - t0}ms`);
++  return res.data;
++};
++
+ export default function Hero() {
+   const { t } = useLanguage();
+ 
+-  const [video, setVideo] = useState({
+-    videoId: "",
+-    title: "",
++  // SWR automatically handles caching, parallel fetching, and deduplication
++  const { data, error, isLoading } = useSWR("/youtube", fetcher, {
++    revalidateOnFocus: false, // Don't refetch when user switches tabs
++    refreshInterval: 300000, // Refresh every 5 minutes (matches backend worker)
++    dedupingInterval: 60000, // Prevent duplicates within 60s
+   });
+ 
+-  const [loading, setLoading] = useState(true);
+-  const intervalRef = useRef(null);
+-
+-  const fetchYoutubeVideo = useCallback(async () => {
+-    try {
+-      const res = await API.get("/youtube");
+-      const data = res?.data || {};
+-
+-      setVideo((prev) => {
+-        const newVideoId = data?.videoId || "";
+-        const newTitle = data?.title || "";
+-        if (prev.videoId === newVideoId && prev.title === newTitle) {
+-          return prev;
+-        }
+-        return { videoId: newVideoId, title: newTitle };
+-      });
+-    } catch {
+-      // Intentionally ignoring errors (e.g. ad blockers blocking /youtube route)
+-      // to keep console clean as requested.
+-      setVideo((prev) => {
+-        if (prev.videoId === "" && prev.title === "") return prev;
+-        return { videoId: "", title: "" };
+-      });
+-    } finally {
+-      setLoading(false);
+-    }
+-  }, []);
+-
+-  useEffect(() => {
+-    void fetchYoutubeVideo();
+-
+-    if (intervalRef.current) clearInterval(intervalRef.current);
+-
+-    intervalRef.current = setInterval(() => {
+-      void fetchYoutubeVideo();
+-    }, 60000);
+-
+-    return () => clearInterval(intervalRef.current);
+-  }, [fetchYoutubeVideo]);
++  const videoId = data?.videoId || "";
++  const title = data?.title || "";
+ 
+   return (
+     <section id="hero" className="py-16 text-white bg-[#54091b]">
+@@ -65,19 +40,25 @@ export default function Hero() {
+ 
+         <div className="group rounded-3xl bg-cream p-4 shadow-2xl transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_30px_70px_rgba(0,0,0,0.22)]">
+           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black transition-transform duration-700 ease-out group-hover:scale-[1.01]">
+-            {loading ? (
+-              <div className="absolute inset-0 flex items-center justify-center bg-white">
+-                <p className="font-semibold text-gray-500">{t("Loading...")}</p>
++            {isLoading ? (
++              <div className="absolute inset-0 bg-[#30050f] animate-pulse">
++                {/* Premium Shimmer Skeleton */}
++                <div className="w-full h-full relative overflow-hidden">
++                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_1.5s_infinite]"></div>
++                  <div className="absolute inset-0 flex items-center justify-center">
++                    <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-[#D4AF37] animate-spin"></div>
++                  </div>
++                </div>
+               </div>
+-            ) : !video.videoId ? (
+-              <div className="absolute inset-0 flex items-center justify-center bg-white">
+-                <p className="font-semibold text-gray-500">{t("No Video Available")}</p>
++            ) : !videoId || error ? (
++              <div className="absolute inset-0 flex items-center justify-center bg-[#30050f]">
++                <p className="font-semibold text-gray-400">{t("No Video Available")}</p>
+               </div>
+             ) : (
+               <iframe
+                 className="absolute left-0 top-0 h-full w-full"
+-                src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
+-                title={video.title || "YouTube Video"}
++                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
++                title={title || "YouTube Video"}
+                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+               />
+             )}
+@@ -85,23 +66,20 @@ export default function Hero() {
+ 
+           <div className="mt-4 flex items-center justify-between transition-transform duration-500 ease-out group-hover:translate-y-0.5">
+             <span className="font-bold text-primary">
+-              {video.videoId ? `≡ƒö┤ ${t("Latest Sermon")}` : t("No Video")}
++              {videoId ? (data?.isLive ? `≡ƒö┤ ${t("Live Stream")}` : `Γû╢ ${t("Latest Sermon")}`) : t("No Video")}
+             </span>
+ 
+             <a
+               href={
+-                video.videoId
+-                  ? `https://www.youtube.com/watch?v=${video.videoId}`
++                videoId
++                  ? `https://www.youtube.com/watch?v=${videoId}`
+                   : "https://www.youtube.com/@MethodistChurchPadikuppam"
+               }
+               target="_blank"
+               rel="noopener noreferrer"
+-              className={`rounded-full px-5 py-2 font-medium transition ${video.videoId
+-                  ? "hover:opacity-90"
+-                  : "hover:opacity-90"
+-                } bg-[#54091b] text-[#FFFFFF]`}
++              className={`rounded-full px-5 py-2 font-medium transition hover:opacity-90 bg-[#54091b] text-[#FFFFFF]`}
+             >
+-              {video.videoId ? `Γû╢ ${t("Watch Video on YouTube")}` : t("Watch on YouTube")}
++              {videoId ? `Γû╢ ${t("Watch Video on YouTube")}` : t("Watch on YouTube")}
+             </a>
+           </div>
+         </div>
+diff --git a/src/components/History.jsx b/src/components/History.jsx
+index 33cc345..1a56614 100644
+--- a/src/components/History.jsx
++++ b/src/components/History.jsx
+@@ -1,4 +1,5 @@
+ import { useLanguage } from "../context/LanguageContext";
++import { FadeLeft, FadeRight, FadeUp } from "./animations/index.jsx";
+ 
+ export default function History() {
+   const { t } = useLanguage();
+@@ -24,14 +25,17 @@ export default function History() {
+     <section id="history" className="overflow-hidden bg-[#F4EFE7]">
+       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+         <div className="pt-16 lg:pt-24">
+-          <h2 className="mb-6 lg:mb-8 text-3xl font-bold text-[#54091b]">
+-            {t("Church History")}
+-          </h2>
++          <FadeUp>
++            <h2 className="mb-6 lg:mb-8 text-3xl font-bold text-[#54091b]">
++              {t("Church History")}
++            </h2>
++          </FadeUp>
+         </div>
+ 
+         <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 xl:gap-24 items-start mt-8 lg:mt-10">
+           <div className="order-1">
+-            <div className="max-w-2xl lg:pr-8">
++            <FadeRight delay={150}>
++              <div className="max-w-2xl lg:pr-8">
+               {hasCmsContent ? (
+                 <p 
+                   className="leading-8 md:leading-9 whitespace-pre-line text-base md:text-lg text-[#54091b]"
+@@ -48,11 +52,13 @@ export default function History() {
+                   </p>
+                 ))
+               )}
+-            </div>
++              </div>
++            </FadeRight>
+           </div>
+ 
+           <div className="order-2 flex justify-center lg:justify-end lg:self-end mt-6 lg:mt-0">
+-            <img
++            <FadeLeft delay={300}>
++              <img
+               src={imgSrc}
+               alt={t("Methodist Tamil Church")}
+               className="
+@@ -68,7 +74,8 @@ export default function History() {
+                 drop-shadow-[0_30px_60px_rgba(0,0,0,0.18)]
+                 lg:translate-y-10
+               "
+-            />
++              />
++            </FadeLeft>
+           </div>
+         </div>
+       </div>
+diff --git a/src/components/Pastor.jsx b/src/components/Pastor.jsx
+index d63f291..0aaa5c3 100644
+--- a/src/components/Pastor.jsx
++++ b/src/components/Pastor.jsx
+@@ -3,6 +3,7 @@ import API from "../api/axios";
+ import { useLanguage } from "../context/LanguageContext";
+ import { FaTimes, FaCalendarAlt } from "react-icons/fa";
+ import { getFallbackAvatar, handleImageError } from "../utils/avatarFallback";
++import { FadeUp, FadeLeft, FadeRight } from "./animations/index.jsx";
+ 
+ export default function Pastor() {
+   const { t } = useLanguage();
+@@ -159,12 +160,15 @@ export default function Pastor() {
+     <>
+       <section id="pastor" className="py-16 bg-[#54091b]">
+         <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+-          <div className="mb-6 lg:mb-8">
+-            <h2 className="text-3xl font-bold text-[#F4EFE7]">{t("Pastor")}</h2>
+-          </div>
++          <FadeUp>
++            <div className="mb-6 lg:mb-8">
++              <h2 className="text-3xl font-bold text-[#F4EFE7]">{t("Pastor")}</h2>
++            </div>
++          </FadeUp>
+ 
+           <div className="grid gap-6 lg:grid-cols-4">
+-            <div className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3 bg-[#d8cbb7]">
++            <FadeLeft delay={0} className="lg:col-span-3">
++            <div className="h-full rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl bg-[#d8cbb7]">
+               {loading ? (
+                 <div className="py-10 text-center text-base font-bold text-[#1E293B]">
+                   {t("Loading...")}
+@@ -218,7 +222,9 @@ export default function Pastor() {
+                 </div>
+               )}
+             </div>
++            </FadeLeft>
+ 
++            <FadeRight delay={150}>
+             <div className="rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
+               <h3 className="mb-2 text-center font-bold text-[#54091b]">
+                 {t("Search Pastors")}
+@@ -288,6 +294,7 @@ export default function Pastor() {
+                 </button>
+               </div>
+             </div>
++            </FadeRight>
+           </div>
+         </div>
+       </section>
+diff --git a/src/components/Testimonials.jsx b/src/components/Testimonials.jsx
+index a00749b..3d0b2b6 100644
+--- a/src/components/Testimonials.jsx
++++ b/src/components/Testimonials.jsx
+@@ -1,30 +1,7 @@
+-import { useEffect, useRef, useState } from "react";
++import { useEffect, useState } from "react";
+ import { getBlock } from "../services/api";
+ import { useLanguage } from "../context/LanguageContext";
+-
+-// ΓöÇΓöÇΓöÇ Reveal hook (same threshold as other sections) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-function useSectionReveal() {
+-  const ref = useRef(null);
+-  const [visible, setVisible] = useState(false);
+-
+-  useEffect(() => {
+-    const el = ref.current;
+-    if (!el) return;
+-    const observer = new IntersectionObserver(
+-      ([entry]) => {
+-        if (entry.isIntersecting) {
+-          setVisible(true);
+-          observer.disconnect();
+-        }
+-      },
+-      { threshold: 0.08 }
+-    );
+-    observer.observe(el);
+-    return () => observer.disconnect();
+-  }, []);
+-
+-  return { ref, visible };
+-}
++import { FadeUp, StaggerContainer, StaggerItem } from "./animations/index.jsx";
+ 
+ // ΓöÇΓöÇΓöÇ Avatar initials ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ function getInitials(name = "") {
+@@ -37,11 +14,10 @@ function getInitials(name = "") {
+ }
+ 
+ // ΓöÇΓöÇΓöÇ Single message card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-function MessageCard({ item, index, visible, t }) {
++function MessageCard({ item, index, t }) {
+   return (
+     <article
+-      style={{ animationDelay: `${index * 90}ms` }}
+-      className={`group relative flex flex-col overflow-hidden rounded-[24px] bg-[#F4EFE7] border border-[#d8cbb7] p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] ${visible ? "animate-event-card-in" : "opacity-0"}`}
++      className={`group relative flex flex-col overflow-hidden rounded-[24px] bg-[#F4EFE7] border border-[#d8cbb7] p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]`}
+     >
+       {/* Decorative top border highlight on hover */}
+       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ee0039] to-[#54091b] opacity-40 transition-opacity duration-300 group-hover:opacity-100" />
+@@ -76,11 +52,9 @@ function MessageCard({ item, index, visible, t }) {
+   );
+ }
+ 
+-// ΓöÇΓöÇΓöÇ Main component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ export default function Testimonials() {
+   const [data, setData] = useState({ messages: [] });
+   const [loading, setLoading] = useState(true);
+-  const { ref: sectionRef, visible } = useSectionReveal();
+   const { t } = useLanguage();
+ 
+   useEffect(() => {
+@@ -106,18 +80,18 @@ export default function Testimonials() {
+   return (
+     <section
+       id="pastor-message"
+-      ref={sectionRef}
+       className="py-16 overflow-hidden bg-[#54091b]"
+     >
+       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+ 
+         {/* ΓöÇΓöÇ Heading ΓöÇΓöÇ */}
+-        <div className="mb-6 lg:mb-8">
+-          <h2 className="text-3xl font-bold text-[#F4EFE7]">
+-            {t("Pastor's Message")}
+-          </h2>
+-          
+-        </div>
++        <FadeUp>
++          <div className="mb-6 lg:mb-8">
++            <h2 className="text-3xl font-bold text-[#F4EFE7]">
++              {t("Pastor's Message")}
++            </h2>
++          </div>
++        </FadeUp>
+ 
+         {/* ΓöÇΓöÇ Content area ΓöÇΓöÇ */}
+         <div className="pb-16 lg:pb-24">
+@@ -136,32 +110,30 @@ export default function Testimonials() {
+ 
+           {/* Cards */}
+           {!loading && items.length > 0 && (
+-            <div
++            <StaggerContainer
+               className={`grid gap-6 sm:grid-cols-2 ${gridCols}`}
+             >
+               {items.map((item, i) => (
+-                <MessageCard
+-                  key={item.id || i}
+-                  item={item}
+-                  index={i}
+-                  visible={visible}
+-                  t={t}
+-                />
++                <StaggerItem key={item.id || i} animation="fade-up">
++                  <MessageCard
++                    item={item}
++                    index={i}
++                    t={t}
++                  />
++                </StaggerItem>
+               ))}
+-            </div>
++            </StaggerContainer>
+           )}
+ 
+           {/* Empty state ΓÇö plain, matches site tone */}
+           {isEmpty && (
+-            <p
+-              style={{
+-                opacity: visible ? 1 : 0,
+-                transition: "opacity 0.5s ease",
+-              }}
+-              className="text-center text-base text-[#F4EFE7]/90"
+-            >
+-              {t("No messages yet.")}
+-            </p>
++            <FadeUp>
++              <p
++                className="text-center text-base text-[#F4EFE7]/90"
++              >
++                {t("No messages yet.")}
++              </p>
++            </FadeUp>
+           )}
+ 
+         </div>

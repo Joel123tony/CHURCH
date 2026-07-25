@@ -161,7 +161,7 @@ export const updateMedia = async (
             req.body.eventDate || null,
         },
         {
-          new: true,
+          returnDocument: 'after',
         }
       );
 

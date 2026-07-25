@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const API_URL = 'https://church-rp0n.onrender.com/api/songs/search';
+const API_URL = 'http://localhost:5000/api/songs/search';
 
 const SONGS = [
   'Sarvagnani', 'Uyar Malaiyo', 'Kiruba Kiruba', 'Stella Ramola Aasirvadham',

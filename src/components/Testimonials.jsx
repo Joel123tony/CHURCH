@@ -1,30 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { getBlock } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
-
-// ─── Reveal hook (same threshold as other sections) ───────────────────────────
-function useSectionReveal() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.08 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return { ref, visible };
-}
+import { FadeUp, StaggerContainer, StaggerItem } from "./animations/index.jsx";
 
 // ─── Avatar initials ──────────────────────────────────────────────────────────
 function getInitials(name = "") {
@@ -37,11 +14,10 @@ function getInitials(name = "") {
 }
 
 // ─── Single message card ──────────────────────────────────────────────────────
-function MessageCard({ item, index, visible, t }) {
+function MessageCard({ item, index, t }) {
   return (
     <article
-      style={{ animationDelay: `${index * 90}ms` }}
-      className={`group relative flex flex-col overflow-hidden rounded-[24px] bg-[#F4EFE7] border border-[#d8cbb7] p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] ${visible ? "animate-event-card-in" : "opacity-0"}`}
+      className={`group relative flex flex-col overflow-hidden rounded-[24px] bg-white border border-[#d8cbb7] p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]`}
     >
       {/* Decorative top border highlight on hover */}
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ee0039] to-[#54091b] opacity-40 transition-opacity duration-300 group-hover:opacity-100" />
@@ -80,7 +56,6 @@ function MessageCard({ item, index, visible, t }) {
 export default function Testimonials() {
   const [data, setData] = useState({ messages: [] });
   const [loading, setLoading] = useState(true);
-  const { ref: sectionRef, visible } = useSectionReveal();
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -106,18 +81,18 @@ export default function Testimonials() {
   return (
     <section
       id="pastor-message"
-      ref={sectionRef}
-      className="py-16 overflow-hidden bg-[#54091b]"
+      className="py-16 overflow-hidden bg-[#F4EFE7]"
     >
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
 
         {/* ── Heading ── */}
-        <div className="mb-6 lg:mb-8">
-          <h2 className="text-3xl font-bold text-[#F4EFE7]">
-            {t("Pastor's Message")}
-          </h2>
-          
-        </div>
+        <FadeUp>
+          <div className="mb-6 lg:mb-8">
+            <h2 className="text-3xl font-bold text-[#54091b]">
+              {t("Pastor's Message")}
+            </h2>
+          </div>
+        </FadeUp>
 
         {/* ── Content area ── */}
         <div className="pb-16 lg:pb-24">
@@ -128,7 +103,7 @@ export default function Testimonials() {
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
-                  className="h-52 animate-pulse rounded-3xl shadow-sm bg-[#F4EFE7]"
+                  className="h-52 animate-pulse rounded-3xl shadow-sm bg-[#e5ddd3]"
                 />
               ))}
             </div>
@@ -136,32 +111,30 @@ export default function Testimonials() {
 
           {/* Cards */}
           {!loading && items.length > 0 && (
-            <div
+            <StaggerContainer
               className={`grid gap-6 sm:grid-cols-2 ${gridCols}`}
             >
               {items.map((item, i) => (
-                <MessageCard
-                  key={item.id || i}
-                  item={item}
-                  index={i}
-                  visible={visible}
-                  t={t}
-                />
+                <StaggerItem key={item.id || i} animation="fade-up">
+                  <MessageCard
+                    item={item}
+                    index={i}
+                    t={t}
+                  />
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           )}
 
           {/* Empty state — plain, matches site tone */}
           {isEmpty && (
-            <p
-              style={{
-                opacity: visible ? 1 : 0,
-                transition: "opacity 0.5s ease",
-              }}
-              className="text-center text-base text-[#F4EFE7]/90"
-            >
-              {t("No messages yet.")}
-            </p>
+            <FadeUp>
+              <p
+                className="text-center text-base text-[#54091b]/90"
+              >
+                {t("No messages yet.")}
+              </p>
+            </FadeUp>
           )}
 
         </div>

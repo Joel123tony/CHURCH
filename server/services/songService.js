@@ -25,7 +25,7 @@ const upsertSearchCache = (query, results, source, status = "success") =>
         searchedAt: new Date()
       }
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   ).catch(() => null);
 
 const withImportLock = async (query, executor) => {
@@ -194,6 +194,8 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
         ...processed,
         status: "completed",
         isPublished: true,
+        lyricsStatus: "found",
+        isPendingLyrics: false,
         providerCandidates
       },
       {
@@ -230,6 +232,8 @@ const buildSearchPatterns = (query) => {
   const escapedTransliterated = transliterated.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   return [
+    { displayTitle: { $regex: escapedPlain, $options: "i" } },
+    { normalizedDisplayTitle: { $regex: escapedNormalized, $options: "i" } },
     { title: { $regex: escapedPlain, $options: "i" } },
     { titleTamil: { $regex: escapedPlain, $options: "i" } },
     { titleEnglish: { $regex: escapedPlain, $options: "i" } },
@@ -321,25 +325,15 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
     console.error("[SongService] MongoDB Error:", err);
   }
 
-  // 3. Live Adapter Search Fallback (Only if database lacks strong title matches for this query)
-  let hasStrongTitleMatch = false;
-  if (searchQuery && dbSongs.length > 0) {
-    const q = (normalizeTanglish(searchQuery) || searchQuery).toLowerCase().trim();
-    hasStrongTitleMatch = dbSongs.some(song => {
-      const title = (normalizeTanglish(song.titleTamil || song.titleEnglish || song.title || "") || "").toLowerCase().trim();
-      const altTitles = (song.alternateTitles || []).map(t => (normalizeTanglish(t) || t).toLowerCase().trim());
-      return title.includes(q) || altTitles.some(t => t.includes(q));
-    });
-  }
-
-  if (searchQuery && !hasStrongTitleMatch && page === 1) {
+  // 3. Live Adapter Search Fallback (Only if database lacks ANY results for this query)
+  if (searchQuery && dbSongs.length === 0 && page === 1) {
     const cacheQuery = searchQuery.toLowerCase().trim();
     const cached = await SongSearchCache.findOne({ query: cacheQuery });
     
     if (cached && cached.results) {
       console.log(`[SongService] Cache hit for "${searchQuery}"`);
-      dbSongs = [cached.results, ...dbSongs]; // Prepend cached result
-      totalCount += 1;
+      dbSongs = [cached.results]; // Prepend cached result
+      totalCount = 1;
     } else if (cached && cached.status === "failed") {
       const hoursSinceSearch = (Date.now() - cached.searchedAt.getTime()) / (1000 * 60 * 60);
       if (hoursSinceSearch < 24) {
@@ -347,25 +341,28 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
           return {
             success: true,
             status: "completed",
-            songs: dbSongs,
-            totalSongs: totalCount,
+            songs: [],
+            totalSongs: 0,
             currentPage: 1,
-            totalPages: Math.ceil(totalCount / limit) || 1
+            totalPages: 1
           };
       }
     } else {
-      console.log(`[SongService] No strong local results for "${searchQuery}". Synchronously importing...`);
+      console.log(`[SongService] No local results for "${searchQuery}". Synchronously importing...`);
       
+      const perfStart = Date.now();
       try {
           // Synchronous fetch and AI clean!
           const newlyImportedSong = await importSongOnDemand(searchQuery, selectedCategories);
           
           if (newlyImportedSong) {
-              dbSongs = [newlyImportedSong, ...dbSongs];
-              totalCount += 1;
+              dbSongs = [newlyImportedSong];
+              totalCount = 1;
           }
       } catch (err) {
           console.error(`[SongService] On-demand synchronous import error:`, err.stack);
+      } finally {
+          recordPerf("providerSearch", Number(Date.now() - perfStart));
       }
     }
   }
@@ -418,6 +415,6 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
     hasPreviousPage: page > 1
   };
 
-  setCached(cacheKey, responsePayload, 60 * 5); // Cache for 5 minutes
+  setCached(cacheKey, responsePayload, 60 * 30); // Cache for 30 minutes
   return responsePayload;
 };

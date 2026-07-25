@@ -13,6 +13,7 @@ export default function Pastor() {
   const [showModal, setShowModal] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("search");
 
   const getImage = (pastor) => pastor?.image?.url || getFallbackAvatar();
 
@@ -190,10 +191,11 @@ export default function Pastor() {
                         {serviceYears === 1 ? t("Year") : t("Years")}
                       </p>
 
-                      <p>
-                        <strong>{t("Bio")}:</strong>{" "}
-                        {currentPastor.bio ? t(currentPastor.bio) : t("No details available")}
-                      </p>
+                      {currentPastor.bio?.trim() && (
+                        <p>
+                          <strong>{t("Bio")}:</strong> {t(currentPastor.bio)}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -219,16 +221,32 @@ export default function Pastor() {
               )}
             </div>
 
-            <div className="rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
-              <h3 className="mb-2 text-center font-bold text-[#54091b]">
-                {t("Search Pastors")}
-              </h3>
+            <div className="flex h-full flex-col rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
+              <div className="mb-6 flex rounded-full bg-[#54091b]/10 p-1">
+                <button
+                  onClick={() => setActiveTab("search")}
+                  className={`flex-1 rounded-full py-2 text-sm font-bold transition-all ${
+                    activeTab === "search"
+                      ? "bg-[#54091b] text-white shadow"
+                      : "text-[#54091b] hover:bg-[#54091b]/5"
+                  }`}
+                >
+                  {t("Search")}
+                </button>
+                <button
+                  onClick={() => setActiveTab("timeline")}
+                  className={`flex-1 rounded-full py-2 text-sm font-bold transition-all ${
+                    activeTab === "timeline"
+                      ? "bg-[#54091b] text-white shadow"
+                      : "text-[#54091b] hover:bg-[#54091b]/5"
+                  }`}
+                >
+                  {t("Timeline")}
+                </button>
+              </div>
 
-              <p className="mb-5 text-center text-sm leading-6 text-[#54091b]/80">
-                {t("Search by name or year to find a pastor quickly.")}
-              </p>
-
-              <div className="space-y-4">
+              {activeTab === "search" ? (
+                <div className="flex-1 flex flex-col justify-center space-y-4 overflow-hidden">
                 <div className="relative">
                   <input
                     type="text"
@@ -286,7 +304,26 @@ export default function Pastor() {
                 >
                   {t("Search")}
                 </button>
-              </div>
+                </div>
+              ) : (
+                <div className="timeline-container flex-1 h-[270px] max-h-[270px] overflow-y-auto overflow-x-hidden pr-2">
+                  <div className="relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-[2px] before:bg-[#54091b]/20">
+                    {pastors.filter(p => !p.isCurrent).length > 0 ? (
+                      pastors.filter(p => !p.isCurrent).map(p => (
+                        <div key={p._id} className="relative flex items-center group cursor-pointer h-[80px] shrink-0" onClick={() => { setSearchYear(String(p.joinedYear)); searchPastors(); }}>
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full border-[4px] border-[#d8cbb7] bg-[#54091b] shrink-0 z-10 transition-transform duration-300 group-hover:scale-125 group-hover:bg-[#441018]"></div>
+                          <div className="ml-4 py-2">
+                            <span className="font-bold text-[#54091b] text-sm">{p.joinedYear} - {p.leftYear || t("Present")}</span>
+                            <h5 className="font-semibold text-[#1E293B] text-sm">{p.name}</h5>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-sm text-[#54091b]/70 italic mt-10">{t("No timeline data.")}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -359,9 +396,11 @@ export default function Pastor() {
                           {p.joinedYear} - {p.leftYear || t("Present")}
                         </p>
 
-                        <p className="mt-3 leading-6 text-[#54091b]">
-                          {p.bio ? t(p.bio) : t("No details available")}
-                        </p>
+                        {p.bio?.trim() && (
+                          <p className="mt-3 leading-6 text-[#54091b]">
+                            {t(p.bio)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

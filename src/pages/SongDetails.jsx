@@ -5,6 +5,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import API from "../api/axios";
 import SongInlineSearch from "../components/SongInlineSearch";
+import { FadeUp, StaggerContainer, StaggerItem } from "../components/animations/index.jsx";
 
 export default function SongDetails() {
   const { id } = useParams();
@@ -97,7 +98,7 @@ export default function SongDetails() {
           {/* Center: Title + Zoom */}
           <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5">
              <div className={`text-lg lg:text-xl font-black truncate w-full text-center ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
-               {songMeta.titleTamil || songMeta.title}
+               {songMeta.displayTitle || songMeta.titleTamil || songMeta.title}
              </div>
              
              <div className={`flex items-center gap-1 p-0.5 rounded-full border transition-colors ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#F4EFE7] border-[#54091b]/10'}`}>
@@ -126,7 +127,7 @@ export default function SongDetails() {
                <ChevronLeft size={20} />
              </Link>
              <div className={`text-base font-black truncate flex-1 ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
-               {songMeta.titleTamil || songMeta.title}
+               {songMeta.displayTitle || songMeta.titleTamil || songMeta.title}
              </div>
           </div>
 
@@ -154,14 +155,16 @@ export default function SongDetails() {
       <div className="w-full md:w-[92%] lg:max-w-[960px] mx-auto px-4 sm:px-0 pt-2 sm:pt-6">
 
         {/* Metadata Area (Compact Tags) */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-4 animate-fade-in-up">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm transition-colors ${isDark ? 'bg-gray-800 text-[#D4AF37] border border-gray-700' : 'bg-[#54091b] text-[#F6EFE3]'}`}>{songMeta.category}</span>
-          {songMeta.artist && (
-            <span className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>🎤 {songMeta.artist}</span>
-          )}
-          <span className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-[#1E293B] border-[#E8DCCB]'}`}>{songMeta.language}</span>
-          <span className={`px-3 py-1 rounded-full text-xs font-bold border border-dashed transition-colors ${isDark ? 'bg-gray-800/50 text-gray-400 border-gray-700' : 'bg-[#F8F4EC] text-slate-500 border-[#E8DCCB]'}`}>Source: {songMeta.source}</span>
-        </div>
+        <FadeUp>
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm transition-colors ${isDark ? 'bg-gray-800 text-[#D4AF37] border border-gray-700' : 'bg-[#54091b] text-[#F6EFE3]'}`}>{songMeta.category}</span>
+            {songMeta.artist && (
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>🎤 {songMeta.artist}</span>
+            )}
+            <span className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-[#1E293B] border-[#E8DCCB]'}`}>{songMeta.language}</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold border border-dashed transition-colors ${isDark ? 'bg-gray-800/50 text-gray-400 border-gray-700' : 'bg-[#F8F4EC] text-slate-500 border-[#E8DCCB]'}`}>Source: {songMeta.source}</span>
+          </div>
+        </FadeUp>
 
         {loading ? (
           /* Premium Skeleton Loader */
@@ -217,9 +220,10 @@ export default function SongDetails() {
           </div>
         ) : (
           /* Content Container */
-          <div className={`rounded-[18px] sm:rounded-[32px] p-5 sm:p-12 shadow-sm border animate-fade-in-up transition-colors duration-500 overflow-hidden w-full ${isDark ? 'bg-[#1e293b] border-gray-700' : 'bg-white border-[#E8DCCB]'}`}>
-            
-            {/* Tabs (If dual language available) */}
+          <FadeUp delay={100} className="w-full">
+            <div className={`rounded-[18px] sm:rounded-[32px] p-5 sm:p-12 shadow-sm border transition-colors duration-500 overflow-hidden w-full ${isDark ? 'bg-[#1e293b] border-gray-700' : 'bg-white border-[#E8DCCB]'}`}>
+              
+              {/* Tabs (If dual language available) */}
             {songMeta.lyricsEnglish && (
               <div className="flex justify-center mb-6 overflow-x-auto">
                  <div className={`p-1 rounded-2xl inline-flex shadow-inner transition-colors max-w-full ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7]'}`}>
@@ -242,22 +246,24 @@ export default function SongDetails() {
             {/* Lyrics Area */}
             <div className="w-full text-center mx-auto transition-all duration-300 ease-out overflow-x-hidden" style={{ fontSize: `${zoomLevel}%` }}>
               {activeTab === 'tamil' && songSections && songSections.length > 0 ? (
-                <div className={`font-medium text-[1.375em] lg:text-[1.875em] leading-[1.9] lg:leading-[2.0] whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-serif tracking-[0.01em] transition-colors ${isDark ? 'text-gray-300' : 'text-[#1E293B]'}`}>
+                <StaggerContainer className={`font-medium text-[1.375em] lg:text-[1.875em] leading-[1.9] lg:leading-[2.0] whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-serif tracking-[0.01em] transition-colors ${isDark ? 'text-gray-300' : 'text-[#1E293B]'}`} staggerDelay={50}>
                   {songSections.map((section, idx) => (
-                    <div key={idx} className="mb-[2em] animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
-                      {(section.label || section.type) && (
-                         <div className={`text-[0.6em] lg:text-[0.55em] font-bold mb-[1em] uppercase tracking-wider ${isDark ? 'text-[#D4AF37]' : 'text-[#54091b]'}`}>
-                           {section.label || `${section.type} ${section.number || ''}`.trim()}
-                         </div>
-                      )}
-                      <div>
-                        {(section.lines || []).map((line, lIdx) => (
-                          <div key={lIdx} className="min-h-[1.5em]">{line}</div>
-                        ))}
+                    <StaggerItem key={idx} animation="fade-up">
+                      <div className="mb-[2em]">
+                        {(section.label || section.type) && (
+                           <div className={`text-[0.6em] lg:text-[0.55em] font-bold mb-[1em] uppercase tracking-wider ${isDark ? 'text-[#D4AF37]' : 'text-[#54091b]'}`}>
+                             {section.label || `${section.type} ${section.number || ''}`.trim()}
+                           </div>
+                        )}
+                        <div>
+                          {(section.lines || []).map((line, lIdx) => (
+                            <div key={lIdx} className="min-h-[1.5em]">{line}</div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    </StaggerItem>
                   ))}
-                </div>
+                </StaggerContainer>
               ) : (
                 <div
                   className={`font-medium ${activeTab === 'tamil' ? 'text-[1.375em] lg:text-[1.875em] leading-[1.9] lg:leading-[2.0]' : 'text-[1.125em] lg:text-[1.375em] leading-[1.8] lg:leading-[1.9]'} whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-serif tracking-[0.01em] transition-colors ${isDark ? 'text-gray-300' : 'text-[#1E293B]'}`}
@@ -265,7 +271,8 @@ export default function SongDetails() {
                 ></div>
               )}
             </div>
-          </div>
+            </div>
+          </FadeUp>
         )}
       </div>
     </div>
