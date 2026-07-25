@@ -332,6 +332,14 @@ const songSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    searchCount: {
+      type: Number,
+      default: 0,
+    },
+    lastSearched: {
+      type: Date,
+      default: null,
+    },
     importedAt: {
       type: Date,
       default: Date.now,

@@ -16,6 +16,11 @@ const songSearchCacheSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    status: {
+      type: String,
+      enum: ["success", "failed"],
+      default: "success",
+    },
     searchedAt: {
       type: Date,
       default: Date.now,

@@ -17,19 +17,19 @@ export const isSongPage = (url) => {
 export const extractCollection = async (url) => {
     try {
         const res = await resilientFetch(url, {
-            
+
             timeout: 15000
         });
         const $ = cheerio.load(res.data);
         const childUrls = new Set();
-        
+
         $('.entry-title a, .post-title a, h2 a').each((i, el) => {
             const href = $(el).attr('href');
             if (href && href.includes('worldtamilchristians.com')) {
                 childUrls.add(href);
             }
         });
-        
+
         return Array.from(childUrls);
     } catch (err) {
         console.error("WTC extractCollection Error:", err.message);
@@ -39,20 +39,20 @@ export const extractCollection = async (url) => {
 
 export const extractSong = async (songUrl) => {
     try {
-        const res = await resilientFetch(songUrl, { 
-             
-            timeout: 15000 
+        const res = await resilientFetch(songUrl, {
+
+            timeout: 15000
         });
         const extractedSongs = await extractSongsFromHtml(res.data, songUrl);
-        
+
         if (!extractedSongs || extractedSongs.length === 0) {
             throw new Error("Lyrics could not be found or were rejected by the sanitizer.", { cause: new Error("extractSongsFromHtml returned no songs") });
         }
 
-        return extractedSongs.map(extracted => ({ 
-            titleTamil: extracted.titleTamil, 
-            titleEnglish: extracted.titleEnglish, 
-            lyricsTamil: extracted.lyricsTamil, 
+        return extractedSongs.map(extracted => ({
+            titleTamil: extracted.titleTamil,
+            titleEnglish: extracted.titleEnglish,
+            lyricsTamil: extracted.lyricsTamil,
             lyricsEnglish: extracted.lyricsEnglish,
             artist: "",
             source: "World Tamil Christians",
@@ -66,12 +66,12 @@ export const extractSong = async (songUrl) => {
 
 export const searchSong = async (query) => {
     try {
-        const searchRes = await resilientFetch(`https://www.worldtamilchristians.com/?s=${encodeURIComponent(query)}`, { 
-             
-            timeout: 10000 
+        const searchRes = await resilientFetch(`https://www.worldtamilchristians.com/?s=${encodeURIComponent(query)}`, {
+
+            timeout: 10000
         });
         const $q = cheerio.load(searchRes.data);
-        
+
         if (searchRes.data.includes('grecaptcha') || searchRes.data.includes('403 Forbidden')) {
             console.warn(`[WTC] WAF Bot Verification blocked search for "${query}". Returning null.`);
             return null;
@@ -79,13 +79,13 @@ export const searchSong = async (query) => {
 
         let bestUrl = null;
         let bestScore = 0;
-        
+
         $q('.post-title a, .entry-title a, h2 a, h3 a').each((i, el) => {
             const loc = $q(el).attr('href');
             const title = $q(el).text().trim();
             if (loc && loc.includes('worldtamilchristians.com')) {
                 const score = calculateSimilarity(query, title);
-                if (score > bestScore && score >= 0.90) {
+                if (score > bestScore && score >= 0.60) {
                     bestScore = score;
                     bestUrl = loc;
                 }
@@ -96,7 +96,7 @@ export const searchSong = async (query) => {
             const songs = await extractSong(bestUrl);
             return songs.length > 0 ? songs[0] : null;
         }
-        
+
         return null;
     } catch (error) {
         if (error.message.includes('403') || error.message.includes('503')) {
@@ -111,7 +111,7 @@ export const searchSong = async (query) => {
 export const discoverLatest = async () => {
     try {
         const indexRes = await resilientFetch("https://www.worldtamilchristians.com/category/tamil-christians-songs/", {
-            
+
             timeout: 10000
         });
         const $ = cheerio.load(indexRes.data);
@@ -135,18 +135,18 @@ export const discoverAll = async (progressCallback) => {
 
     while (hasMore) {
         try {
-            const pageUrl = page === 1 
+            const pageUrl = page === 1
                 ? "https://www.worldtamilchristians.com/category/tamil-christians-songs/"
                 : `https://www.worldtamilchristians.com/category/tamil-christians-songs/page/${page}/`;
-                
+
             const res = await resilientFetch(pageUrl, {
-                
+
                 timeout: 15000
             });
-            
+
             const $ = cheerio.load(res.data);
             let foundOnPage = 0;
-            
+
             $('.entry-title a, .post-title a, h2 a').each((i, el) => {
                 const href = $(el).attr('href');
                 if (href && href.includes('worldtamilchristians.com') && !allUrls.has(href)) {

@@ -14,13 +14,14 @@ const onDemandImportLocks = new Map();
 
 const escapeRegex = (value = "") => String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const buildImportKey = (query = "") => normalizeTanglish(String(query || "")).toLowerCase().trim();
-const upsertSearchCache = (query, results, source) =>
+const upsertSearchCache = (query, results, source, status = "success") =>
   SongSearchCache.findOneAndUpdate(
     { query: String(query || "").toLowerCase().trim() },
     {
       $set: {
         results,
         source,
+        status,
         searchedAt: new Date()
       }
     },
@@ -152,20 +153,39 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
     }
 
     if (!primaryCandidate) {
-      await upsertSearchCache(searchKey, null, "Not Found");
+      await upsertSearchCache(searchKey, null, "Not Found", "failed");
       return null;
     }
 
     const providerCandidates = candidates.filter(Boolean);
     const sourceText = primaryCandidate.lyricsTamil || primaryCandidate.cleanedLyrics || primaryCandidate.lyrics || primaryCandidate.lyricsEnglish || "";
     
-    // Instead of waiting 20s for AI, create a raw entry immediately.
-    const processed = {
+    // Process AI synchronously to immediately return the completed song.
+    let processed = {
         lyrics: sourceText,
         cleanLyrics: sourceText,
         aiNeedsReview: true,
         aiStatus: "pending"
     };
+
+    if (sourceText && sourceText !== "pending_fetch" && primaryCandidate.lyricsStatus !== "pending") {
+        try {
+            console.log(`[SongService] Processing AI synchronously for "${query}"...`);
+            processed = await processLyricsWithAi(
+                sourceText, 
+                {
+                    sourceUrl: primaryCandidate.sourceUrl || primaryCandidate.url, 
+                    source: primaryCandidate.source, 
+                    category: importCategory, 
+                    title: primaryCandidate.title, 
+                    titleTamil: primaryCandidate.titleTamil, 
+                    titleEnglish: primaryCandidate.titleEnglish
+                }
+            );
+        } catch (err) {
+            console.error(`[SongService] AI processing failed inline: ${err.message}`);
+        }
+    }
 
     const payload = buildSongPayload(
       {
@@ -191,25 +211,6 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
 
     const song = new Song(payload);
     await withPerfTimer("save", () => song.save());
-
-    // Queue AI cleaning in the background asynchronously
-    const { QueueManager } = await import("../utils/queueManager.js");
-    if (song.lyricsTamil !== "pending_fetch" && song.lyricsStatus !== "pending") {
-        await QueueManager.addJob("ai_cleaning", {
-            html: sourceText,
-            url: song.sourceUrl || song.url,
-            source: song.source,
-            category: song.category,
-            title: song.title,
-            titleTamil: song.titleTamil,
-            titleEnglish: song.titleEnglish
-        }, song._id).catch(() => {});
-    } else {
-        await QueueManager.addJob("import", {
-            url: song.sourceUrl || song.url,
-            priority: 1
-        }, song._id).catch(() => {});
-    }
 
     await refreshSongRelationships(song._id).catch(() => {});
 
@@ -307,6 +308,15 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
       Song.countDocuments(dbQuery)
     ]));
     console.log(`[SongService] MongoDB lookup for "${searchQuery}" completed in ${Date.now() - mongoStart}ms`);
+    
+    // Update search count for found songs
+    if (searchQuery && dbSongs.length > 0) {
+        const songIds = dbSongs.map(s => s._id);
+        Song.updateMany(
+            { _id: { $in: songIds } },
+            { $inc: { searchCount: 1 }, $set: { lastSearched: new Date() } }
+        ).catch(e => console.error("[SongService] Failed to update searchCount:", e.message));
+    }
   } catch (err) {
     console.error("[SongService] MongoDB Error:", err);
   }
@@ -330,66 +340,33 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
       console.log(`[SongService] Cache hit for "${searchQuery}"`);
       dbSongs = [cached.results, ...dbSongs]; // Prepend cached result
       totalCount += 1;
-    } else if (cached && cached.results === null) {
-      console.log(`[SongService] Cached negative result for "${searchQuery}". Returning empty immediately.`);
-      return {
-        success: true,
-        status: "completed",
-        songs: [],
-        totalSongs: 0,
-        currentPage: 1,
-        totalPages: 1
-      };
+    } else if (cached && cached.status === "failed") {
+      const hoursSinceSearch = (Date.now() - cached.searchedAt.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceSearch < 24) {
+          console.log(`[SongService] Cached failed result for "${searchQuery}". Skipping provider search.`);
+          return {
+            success: true,
+            status: "completed",
+            songs: dbSongs,
+            totalSongs: totalCount,
+            currentPage: 1,
+            totalPages: Math.ceil(totalCount / limit) || 1
+          };
+      }
     } else {
-      if (cached && !cached.results) {
-        console.log(`[SongService] Cached miss for "${searchQuery}" will be retried against providers.`);
-      }
-      console.log(`[SongService] No strong local results for "${searchQuery}". Launching background search...`);
+      console.log(`[SongService] No strong local results for "${searchQuery}". Synchronously importing...`);
       
-      // DEBUG: Allow synchronous waiting to extract stack trace on Render
-      if (query === "DEBUG_YOUTUBE") {
-          try {
-              const { searchSong } = await import("./songSources/youtubeDiscovery.js");
-              const hasKey = !!process.env.YOUTUBE_API_KEY;
-              const keyPrefix = hasKey ? process.env.YOUTUBE_API_KEY.substring(0, 5) : "MISSING";
-              
-              // We will run resilientFetch manually to capture exact HTTP status
-              const { resilientFetch } = await import("../../utils/resilientFetch.js");
-              const encQuery = encodeURIComponent("test song");
-              const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encQuery}&type=video&key=${process.env.YOUTUBE_API_KEY}`;
-              
-              let fetchResult = "none";
-              try {
-                  const res = await resilientFetch(url, { timeout: 10000 });
-                  fetchResult = { status: res.status, data: res.data };
-              } catch (err) {
-                  fetchResult = { 
-                      error: err.message, 
-                      status: err.response?.status, 
-                      data: err.response?.data 
-                  };
-              }
-              
-              return { success: true, status: "debug_youtube", hasKey, keyPrefix, fetchResult };
-          } catch (e) {
-              return { success: false, status: "debug_error", error: e.message, stack: e.stack };
+      try {
+          // Synchronous fetch and AI clean!
+          const newlyImportedSong = await importSongOnDemand(searchQuery, selectedCategories);
+          
+          if (newlyImportedSong) {
+              dbSongs = [newlyImportedSong, ...dbSongs];
+              totalCount += 1;
           }
+      } catch (err) {
+          console.error(`[SongService] On-demand synchronous import error:`, err.stack);
       }
-
-      // Fire and forget
-      importSongOnDemand(searchQuery, selectedCategories).catch(err => {
-        console.error(`[SongService] On-demand import error:`, err.stack);
-      });
-
-      // Immediately return polling state
-      return {
-        success: true,
-        status: "searching_online",
-        songs: [],
-        totalSongs: 0,
-        currentPage: 1,
-        totalPages: 1
-      };
     }
   }
 

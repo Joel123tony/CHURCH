@@ -20,10 +20,13 @@ export const normalizeTanglish = (text) => {
     normalized = normalized.replace(/zh/g, "l"); // Tamil 'zh' often searched as 'l'
     normalized = normalized.replace(/dh/g, "th");
     
+    // Strip common metadata suffixes that ruin Levenshtein distance
+    normalized = normalized.replace(/\b(song|lyrics|tamil|christian|video|official|version|full)\b/g, "");
+
     // Remove non-alphanumeric chars for indexing
     normalized = normalized.replace(/[^\w\s\u0B80-\u0BFF]/g, "");
     
-    return normalized.trim();
+    return normalized.trim().replace(/\s+/g, ' ');
 };
 
 /**

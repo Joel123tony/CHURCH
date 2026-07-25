@@ -95,7 +95,7 @@ export const searchOnlineSources = async (query) => {
             const searchPromise = withPerfTimer(name, () => provider.searchSong(query), true);
             const result = await Promise.race([searchPromise, timeoutPromise]);
             
-            if (result && result.lyricsTamil) {
+            if (result && (result.lyricsTamil || result.lyrics || result.cleanLyrics)) {
                 console.log(`[AdapterManager] Success found in ${name}! (${Date.now() - start}ms)`);
                 await recordProviderHealth({
                     provider: name,
@@ -186,7 +186,7 @@ export const searchOnlineSourcesAcrossProviders = async (query, maxResults = 3) 
             const start = Date.now();
             try {
                 const result = await withPerfTimer(name, () => provider.searchSong(query), true);
-                if (result && result.lyricsTamil) {
+                if (result && (result.lyricsTamil || result.lyrics || result.cleanLyrics)) {
                     await recordProviderHealth({
                         provider: name,
                         domain: result.sourceUrl || "",

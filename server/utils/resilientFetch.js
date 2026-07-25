@@ -19,7 +19,28 @@ function getRandomUserAgent() {
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+let isPuppeteerRunning = false;
+const puppeteerQueue = [];
+
+async function acquirePuppeteerLock() {
+  if (!isPuppeteerRunning) {
+    isPuppeteerRunning = true;
+    return;
+  }
+  return new Promise(resolve => puppeteerQueue.push(resolve));
+}
+
+function releasePuppeteerLock() {
+  if (puppeteerQueue.length > 0) {
+    const next = puppeteerQueue.shift();
+    next();
+  } else {
+    isPuppeteerRunning = false;
+  }
+}
+
 async function fetchWithPuppeteer(url) {
+  await acquirePuppeteerLock();
   let browser = null;
   try {
     browser = await puppeteer.launch({
@@ -66,6 +87,8 @@ async function fetchWithPuppeteer(url) {
     const status = response ? response.status() : 200;
     
     await browser.close();
+    releasePuppeteerLock();
+    
     
     return {
       status,
@@ -74,6 +97,7 @@ async function fetchWithPuppeteer(url) {
     };
   } catch (error) {
     if (browser) await browser.close();
+    releasePuppeteerLock();
     throw error;
   }
 }

@@ -79,7 +79,7 @@ export const searchSong = async (query) => {
                 href.includes('thegodsmusic.com/lyrics/')
             ) {
                 const score = calculateSimilarity(query, title);
-                if (score > bestScore && score >= 0.90) {
+                if (score > bestScore && score >= 0.60) {
                     bestScore = score;
                     bestUrl = href;
                 }
