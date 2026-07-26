@@ -7,6 +7,72 @@ import { RecoveryWorker } from "./RecoveryWorker.js";
 import { IndexWorker } from "./IndexWorker.js";
 import { ModerationWorker } from "./ModerationWorker.js";
 import { ProviderHealthProbeWorker } from "./ProviderHealthProbeWorker.js";
+import Song from "../models/Song.js";
+
+const repairStuckSongs = async () => {
+    try {
+        const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+        const result = await Song.updateMany(
+            {
+                $or: [
+                    { lyricsStatus: "pending" },
+                    { status: "processing" }
+                ],
+                updatedAt: { $lte: fifteenMinsAgo }
+            },
+            {
+                $set: { 
+                    lyricsStatus: "failed", 
+                    status: "failed",
+                    isPendingLyrics: false
+                }
+            }
+        );
+        if (result.modifiedCount > 0) {
+            console.log(`[WorkerManager] Repaired ${result.modifiedCount} stuck songs (marked as failed).`);
+        }
+    } catch (err) {
+        console.error(`[WorkerManager] Error repairing stuck songs:`, err);
+    }
+};
+
+const recleanDirtySongs = async () => {
+    try {
+        const dirtySongs = await Song.find({
+            $or: [
+                { lyrics: { $regex: /<[^>]+>/ } },
+                { lyrics: { $regex: /see more|related songs|leave a reply|new collections/i } }
+            ],
+            status: "completed",
+            sourceUrl: { $exists: true, $ne: "" }
+        });
+
+        if (dirtySongs.length > 0) {
+            console.log(`[WorkerManager] Found ${dirtySongs.length} dirty songs. Queuing for fresh import and re-cleaning...`);
+            const { QueueManager } = await import("../utils/queueManager.js");
+            
+            for (const song of dirtySongs) {
+                song.status = "processing";
+                song.lyricsStatus = "pending";
+                song.isPendingLyrics = true;
+                song.retryCount = 0;
+                await song.save();
+                
+                await QueueManager.addJob("import", {
+                    url: song.sourceUrl || song.url,
+                    source: song.source,
+                    metadata: {
+                        title: song.title,
+                        titleTamil: song.titleTamil,
+                        category: song.category
+                    }
+                }, song._id);
+            }
+        }
+    } catch (err) {
+        console.error(`[WorkerManager] Error re-cleaning dirty songs:`, err);
+    }
+};
 
 const workers = [
     new DiscoveryWorker(),
@@ -24,6 +90,13 @@ let heartbeatMonitor = null;
 
 export const startWorkers = () => {
     console.log("[WorkerManager] Starting all background workers...");
+    
+    // Repair historically stuck songs
+    repairStuckSongs();
+    
+    // Re-clean existing dirty songs
+    recleanDirtySongs();
+    
     for (const worker of workers) {
         worker.start();
     }

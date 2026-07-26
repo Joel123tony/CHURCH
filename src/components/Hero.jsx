@@ -63,8 +63,8 @@ export default function Hero() {
           </p>
         </div>
 
-        <div className="group rounded-3xl bg-cream p-4 shadow-2xl transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_30px_70px_rgba(0,0,0,0.22)]">
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black transition-transform duration-700 ease-out group-hover:scale-[1.01]">
+        <div className="group rounded-3xl bg-cream p-4 shadow-2xl transition-all duration-500 ease-out transform-gpu will-change-transform [backface-visibility:hidden] hover:-translate-y-2 hover:shadow-[0_30px_70px_rgba(0,0,0,0.22)]">
+          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black transition-transform duration-700 ease-out transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-[1.01]">
             {loading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white">
                 <p className="font-semibold text-gray-500">{t("Loading...")}</p>
@@ -83,7 +83,7 @@ export default function Hero() {
             )}
           </div>
 
-          <div className="mt-4 flex items-center justify-between transition-transform duration-500 ease-out group-hover:translate-y-0.5">
+          <div className="mt-4 flex items-center justify-between transition-transform duration-500 ease-out transform-gpu will-change-transform [backface-visibility:hidden] group-hover:translate-y-0.5">
             <span className="font-bold text-primary">
               {video.videoId ? `🔴 ${t("Latest Sermon")}` : t("No Video")}
             </span>

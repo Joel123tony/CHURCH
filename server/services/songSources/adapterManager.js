@@ -136,27 +136,42 @@ export const searchOnlineSources = async (query) => {
         }
     };
 
-    // Run Tier 1 in parallel and return the first successful result
+    // Run Tier 1 in parallel and find the best result
     try {
-        const result = await Promise.any(tier1.map(fetchFromProvider));
-        if (result) {
-            setCached(cacheKey, result, 60 * 60 * 6);
-            return result;
+        const results = await Promise.allSettled(tier1.map(fetchFromProvider));
+        const successful = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+        if (successful.length > 0) {
+            // Sort to prefer ones with actual lyrics over just metadata/pending
+            successful.sort((a, b) => {
+                const aScore = (a.lyricsTamil && a.lyricsTamil !== "pending_fetch") ? 2 : (a.lyricsEnglish ? 1 : 0);
+                const bScore = (b.lyricsTamil && b.lyricsTamil !== "pending_fetch") ? 2 : (b.lyricsEnglish ? 1 : 0);
+                return bScore - aScore;
+            });
+            const bestResult = successful[0];
+            setCached(cacheKey, bestResult, 60 * 60 * 6);
+            return bestResult;
         }
     } catch (e) {
         console.log(`[AdapterManager] Tier 1 providers failed for "${query}". Falling back to Tier 2...`);
     }
-    
-    // Run Tier 2 sequentially (or in parallel) if Tier 1 failed
-    for (const providerObj of tier2) {
+    // Run Tier 2 in parallel if Tier 1 failed
+    if (tier2.length > 0) {
         try {
-            const result = await fetchFromProvider(providerObj);
-            if (result) {
-                setCached(cacheKey, result, 60 * 60 * 6);
-                return result;
+            const results = await Promise.allSettled(tier2.map(fetchFromProvider));
+            const successful = results.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+            if (successful.length > 0) {
+                // Sort similarly
+                successful.sort((a, b) => {
+                    const aScore = (a.lyricsTamil && a.lyricsTamil !== "pending_fetch") ? 2 : (a.lyricsEnglish ? 1 : 0);
+                    const bScore = (b.lyricsTamil && b.lyricsTamil !== "pending_fetch") ? 2 : (b.lyricsEnglish ? 1 : 0);
+                    return bScore - aScore;
+                });
+                const bestResult = successful[0];
+                setCached(cacheKey, bestResult, 60 * 60 * 6);
+                return bestResult;
             }
         } catch (e) {
-            // ignore and try next
+            console.log(`[AdapterManager] Tier 2 providers also failed for "${query}".`);
         }
     }
     

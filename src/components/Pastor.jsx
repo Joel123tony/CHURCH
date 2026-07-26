@@ -164,8 +164,8 @@ export default function Pastor() {
             <h2 className="text-3xl font-bold text-[#F4EFE7]">{t("Pastor")}</h2>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-4">
-            <div className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3 bg-[#d8cbb7]">
+          <div className="grid gap-6 lg:grid-cols-4 lg:items-start">
+            <div className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3 bg-[#d8cbb7] flex flex-col justify-center lg:h-[400px]">
               {loading ? (
                 <div className="py-10 text-center text-base font-bold text-[#1E293B]">
                   {t("Loading...")}
@@ -221,8 +221,8 @@ export default function Pastor() {
               )}
             </div>
 
-            <div className="flex h-full flex-col rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl">
-              <div className="mb-6 flex rounded-full bg-[#54091b]/10 p-1">
+            <div className="flex flex-col rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:h-[400px]">
+              <div className="mb-6 flex rounded-full bg-[#54091b]/10 p-1 shrink-0">
                 <button
                   onClick={() => setActiveTab("search")}
                   className={`flex-1 rounded-full py-2 text-sm font-bold transition-all ${
@@ -306,7 +306,7 @@ export default function Pastor() {
                 </button>
                 </div>
               ) : (
-                <div className="timeline-container flex-1 h-[270px] max-h-[270px] overflow-y-auto overflow-x-hidden pr-2">
+                <div className="timeline-container flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-2">
                   <div className="relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-[2px] before:bg-[#54091b]/20">
                     {pastors.filter(p => !p.isCurrent).length > 0 ? (
                       pastors.filter(p => !p.isCurrent).map(p => (

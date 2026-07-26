@@ -12,7 +12,10 @@ import {
     getLibrarySongs, updateSong,
     bulkPublish, bulkDelete,
     getDuplicates, mergeDuplicates,
-    getAnalytics, getQualityReport
+    getAnalytics, getQualityReport,
+    
+    // Manual Input System
+    createManualSong, republishSong, getSongVersions, restoreSongVersion
 } from "../controllers/adminSongController.js";
 import auth from "../middleware/auth.js"; 
 
@@ -60,5 +63,14 @@ router.post("/duplicates/merge", auth, mergeDuplicates);
 // Analytics & Quality
 router.get("/analytics", auth, getAnalytics);
 router.get("/quality-report", auth, getQualityReport);
+
+// ---------------------------------------------------------
+// Manual Input & Versioning
+// ---------------------------------------------------------
+router.post("/manual", auth, createManualSong);
+router.put("/manual/:id", auth, updateSong); // We can reuse updateSong for standard edits
+router.post("/manual/:id/republish", auth, republishSong);
+router.get("/versions/:id", auth, getSongVersions);
+router.post("/versions/:id/restore/:versionId", auth, restoreSongVersion);
 
 export default router;

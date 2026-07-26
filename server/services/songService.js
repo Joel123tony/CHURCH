@@ -8,7 +8,7 @@ import { processLyricsWithAi } from "./ai/index.js";
 import { refreshSongRelationships } from "./knowledgeGraph.js";
 import { queueSongForReview } from "./reviewWorkflow.js";
 import { withPerfTimer, recordPerf } from "../utils/perfTracker.js";
-
+import { extractArtistAndTitle } from "../utils/songParser.js";
 const normalizeScoreText = (value = "") => normalizeTanglish(String(value || "")).toLowerCase().trim();
 const onDemandImportLocks = new Map();
 
@@ -141,12 +141,15 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
     ? selectedCategories.join(", ")
     : "Tamil Christian Songs";
 
+  const { title, artist } = extractArtistAndTitle(query);
+
   return withImportLock(searchKey, async () => {
-    const candidates = await searchOnlineSourcesAcrossProviders(query, 3).catch(() => []);
+    // Only search online using the parsed title, not the whole query
+    const candidates = await searchOnlineSourcesAcrossProviders(title, 3).catch(() => []);
     let primaryCandidate = candidates[0] || null;
 
     if (!primaryCandidate) {
-      primaryCandidate = await searchOnlineSources(query);
+      primaryCandidate = await searchOnlineSources(title);
       if (primaryCandidate) {
         candidates.push(primaryCandidate);
       }
@@ -160,39 +163,20 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
     const providerCandidates = candidates.filter(Boolean);
     const sourceText = primaryCandidate.lyricsTamil || primaryCandidate.cleanedLyrics || primaryCandidate.lyrics || primaryCandidate.lyricsEnglish || "";
     
-    // Process AI synchronously to immediately return the completed song.
-    let processed = {
+    // Process AI in the background to avoid blocking API responses (TTFB optimization)
+    const processed = {
         lyrics: sourceText,
         cleanLyrics: sourceText,
         aiNeedsReview: true,
         aiStatus: "pending"
     };
 
-    if (sourceText && sourceText !== "pending_fetch" && primaryCandidate.lyricsStatus !== "pending") {
-        try {
-            console.log(`[SongService] Processing AI synchronously for "${query}"...`);
-            processed = await processLyricsWithAi(
-                sourceText, 
-                {
-                    sourceUrl: primaryCandidate.sourceUrl || primaryCandidate.url, 
-                    source: primaryCandidate.source, 
-                    category: importCategory, 
-                    title: primaryCandidate.title, 
-                    titleTamil: primaryCandidate.titleTamil, 
-                    titleEnglish: primaryCandidate.titleEnglish
-                }
-            );
-        } catch (err) {
-            console.error(`[SongService] AI processing failed inline: ${err.message}`);
-        }
-    }
-
     const payload = buildSongPayload(
       {
-        title: primaryCandidate.title || query,
+        title: primaryCandidate.title || title,
         ...primaryCandidate,
         ...processed,
-        status: "completed",
+        status: "processing", // changed to processing so it isn't completely 'done' yet, though front-end handles it
         isPublished: true,
         lyricsStatus: "found",
         isPendingLyrics: false,
@@ -214,7 +198,29 @@ const importSongOnDemand = async (query, selectedCategories = []) => {
     const song = new Song(payload);
     await withPerfTimer("save", () => song.save());
 
-    await refreshSongRelationships(song._id).catch(() => {});
+    // Queue for background AI processing
+    if (sourceText && sourceText !== "pending_fetch" && primaryCandidate.lyricsStatus !== "pending") {
+        try {
+            const { QueueManager } = await import("../utils/queueManager.js");
+            await QueueManager.addJob("ai_cleaning", {
+                html: sourceText,
+                rawText: sourceText,
+                title: payload.title,
+                titleTamil: payload.titleTamil,
+                titleEnglish: payload.titleEnglish,
+                source: payload.source,
+                category: payload.category,
+                url: payload.sourceUrl,
+                providerCandidates
+            }, song._id);
+            console.log(`[SongService] Offloaded AI cleaning to background worker for "${query}"`);
+        } catch (err) {
+            console.error(`[SongService] Failed to queue background AI processing: ${err.message}`);
+        }
+    }
+
+    // Don't await relationship refresh to keep the API ultra-fast
+    refreshSongRelationships(song._id).catch(() => {});
 
     const saved = song.toObject();
     await upsertSearchCache(searchKey, saved, saved.source || primaryCandidate.source || "Provider Lookup");

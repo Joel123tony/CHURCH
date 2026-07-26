@@ -21,7 +21,7 @@ export const importUrlPreview = async (req, res) => {
     try {
         const { url } = req.body;
         console.log(`[Admin Import] Received URL for queue: ${url}`);
-        
+
         if (!url) return res.status(400).json({ success: false, message: "URL is required" });
 
         const providerInfo = detectProvider(url);
@@ -31,9 +31,9 @@ export const importUrlPreview = async (req, res) => {
         if (providerInfo?.provider?.extractSong) {
             const extracted = await providerInfo.provider.extractSong(url);
             if (Array.isArray(extracted) && extracted.length > 0) {
-              previewData = extracted[0];
+                previewData = extracted[0];
             } else if (extracted && !Array.isArray(extracted)) {
-              previewData = extracted;
+                previewData = extracted;
             }
         }
 
@@ -67,8 +67,8 @@ export const importUrlPreview = async (req, res) => {
             category: previewData.category || "Tamil Christian Songs"
         });
 
-        return res.json({ 
-            success: true, 
+        return res.json({
+            success: true,
             preview
         });
     } catch (err) {
@@ -122,7 +122,7 @@ export const importSongSave = async (req, res) => {
 export const getImportStatus = async (req, res) => {
     try {
         const totalSongs = await Song.countDocuments({ isPublished: true });
-        
+
         const sourceBreakdown = await Song.aggregate([
             { $match: { isPublished: true } },
             { $group: { _id: "$source", count: { $sum: 1 } } },
@@ -134,7 +134,7 @@ export const getImportStatus = async (req, res) => {
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay());
-        startOfWeek.setHours(0,0,0,0);
+        startOfWeek.setHours(0, 0, 0, 0);
 
         const importedToday = await Song.countDocuments({ importedAt: { $gte: startOfToday }, isPublished: true });
         const importedThisWeek = await Song.countDocuments({ importedAt: { $gte: startOfWeek }, isPublished: true });
@@ -148,20 +148,22 @@ export const getImportStatus = async (req, res) => {
 
         const failedImports = await JobQueue.countDocuments({ type: 'import', status: 'failed' });
         const recoveringImports = await JobQueue.countDocuments({ type: 'recovery', status: 'pending' });
-        
+
         const aiQueue = await JobQueue.countDocuments({ type: 'ai_cleaning', status: { $in: ["pending", "failed"] } });
         const aiProcessed = await JobQueue.countDocuments({ type: 'ai_cleaning', status: 'completed' });
         const aiNeedsReview = await Song.countDocuments({ aiNeedsReview: true, isPublished: true });
-        
+
         const recoveryQueue = await JobQueue.countDocuments({ type: 'recovery', status: 'pending' });
-        
+
         const aiAverage = await Song.aggregate([
             { $match: { isPublished: true, aiConfidence: { $gt: 0 } } },
-            { $group: {
-                _id: null,
-                avgConfidence: { $avg: "$aiConfidence" },
-                avgProcessingTime: { $avg: "$aiProcessingTimeMs" }
-            }}
+            {
+                $group: {
+                    _id: null,
+                    avgConfidence: { $avg: "$aiConfidence" },
+                    avgProcessingTime: { $avg: "$aiProcessingTimeMs" }
+                }
+            }
         ]);
         const confidenceBands = await Song.aggregate([
             { $match: { isPublished: true } },
@@ -173,7 +175,7 @@ export const getImportStatus = async (req, res) => {
             { $group: { _id: "$aiProvider", count: { $sum: 1 }, avgConfidence: { $avg: "$aiConfidence" } } },
             { $sort: { count: -1 } }
         ]);
-        
+
         const providerHealth = await getProviderHealthSnapshot();
         const providerHealthTotals = providerHealth.reduce((acc, item) => {
             acc.totalSamples += item.totalSamples || 0;
@@ -181,19 +183,19 @@ export const getImportStatus = async (req, res) => {
             acc.cacheHits += item.cacheHits || 0;
             return acc;
         }, { totalSamples: 0, mergedCount: 0, cacheHits: 0 });
-        
+
         const mergeSuccessRate = providerHealthTotals.totalSamples > 0
             ? Math.round((providerHealthTotals.mergedCount / providerHealthTotals.totalSamples) * 100)
             : 0;
         const aiCacheHitRate = providerHealthTotals.totalSamples > 0
             ? Math.round((providerHealthTotals.cacheHits / providerHealthTotals.totalSamples) * 100)
             : 0;
-            
+
         const moderationQueue = await JobQueue.countDocuments({ type: 'moderation', status: 'pending' });
         const providerRegistryCount = await ProviderRegistry.countDocuments();
         const relationshipCount = await SongRelationship.countDocuments();
         const platformMetrics = await collectPlatformMetrics();
-        
+
         const lastImportDoc = await Song.findOne().sort({ importedAt: -1 }).select("importedAt title titleTamil source");
         const lastImport = lastImportDoc ? {
             time: lastImportDoc.importedAt,
@@ -202,7 +204,7 @@ export const getImportStatus = async (req, res) => {
         } : null;
 
         const recentImports = await Song.find().sort({ importedAt: -1 }).limit(10).select("title titleTamil source importedAt status isPublished aiStatus").lean();
-        
+
         const queueMetrics = {
             import: await JobQueue.countDocuments({ type: 'import', status: 'pending' }),
             ai_cleaning: aiQueue,
@@ -303,8 +305,8 @@ export const getFailedImports = async (req, res) => {
 
         const retryStatus = retryService.getStatus();
 
-        return res.json({ 
-            success: true, 
+        return res.json({
+            success: true,
             data,
             page,
             totalPages: Math.ceil(totalRecords / limit),
@@ -408,7 +410,7 @@ export const getRetryStatus = async (req, res) => {
 export const getWorkerStatus = async (req, res) => {
     try {
         const stats = getWorkerStats();
-        
+
         // Count jobs in each state
         const jobCounts = await JobQueue.aggregate([
             { $group: { _id: "$status", count: { $sum: 1 } } }
@@ -430,8 +432,8 @@ export const getWorkerStatus = async (req, res) => {
 
         // Get success rates
         const totalProcessed = queueMetrics.completed + queueMetrics.failed + queueMetrics.quarantined;
-        const successRate = totalProcessed > 0 
-            ? Math.round((queueMetrics.completed / totalProcessed) * 100) 
+        const successRate = totalProcessed > 0
+            ? Math.round((queueMetrics.completed / totalProcessed) * 100)
             : 0;
         const providerHealth = await getProviderHealthSnapshot();
         const providerHealthTotals = providerHealth.reduce((acc, item) => {
@@ -455,8 +457,8 @@ export const getWorkerStatus = async (req, res) => {
         });
         const platformMetrics = await collectPlatformMetrics();
 
-        return res.json({ 
-            success: true, 
+        return res.json({
+            success: true,
             workers: stats,
             queueMetrics,
             aiProcessed: await Song.countDocuments({ aiStatus: { $in: ["processed", "fallback"] } }),
@@ -660,7 +662,7 @@ export const getSongDebug = async (req, res) => {
         if (!song) return res.status(404).json({ success: false, message: "Song not found" });
 
         const jobs = await JobQueue.find({ songId: id }).sort({ createdAt: -1 }).lean();
-        
+
         return res.json({
             success: true,
             debug: {
@@ -696,13 +698,19 @@ export const getSongDebug = async (req, res) => {
 
 export const getLibrarySongs = async (req, res) => {
     try {
-        const { page = 1, limit = 50, status, isPublished, missing, needsReview, provider, q, sort = '-createdAt' } = req.query;
+        const { page = 1, limit = 50, status, isPublished, missing, needsReview, provider, q, sort = '-createdAt', language, author, tags, sourceType } = req.query;
         const query = {};
 
         if (status) query.status = status;
-        if (isPublished !== undefined) query.isPublished = isPublished === 'true';
+        if (isPublished !== undefined && isPublished !== "") query.isPublished = isPublished === 'true';
         if (needsReview === 'true') query.aiNeedsReview = true;
         if (provider) query.source = provider;
+        if (language) query.language = language;
+        if (author) query.author = new RegExp(author, 'i');
+        if (tags) query.tags = { $in: tags.split(',') };
+
+        if (sourceType === 'manual') query.source = 'Manual';
+        else if (sourceType === 'imported') query.source = { $ne: 'Manual' };
 
         if (missing === 'lyrics') {
             query.$or = [{ lyrics: { $exists: false } }, { lyrics: "" }];
@@ -711,18 +719,27 @@ export const getLibrarySongs = async (req, res) => {
         }
 
         if (q) {
-            query.$text = { $search: q };
+            const regex = new RegExp(q, 'i');
+            query.$or = [
+                { title: regex },
+                { titleTamil: regex },
+                { titleEnglish: regex },
+                { displayTitle: regex },
+                { lyrics: regex },
+                { author: regex },
+                { album: regex }
+            ];
         }
 
         const skip = (Number(page) - 1) * Number(limit);
-        
+
         let sortObj = {};
         if (sort.startsWith('-')) {
             sortObj[sort.substring(1)] = -1;
         } else {
             sortObj[sort] = 1;
         }
-        
+
         const [songs, total] = await Promise.all([
             Song.find(query).sort(sortObj).skip(skip).limit(Number(limit)).lean(),
             Song.countDocuments(query)
@@ -745,23 +762,60 @@ export const updateSong = async (req, res) => {
     try {
         const { id } = req.params;
         const payload = req.body;
+        console.log("Update Song Payload:", payload);
+
+        // 3. Validate the Song ID
+        if (!id || id.length !== 24) {
+            return res.status(400).json({ success: false, message: "Invalid Song ID" });
+        }
+
+        // 4. Validate Request Body
+        if (!payload.title || !payload.lyrics) {
+            return res.status(400).json({ success: false, message: "Title and lyrics are required" });
+        }
+
+        // 7. Preserve Existing Fields
+        const updateData = {};
+        if (payload.title !== undefined) updateData.title = payload.title;
+        if (payload.author !== undefined) updateData.author = payload.author;
+        if (payload.lyrics !== undefined) {
+            updateData.lyrics = payload.lyrics;
+            updateData.lyricsLength = normalizeLyricsText(payload.lyrics || "").length;
+        }
+        if (payload.language !== undefined) updateData.language = payload.language;
+        if (payload.category !== undefined) updateData.category = payload.category;
         
-        const existing = await Song.findById(id);
-        if (!existing) return res.status(404).json({ success: false, message: "Song not found" });
+        // Prevent required 'source' field from being overwritten with empty values
+        if (payload.source !== undefined && payload.source.trim() !== "") {
+            updateData.source = payload.source;
+        }
+
+        if (payload.isPublished !== undefined) updateData.isPublished = payload.isPublished;
         
-        const merged = { ...existing.toObject(), ...payload };
-        const normalized = buildSongPayload(merged, { source: existing.source, sourceUrl: existing.sourceUrl, category: existing.category });
-        
-        normalized.lyricsLength = normalizeLyricsText(normalized.lyrics || "").length;
-        
-        Object.assign(existing, normalized);
-        await existing.save();
+        updateData.updatedAt = new Date();
+
+        // 5. Verify MongoDB Update Logic
+        const existing = await Song.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        if (!existing) {
+            return res.status(404).json({ success: false, message: "Song not found" });
+        }
+
         clearCache("api_search_");
-        
+
         return res.json({ success: true, song: existing });
     } catch (err) {
-        console.error("updateSong Error:", err);
-        return res.status(500).json({ success: false, message: "Server error" });
+        // 8. Add Proper Error Logging
+        console.error("Song update failed:", err);
+        return res.status(err.name === 'ValidationError' || err.name === 'CastError' ? 400 : 500).json({
+            success: false,
+            message: err.message || "Server error",
+            stack: process.env.NODE_ENV === "development" ? err.stack : undefined
+        });
     }
 };
 
@@ -769,7 +823,7 @@ export const bulkPublish = async (req, res) => {
     try {
         const { ids, publish } = req.body;
         if (!Array.isArray(ids)) return res.status(400).json({ success: false, message: "ids must be an array" });
-        
+
         await Song.updateMany({ _id: { $in: ids } }, { $set: { isPublished: publish } });
         clearCache("api_search_");
         return res.json({ success: true, message: `Updated ${ids.length} songs` });
@@ -783,7 +837,7 @@ export const bulkDelete = async (req, res) => {
     try {
         const { ids } = req.body;
         if (!Array.isArray(ids)) return res.status(400).json({ success: false, message: "ids must be an array" });
-        
+
         await Song.deleteMany({ _id: { $in: ids } });
         clearCache("api_search_");
         return res.json({ success: true, message: `Deleted ${ids.length} songs` });
@@ -802,7 +856,7 @@ export const getDuplicates = async (req, res) => {
             { $sort: { count: -1 } },
             { $limit: 50 }
         ]);
-        
+
         return res.json({ success: true, duplicates });
     } catch (err) {
         console.error("getDuplicates Error:", err);
@@ -814,27 +868,27 @@ export const mergeDuplicates = async (req, res) => {
     try {
         const { primaryId, duplicateIds } = req.body;
         if (!primaryId || !Array.isArray(duplicateIds)) return res.status(400).json({ success: false, message: "Invalid parameters" });
-        
+
         const primary = await Song.findById(primaryId);
         if (!primary) return res.status(404).json({ success: false, message: "Primary song not found" });
-        
+
         for (const id of duplicateIds) {
             if (id === primaryId) continue;
             const dupe = await Song.findById(id);
             if (!dupe) continue;
-            
+
             if (!primary.youtubeUrl && dupe.youtubeUrl) primary.youtubeUrl = dupe.youtubeUrl;
             if (!primary.sourceUrl && dupe.sourceUrl) primary.sourceUrl = dupe.sourceUrl;
             if (dupe.providerHistory && dupe.providerHistory.length > 0) {
                 primary.providerHistory = [...(primary.providerHistory || []), ...dupe.providerHistory];
             }
-            
+
             dupe.duplicateOf = primary._id;
             dupe.status = "completed";
             dupe.isPublished = false;
             await dupe.save();
         }
-        
+
         await primary.save();
         clearCache("api_search_");
         return res.json({ success: true, message: "Merged successfully" });
@@ -848,26 +902,28 @@ export const getAnalytics = async (req, res) => {
     try {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
+
         const importsPerDay = await Song.aggregate([
             { $match: { importedAt: { $gte: thirtyDaysAgo } } },
-            { $group: {
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$importedAt" } },
-                count: { $sum: 1 }
-            }},
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$importedAt" } },
+                    count: { $sum: 1 }
+                }
+            },
             { $sort: { _id: 1 } }
         ]);
-        
+
         const providerContribution = await Song.aggregate([
             { $group: { _id: "$source", count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);
-        
+
         const searchFrequency = await Song.find({ searchCount: { $gt: 0 } })
-                                          .sort({ searchCount: -1 })
-                                          .limit(10)
-                                          .select("title searchCount");
-        
+            .sort({ searchCount: -1 })
+            .limit(10)
+            .select("title searchCount");
+
         return res.json({
             success: true,
             analytics: {
@@ -890,7 +946,7 @@ export const getQualityReport = async (req, res) => {
             Song.countDocuments({ qualityScore: { $lt: 60 } }),
             JobQueue.countDocuments({ type: 'import', status: 'failed' })
         ]);
-        
+
         return res.json({
             success: true,
             report: {
@@ -902,6 +958,206 @@ export const getQualityReport = async (req, res) => {
         });
     } catch (err) {
         console.error("getQualityReport Error:", err);
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+// --- Manual Input Module Endpoints ---
+
+export const createManualSong = async (req, res) => {
+    try {
+        const payload = req.body;
+
+        if (!payload.title) {
+            return res.status(400).json({ success: false, message: "Title is required" });
+        }
+
+        // Check for duplicates (Priority 5)
+        const query = {
+            $or: [
+                { title: new RegExp(`^${payload.title}$`, 'i') },
+                { displayTitle: new RegExp(`^${payload.title}$`, 'i') },
+                { titleTamil: new RegExp(`^${payload.title}$`, 'i') }
+            ]
+        };
+
+        const existingSong = await Song.findOne(query);
+
+        if (existingSong) {
+            // Update existing song instead of creating duplicate
+            const oldState = {
+                title: existingSong.title,
+                lyrics: existingSong.lyrics,
+                author: existingSong.author,
+                category: existingSong.category,
+                language: existingSong.language,
+                isPublished: existingSong.isPublished
+            };
+
+            const newVersion = existingSong.revisionNumber ? existingSong.revisionNumber + 1 : (existingSong.versionHistory?.length || 0) + 2;
+
+            existingSong.versionHistory = existingSong.versionHistory || [];
+            existingSong.versionHistory.push({
+                version: newVersion - 1,
+                timestamp: new Date(),
+                user: req.user?.id || "admin",
+                data: oldState,
+                changes: ["Manual overwrite via Manual Input form"]
+            });
+
+            // Override values
+            Object.assign(existingSong, {
+                ...payload,
+                source: "Manual",
+                status: "completed",
+                aiStatus: "processed",
+                aiProvider: "manual",
+                lyricsLength: normalizeLyricsText(payload.lyrics || "").length
+            });
+            existingSong.revisionNumber = newVersion;
+            
+            await existingSong.save();
+            clearCache("api_search_");
+
+            return res.status(200).json({ 
+                success: true, 
+                song: existingSong, 
+                message: "Existing song was found and updated with clean manual lyrics." 
+            });
+        }
+
+        let slug = payload.url;
+        if (!slug && payload.title) {
+            slug = payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now();
+        }
+
+        const newSongData = {
+            ...payload,
+            source: "Manual",
+            url: slug,
+            lyricsLength: normalizeLyricsText(payload.lyrics || "").length,
+            status: "completed",
+            scrapeStatus: "success",
+            aiStatus: "processed",
+            aiConfidence: 100,
+            aiProvider: "manual",
+            isPublished: payload.isPublished || false,
+            importedAt: new Date(),
+        };
+
+        const song = new Song(newSongData);
+
+        song.versionHistory = [{
+            version: 1,
+            timestamp: new Date(),
+            user: req.user?.id || "admin",
+            changes: ["Initial creation"]
+        }];
+
+        await song.save();
+        clearCache("api_search_");
+
+        return res.status(201).json({ success: true, song });
+    } catch (err) {
+        console.error("createManualSong Error:", err);
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+
+export const republishSong = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const payload = req.body;
+
+        const song = await Song.findById(id);
+        if (!song) return res.status(404).json({ success: false, message: "Song not found" });
+
+        const newVersion = song.revisionNumber ? song.revisionNumber + 1 : (song.versionHistory?.length || 0) + 2;
+        const oldState = {
+            title: song.title,
+            lyrics: song.lyrics,
+            author: song.author,
+            category: song.category,
+            tags: song.tags,
+            language: song.language
+        };
+
+        song.versionHistory = song.versionHistory || [];
+        song.versionHistory.push({
+            version: newVersion - 1,
+            timestamp: new Date(),
+            user: req.user?.id || "admin",
+            data: oldState,
+            changes: ["Manual republish"]
+        });
+
+        Object.assign(song, payload);
+        song.isPublished = true;
+        song.revisionNumber = newVersion;
+        song.lyricsLength = normalizeLyricsText(song.lyrics || "").length;
+
+        await song.save();
+        clearCache("api_search_");
+
+        return res.json({ success: true, song });
+    } catch (err) {
+        console.error("republishSong Error:", err);
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+export const getSongVersions = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const song = await Song.findById(id).select("versionHistory revisionNumber");
+        if (!song) return res.status(404).json({ success: false, message: "Song not found" });
+
+        return res.json({ success: true, versions: song.versionHistory || [], currentRevision: song.revisionNumber });
+    } catch (err) {
+        console.error("getSongVersions Error:", err);
+        return res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+export const restoreSongVersion = async (req, res) => {
+    try {
+        const { id, versionId } = req.params;
+        const song = await Song.findById(id);
+        if (!song) return res.status(404).json({ success: false, message: "Song not found" });
+
+        const vIndex = song.versionHistory?.findIndex(v => v.version.toString() === versionId.toString());
+        if (vIndex === -1 || !song.versionHistory) return res.status(404).json({ success: false, message: "Version not found" });
+
+        const versionData = song.versionHistory[vIndex].data;
+        if (!versionData) return res.status(400).json({ success: false, message: "Version data is empty" });
+
+        const newVersion = (song.revisionNumber || song.versionHistory.length + 1) + 1;
+        song.versionHistory.push({
+            version: newVersion - 1,
+            timestamp: new Date(),
+            user: req.user?.id || "admin",
+            data: {
+                title: song.title,
+                lyrics: song.lyrics,
+                author: song.author,
+                category: song.category,
+                tags: song.tags,
+                language: song.language
+            },
+            changes: [`Restored from version ${versionId}`]
+        });
+
+        Object.assign(song, versionData);
+        song.revisionNumber = newVersion;
+        song.lyricsLength = normalizeLyricsText(song.lyrics || "").length;
+
+        await song.save();
+        clearCache("api_search_");
+
+        return res.json({ success: true, song });
+    } catch (err) {
+        console.error("restoreSongVersion Error:", err);
         return res.status(500).json({ success: false, message: "Server error" });
     }
 };

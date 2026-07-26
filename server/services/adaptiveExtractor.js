@@ -39,7 +39,18 @@ const JUNK_SELECTORS = [
   ".tagcloud",
   ".search-form",
   ".author-box",
-  ".author-bio"
+  ".author-bio",
+  ".yarpp-related",
+  ".td-post-author-name",
+  ".wishlist-btn",
+  ".wishlist-text",
+  "[class*='wishlist']",
+  ".addtoany_share_save_container",
+  ".rp4wp-related-posts",
+  ".crp_related",
+  ".wpcnt",
+  "#respond",
+  ".post-tags"
 ];
 
 const noisePatterns = [
@@ -62,6 +73,15 @@ const noisePatterns = [
   /archive/i,
   /categories?/i,
   /archives?/i,
+  /see more/i,
+  /leave a reply/i,
+  /new collections?/i,
+  /new collections?/i,
+  /comforter beats?/i,
+  /judah benhur worship/i,
+  /youtube credits?/i,
+  /copyrights?/i,
+  /tags?:?/i,
   /a\s*-\s*z/i,
   /\b1\s+2\s+3\b/,
   /\b1\s+2\s+3\s+4\b/,
@@ -92,7 +112,8 @@ const BOUNDARY_PATTERNS = [
   /^(more songs?|related songs?|recent songs?|key takeaways|estimated reading time|comments?|tags?:|disclaimer|about us|helpful links|disclosures|follow us|join our|shop now|previous song|next song|archives?|categories?|a\s*-\s*z)\b/i,
   /^(tamil christian songs?|god medias|tamil christians songs?)\b/i,
   /^(view count|share this|like and share|social links?)\b/i,
-  /^(a heartfelt|the song highlights|it emphasizes|the lyrics include|the song serves|written by|written and sung)\b/i
+  /^(a heartfelt|the song highlights|it emphasizes|the lyrics include|the song serves|written by|written and sung)\b/i,
+  /^(comforter beats|new collections|youtube credits)\b/i
 ];
 
 const normalizeForMatch = (text = "") => normalizeTanglish(cleanLyricsText(text))

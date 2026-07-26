@@ -43,7 +43,18 @@ export const extractSong = async (songUrl) => {
 
             timeout: 15000
         });
-        const extractedSongs = await extractSongsFromHtml(res.data, songUrl);
+        const selectors = [
+            ".entry-content pre",
+            ".entry-content p",
+            ".post-content pre",
+            ".post-content p",
+            ".td-post-content pre",
+            ".td-post-content p",
+            ".entry-content",
+            ".post-content",
+            "article .entry-content"
+        ];
+        const extractedSongs = await extractSongsFromHtml(res.data, songUrl, selectors);
 
         if (!extractedSongs || extractedSongs.length === 0) {
             throw new Error("Lyrics could not be found or were rejected by the sanitizer.", { cause: new Error("extractSongsFromHtml returned no songs") });

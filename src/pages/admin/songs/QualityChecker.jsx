@@ -53,7 +53,7 @@ const QualityChecker = () => {
             count: report.failedImports || 0, 
             icon: XCircle, 
             color: "text-red-500", bg: "bg-red-50", border: "border-red-200",
-            link: "/admin/songs/failed"
+            link: "/admin/songs/failed-imports"
         }
     ];
 

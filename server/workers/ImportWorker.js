@@ -14,6 +14,7 @@ export class ImportWorker extends BaseWorker {
         const songId = job.songId;
 
         let song = null;
+        try {
         if (songId) {
             song = await Song.findById(songId);
             if (!song) throw new Error(`Song metadata not found for ID: ${songId}`);
@@ -113,16 +114,15 @@ export class ImportWorker extends BaseWorker {
                 console.warn(`[ImportWorker] No sources found for "${song.title}".`);
                 const maxRetries = 5;
                 if ((song.retryCount || 0) >= maxRetries) {
-                    console.error(`[ImportWorker] Max retries reached for "${song.title}". Marking as unavailable.`);
-                    song.lyricsStatus = "unavailable";
+                    console.error(`[ImportWorker] Max retries reached for "${song.title}". Marking as failed.`);
+                    song.lyricsStatus = "failed";
                     song.isPendingLyrics = false;
-                    song.lyricsTamil = "unavailable";
-                    song.lyrics = "unavailable";
-                    song.status = "completed";
+                    song.status = "failed";
                 } else {
                     console.warn(`[ImportWorker] Moving to Pending Lyrics queue for future retry.`);
                     song.isPendingLyrics = true;
                     song.lyricsStatus = "pending";
+                    song.retryCount = (song.retryCount || 0) + 1;
                 }
                 
                 if (songId) await song.save();
@@ -146,5 +146,19 @@ export class ImportWorker extends BaseWorker {
         }, songId);
 
         console.log(`[ImportWorker] Fetched content and queued for AI cleaning: ${song.title}`);
+        } catch (err) {
+            console.error(`[ImportWorker] Uncaught exception processing job:`, err);
+            if (song) {
+                try {
+                    song.lyricsStatus = "failed";
+                    song.status = "failed";
+                    song.isPendingLyrics = false;
+                    await song.save();
+                } catch (saveErr) {
+                    console.error(`[ImportWorker] Failed to update song status on error:`, saveErr);
+                }
+            }
+            throw err;
+        }
     }
 }

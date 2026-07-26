@@ -15,7 +15,7 @@ import {
 
 export default function Contact({ theme = "light" }) {
   const { t } = useLanguage();
-  
+
   const isDark = theme === "dark";
 
   // Dynamic Theme Classes
@@ -24,12 +24,12 @@ export default function Contact({ theme = "light" }) {
   // In the dark theme variant (for Resource pages), the cards should be cream colored.
   const cardBg = isDark ? "bg-[#F4EFE7] shadow-xl" : "bg-white border-0 border-transparent shadow-xl";
   const cardHeading = "text-[#54091b]"; // Both themes use maroon text on their respective light cards
-  const cardText = "text-[#54091b]"; 
+  const cardText = "text-[#54091b]";
   // User explicitly requested cream background and maroon icon for dark theme cards, but since the card is cream, we will give the icon a subtle border or use white bg if they meant inverse. Actually, let's use the requested maroon icon.
   const iconBox = isDark ? "bg-white text-[#54091b] shadow-sm" : "bg-[#54091b] text-[#F4EFE7]";
   // User requested "Dark maroon background, Cream text" for buttons
   const actionBtn = "bg-[#54091b] text-[#F4EFE7] hover:bg-[#7A2533] hover:shadow-lg";
-  const socialBtn = isDark 
+  const socialBtn = isDark
     ? "bg-[#F4EFE7] text-[#54091b] hover:bg-white"
     : "bg-white text-[#54091b]";
   const [showPrayerModal, setShowPrayerModal] = useState(false);
@@ -118,7 +118,7 @@ export default function Contact({ theme = "light" }) {
                 className={`mt-8 relative overflow-hidden inline-flex w-full sm:w-auto items-center justify-center rounded-xl px-5 py-3 text-sm font-bold transition-all duration-300 sm:mt-auto sm:px-6 sm:text-[15px] group/btn ${actionBtn}`}
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  {t("Submit Request")}
+                  {t("Request To Pray")}
                 </span>
               </button>
             </div>

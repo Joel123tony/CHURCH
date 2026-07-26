@@ -60,7 +60,7 @@ export default function YoutubeSection() {
           <h2 className="text-3xl font-bold text-[#F4EFE7]">
             {t("youtube")}
           </h2>
-          
+
         </div>
 
         {loading ? (
@@ -68,7 +68,7 @@ export default function YoutubeSection() {
         ) : videos.length === 0 ? (
           <div className="text-center text-[#F4EFE7]/70">{t("youtube.noVideos")}</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 px-4 -mx-4 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {videos.map((video, index) => {
               const isLive = video.snippet?.liveBroadcastContent === 'live';
               return (
@@ -81,7 +81,7 @@ export default function YoutubeSection() {
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="youtube-card block"
+                  className="youtube-card block shrink-0 snap-start w-[300px] sm:w-[340px] md:w-auto"
                   style={{ animationDelay: `${index * 80}ms` }}
                 >
                   <div className="youtube-thumbnail">
@@ -95,7 +95,7 @@ export default function YoutubeSection() {
                         }
                       }}
                     />
-                    
+
                     {/* Play Button Overlay */}
                     <div className="youtube-play-btn">
                       <svg className="youtube-play-icon" viewBox="0 0 24 24">

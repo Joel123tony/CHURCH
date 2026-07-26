@@ -7,15 +7,19 @@ import DuplicateCenter from "./DuplicateCenter";
 import FailedQueue from "./FailedQueue";
 import Analytics from "./Analytics";
 import QualityChecker from "./QualityChecker";
+import ManualInput from "./ManualInput";
+import { Edit3 } from "lucide-react";
+import ErrorBoundary from "../../../components/ErrorBoundary";
 
 const SongsLayout = () => {
     const navItems = [
-        { path: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { path: "library", label: "Library", icon: Library },
-        { path: "duplicates", label: "Duplicates", icon: Copy },
-        { path: "failed", label: "Failed Imports", icon: AlertCircle },
-        { path: "quality", label: "Quality Check", icon: CheckSquare },
-        { path: "analytics", label: "Analytics", icon: BarChart2 }
+        { path: "/admin/songs/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { path: "/admin/songs/library", label: "Library", icon: Library },
+        { path: "/admin/songs/duplicates", label: "Duplicates", icon: Copy },
+        { path: "/admin/songs/failed-imports", label: "Failed Imports", icon: AlertCircle },
+        { path: "/admin/songs/quality-check", label: "Quality Check", icon: CheckSquare },
+        { path: "/admin/songs/analytics", label: "Analytics", icon: BarChart2 },
+        { path: "/admin/songs/manual-input", label: "Manual Input", icon: Edit3 }
     ];
 
     return (
@@ -38,10 +42,9 @@ const SongsLayout = () => {
                             key={path}
                             to={path}
                             className={({ isActive }) =>
-                                `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                                    isActive
-                                        ? "bg-indigo-50 text-indigo-700"
-                                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${isActive
+                                    ? "bg-indigo-50 text-indigo-700"
+                                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                                 }`
                             }
                         >
@@ -54,16 +57,20 @@ const SongsLayout = () => {
 
             {/* Main Content Area */}
             <main className="flex-1 p-4 md:p-8">
-                <Routes>
-                    <Route path="/" element={<Navigate to="dashboard" replace />} />
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="library" element={<LibraryList />} />
-                    <Route path="library/:id" element={<SongEditor />} />
-                    <Route path="duplicates" element={<DuplicateCenter />} />
-                    <Route path="failed" element={<FailedQueue />} />
-                    <Route path="quality" element={<QualityChecker />} />
-                    <Route path="analytics" element={<Analytics />} />
-                </Routes>
+                <ErrorBoundary>
+                    <Routes>
+                        <Route path="/" element={<Navigate to="/admin/songs/dashboard" replace />} />
+                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="library" element={<LibraryList />} />
+                        <Route path="library/:id" element={<SongEditor />} />
+                        <Route path="duplicates" element={<DuplicateCenter />} />
+                        <Route path="failed-imports" element={<FailedQueue />} />
+                        <Route path="quality-check" element={<QualityChecker />} />
+                        <Route path="analytics" element={<Analytics />} />
+                        <Route path="manual-input" element={<ManualInput />} />
+                        <Route path="*" element={<Navigate to="/admin/songs/dashboard" replace />} />
+                    </Routes>
+                </ErrorBoundary>
             </main>
         </div>
     );

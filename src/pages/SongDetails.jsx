@@ -21,14 +21,14 @@ export default function SongDetails() {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [activeTab, setActiveTab] = useState('tamil');
 
-  const [songMeta] = useState(location.state?.song || {
+  const [songMeta, setSongMeta] = useState(location.state?.song || {
     title: t("Song Details"),
     category: t("Unknown"),
     source: t("Unknown"),
     language: "Tamil"
   });
 
-  const fetchSongDetails = useCallback(async (isPolling = false) => {
+  const fetchSongDetails = useCallback(async (isPolling = false, isRetry = false) => {
     if (!isPolling) setLoading(true);
     setError(null);
     try {
@@ -43,10 +43,13 @@ export default function SongDetails() {
          setLoading(false);
          return;
       }
-      
-      const res = await API.get(`/songs/details?url=${encodeURIComponent(decodeURIComponent(id))}&title=${encodeURIComponent(songMeta.title || songMeta.titleTamil)}`);
+      const retryParam = isRetry ? "&retry=true" : "";
+      const res = await API.get(`/songs/details?id=${encodeURIComponent(decodeURIComponent(id))}&title=${encodeURIComponent(songMeta.title || songMeta.titleTamil)}${retryParam}`);
       if (res.data.success && res.data.data) {
         setSongLyrics(res.data.data.lyrics);
+        if (res.data.data.title) {
+            setSongMeta(prev => ({ ...prev, ...res.data.data }));
+        }
         if (res.data.data.aiSections && res.data.data.aiSections.length > 0) {
            setSongSections(res.data.data.aiSections);
         } else if (res.data.data.aiMetadata?.sections && res.data.data.aiMetadata.sections.length > 0) {
@@ -81,31 +84,30 @@ export default function SongDetails() {
   }, [songLyrics, fetchSongDetails]);
 
   return (
-    <div className={`min-h-screen font-sans pb-[calc(4rem+env(safe-area-inset-bottom))] relative transition-colors duration-500 overflow-x-hidden ${isDark ? 'bg-[#0f172a]' : 'bg-[#F4EFE7]'}`}>
+    <div className={`min-h-screen font-sans pb-[calc(4rem+env(safe-area-inset-bottom))] relative transition-colors duration-500 overflow-x-hidden pt-2 md:pt-3 ${isDark ? 'bg-[#0f172a]' : 'bg-[#F4EFE7]'}`}>
 
       {/* Sticky Header Toolbar */}
-      <div className={`sticky top-[var(--navbar-height)] z-40 backdrop-blur-md border-b shadow-sm transition-colors duration-500 pt-1 pb-2 md:py-3 ${isDark ? 'bg-[#1e293b]/95 border-gray-700/50' : 'bg-white/95 border-[#E8DCCB]'}`}>
+      <div className={`sticky top-[var(--navbar-height)] z-40 backdrop-blur-md border-b shadow-sm transition-colors duration-500 py-3 md:py-4 ${isDark ? 'bg-[#1e293b]/95 border-gray-700/50' : 'bg-white/95 border-[#E8DCCB]'}`}>
         
         {/* Desktop & Tablet Layout (>= 768px) */}
         <div className="hidden md:flex max-w-[960px] w-[92%] lg:w-full mx-auto items-center justify-between gap-4">
           {/* Left: Back */}
-          <div className="w-[100px] flex shrink-0">
+          <div className="w-[120px] flex shrink-0">
             <Link to="/songs" className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-sm border transition-all min-h-[44px] ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700 hover:border-gray-600 hover:bg-gray-700' : 'bg-[#F4EFE7] text-[#54091b] border-[#54091b]/10 hover:border-[#54091b]/30 hover:bg-white'}`}>
               <ChevronLeft size={16} /> <span>{t("Back")}</span>
             </Link>
           </div>
 
-          {/* Center: Title + Zoom */}
-          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5">
-             <div className={`text-lg lg:text-xl font-black truncate w-full text-center ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
+          {/* Center: Title + Artist */}
+          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5">
+             <div className={`text-xl lg:text-2xl font-black truncate w-full text-center ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
                {songMeta.displayTitle || songMeta.titleTamil || songMeta.title}
              </div>
-             
-             <div className={`flex items-center gap-1 p-0.5 rounded-full border transition-colors ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#F4EFE7] border-[#54091b]/10'}`}>
-                <button onClick={() => setZoomLevel(prev => Math.max(60, prev - 10))} className={`p-1.5 rounded-full transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white text-[#54091b]/70 hover:text-[#54091b]'}`} title={t("Decrease Font")}><ZoomOut size={14} /></button>
-                <span className={`text-xs font-bold w-10 text-center select-none ${isDark ? 'text-gray-300' : 'text-[#54091b]'}`}>{zoomLevel}%</span>
-                <button onClick={() => setZoomLevel(prev => Math.min(200, prev + 10))} className={`p-1.5 rounded-full transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white text-[#54091b]/70 hover:text-[#54091b]'}`} title={t("Increase Font")}><ZoomIn size={14} /></button>
-             </div>
+             {songMeta.artist && (
+                <div className={`text-sm font-semibold truncate max-w-[300px] text-center ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
+                   {songMeta.artist}
+                </div>
+             )}
           </div>
 
           {/* Right: Search & Theme */}
@@ -120,14 +122,21 @@ export default function SongDetails() {
         </div>
 
         {/* Mobile Layout (< 768px) */}
-        <div className="flex md:hidden flex-col w-full px-4 gap-3">
+        <div className="flex md:hidden flex-col w-full px-4 gap-4">
           {/* Row 1: Back + Title */}
           <div className="flex items-center gap-3">
              <Link to="/songs" className={`flex items-center justify-center p-2.5 rounded-xl border transition-all min-h-[44px] min-w-[44px] shrink-0 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-[#F4EFE7] text-[#54091b] border-[#54091b]/10'}`}>
                <ChevronLeft size={20} />
              </Link>
-             <div className={`text-base font-black truncate flex-1 ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
-               {songMeta.displayTitle || songMeta.titleTamil || songMeta.title}
+             <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                <div className={`text-lg font-black truncate ${isDark ? 'text-white' : 'text-[#54091b]'}`}>
+                  {songMeta.displayTitle || songMeta.titleTamil || songMeta.title}
+                </div>
+                {songMeta.artist && (
+                   <div className={`text-xs font-semibold truncate ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
+                      {songMeta.artist}
+                   </div>
+                )}
              </div>
           </div>
 
@@ -140,29 +149,23 @@ export default function SongDetails() {
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
              </button>
           </div>
-
-          {/* Row 3: Zoom Controls */}
-          <div className="flex justify-center">
-             <div className={`flex items-center justify-between gap-1 p-1 rounded-full border w-full max-w-[200px] transition-colors ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#F4EFE7] border-[#54091b]/10'}`}>
-                <button onClick={() => setZoomLevel(prev => Math.max(60, prev - 10))} className={`p-2 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white text-[#54091b]/70 hover:text-[#54091b]'}`}><ZoomOut size={16} /></button>
-                <span className={`text-sm font-bold w-12 text-center select-none ${isDark ? 'text-gray-300' : 'text-[#54091b]'}`}>{zoomLevel}%</span>
-                <button onClick={() => setZoomLevel(prev => Math.min(200, prev + 10))} className={`p-2 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white text-[#54091b]/70 hover:text-[#54091b]'}`}><ZoomIn size={16} /></button>
-             </div>
-          </div>
         </div>
       </div>
 
-      <div className="w-full md:w-[92%] lg:max-w-[960px] mx-auto px-4 sm:px-0 pt-2 sm:pt-6">
+      <div className="w-full md:w-[92%] lg:max-w-[960px] mx-auto px-4 sm:px-0 pt-4">
 
-        {/* Metadata Area (Compact Tags) */}
+        {/* Metadata & Zoom Controls Area */}
         <FadeUp>
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-            <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm transition-colors ${isDark ? 'bg-gray-800 text-[#D4AF37] border border-gray-700' : 'bg-[#54091b] text-[#F6EFE3]'}`}>{songMeta.category}</span>
-            {songMeta.artist && (
-              <span className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>🎤 {songMeta.artist}</span>
-            )}
-            <span className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-[#1E293B] border-[#E8DCCB]'}`}>{songMeta.language}</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold border border-dashed transition-colors ${isDark ? 'bg-gray-800/50 text-gray-400 border-gray-700' : 'bg-[#F8F4EC] text-slate-500 border-[#E8DCCB]'}`}>Source: {songMeta.source}</span>
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+            <div className={`flex items-center gap-1 p-0.5 rounded-full border transition-colors ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-[#E8DCCB]'}`}>
+               <button onClick={() => setZoomLevel(prev => Math.max(60, prev - 10))} className={`p-1.5 rounded-full transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-[#F4EFE7] text-[#54091b]/70 hover:text-[#54091b]'}`} title={t("Decrease Font")}><ZoomOut size={14} /></button>
+               <span className={`text-xs font-bold w-12 text-center select-none ${isDark ? 'text-gray-300' : 'text-[#54091b]'}`}>{zoomLevel}%</span>
+               <button onClick={() => setZoomLevel(prev => Math.min(200, prev + 10))} className={`p-1.5 rounded-full transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-[#F4EFE7] text-[#54091b]/70 hover:text-[#54091b]'}`} title={t("Increase Font")}><ZoomIn size={14} /></button>
+            </div>
+            
+            <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm transition-colors ${isDark ? 'bg-gray-800 text-[#D4AF37] border border-gray-700' : 'bg-[#54091b] text-[#F6EFE3]'}`}>{songMeta.category}</span>
+            <span className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-[#1E293B] border-[#E8DCCB]'}`}>{songMeta.language}</span>
+            <span className={`px-3 py-1.5 rounded-full text-xs font-bold border border-dashed transition-colors ${isDark ? 'bg-gray-800/50 text-gray-400 border-gray-700' : 'bg-[#F8F4EC] text-slate-500 border-[#E8DCCB]'}`}>Source: {songMeta.source}</span>
           </div>
         </FadeUp>
 
@@ -217,6 +220,30 @@ export default function SongDetails() {
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
               {t("We have discovered this song but could not extract verified lyrics at this time.")}
             </p>
+          </div>
+        ) : songLyrics === "failed" ? (
+          /* Failed Import State */
+          <div className={`rounded-[18px] sm:rounded-[32px] shadow-sm border p-8 sm:p-12 text-center animate-fade-in-up transition-colors duration-500 ${isDark ? 'bg-[#1e293b] border-red-900/30' : 'bg-white border-red-100'}`}>
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
+              <AlertCircle size={32} className="text-red-500" />
+            </div>
+            <h2 className={`text-lg sm:text-xl font-bold mb-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+              {t("Import Failed")}
+            </h2>
+            <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
+              {t("Unable to retrieve verified lyrics.")}
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  setSongLyrics("pending"); // Optimistic UI update
+                  fetchSongDetails(false, true); // Pass isRetry = true
+                }}
+                className={`inline-flex items-center gap-2 px-6 py-3 font-bold rounded-xl transition-all hover:-translate-y-1 shadow-md min-h-[44px] ${isDark ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-700' : 'bg-[#54091b] text-white hover:bg-[#7a0f29]'}`}
+              >
+                <RefreshCw size={18} /> {t("Retry Import")}
+              </button>
+            </div>
           </div>
         ) : (
           /* Content Container */

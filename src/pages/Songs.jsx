@@ -242,7 +242,7 @@ export default function Songs() {
             {songs.map((song, idx) => (
               <StaggerItem key={idx} animation="fade-up">
                 <Link
-                  to={`/songs/${encodeURIComponent(song.url)}`}
+                  to={`/songs/${song._id}`}
                   state={{ song }}
                   className="group block bg-white rounded-[20px] p-6 sm:p-7 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_30px_-4px_rgba(84,9,27,0.15)] transition-all duration-300 hover:-translate-y-1.5 border border-[#E8DCCB] relative overflow-hidden"
                 >

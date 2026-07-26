@@ -1,5 +1,6 @@
 import { searchSongs } from "../services/songService.js";
 import { getCached, setCached } from "../utils/cache.js";
+import mongoose from "mongoose";
 import Song from "../models/Song.js";
 import { prepareSongForClient, normalizeLyricsText } from "../utils/songNormalization.js";
 import { withPerfTimer, recordPerf } from "../utils/perfTracker.js";
@@ -89,15 +90,52 @@ export const getSongDetailsController = async (req, res) => {
       return res.json(cachedData);
     }
 
+    const orConditions = [
+      { slug: decodedId },
+      { url: decodedId },
+      { sourceUrl: decodedId }
+    ];
+
+    if (mongoose.Types.ObjectId.isValid(decodedId)) {
+      orConditions.push({ _id: decodedId });
+    }
+
     const existingSong = await Song.findOne({
-      $or: [
-        { slug: decodedId },
-        { url: decodedId },
-        { sourceUrl: decodedId }
-      ]
+      $or: orConditions
     }).lean();
 
     if (existingSong) {
+      const retry = req.query.retry === "true";
+      
+      if (retry && existingSong.lyricsStatus === "failed") {
+          console.log(`[SongController] Retry requested for failed song: ${existingSong.title}`);
+          const { QueueManager } = await import("../utils/queueManager.js");
+          await QueueManager.addJob("import", {
+              url: existingSong.url || existingSong.sourceUrl,
+              source: existingSong.source,
+              metadata: {
+                  title: existingSong.title,
+                  titleTamil: existingSong.titleTamil,
+                  category: existingSong.category
+              }
+          }, existingSong._id);
+          
+          await Song.findByIdAndUpdate(existingSong._id, {
+              lyricsStatus: "pending",
+              status: "processing",
+              isPendingLyrics: true,
+              retryCount: 0 // Reset retry count on manual retry
+          });
+
+          return res.json({
+              success: true,
+              data: {
+                  ...prepareSongForClient(existingSong),
+                  lyrics: "pending_fetch"
+              }
+          });
+      }
+
       const prepared = prepareSongForClient(existingSong);
       const response = {
         success: true,
@@ -121,20 +159,18 @@ export const getSongDetailsController = async (req, res) => {
       console.log(`[Fallback] Primary URL failed. Searching other providers for title: "${decodedTitle}"`);
       
       // Use the existing search logic to find the same song on other providers
+      // searchSongs now runs fast (AI is async)
       const fallbackSongs = await searchSongs(decodedTitle, []);
       
       // Filter out the primary URL that already failed
       const alternativeSongs = fallbackSongs.songs ? fallbackSongs.songs.filter(song => song.url !== decodedId) : [];
       
-      // Try scraping alternatives sequentially
-      for (const altSong of alternativeSongs) {
-        console.log(`[Fallback] Trying alternative provider: ${altSong.source} (${altSong.url})`);
-        const altLyrics = await scrapeSongDetails(altSong.url);
-        if (altLyrics !== "Lyrics not available.") {
-          console.log(`[Fallback] Success! Recovered lyrics from ${altSong.source}`);
-          lyricsHtml = altLyrics;
-          break; // Stop after first successful fallback
-        }
+      // Use lyrics directly from the alternative songs without re-scraping
+      const validAltSong = alternativeSongs.find(s => s.lyrics && s.lyrics !== "pending_fetch" && s.lyrics !== "Lyrics not available.");
+      
+      if (validAltSong) {
+          console.log(`[Fallback] Success! Recovered lyrics from ${validAltSong.source}`);
+          lyricsHtml = validAltSong.cleanedLyrics || validAltSong.lyrics;
       }
     }
 

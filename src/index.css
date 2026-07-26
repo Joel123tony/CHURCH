@@ -85,6 +85,7 @@ body {
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -101,6 +102,7 @@ body {
     transform: translateY(10px) scale(0.99);
     filter: blur(2px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -118,6 +120,7 @@ body {
     opacity: 0;
     transform: translateY(16px) scale(0.985);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -135,6 +138,7 @@ body {
     transform: translateY(14px) scale(0.985);
     filter: blur(1px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -153,6 +157,7 @@ body {
     transform: translateY(18px) scale(0.97);
     filter: blur(1px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -166,10 +171,12 @@ body {
 }
 
 @keyframes mtcFloat {
+
   0%,
   100% {
     transform: translateY(0) scale(1);
   }
+
   50% {
     transform: translateY(-6px) scale(1.02);
   }
@@ -179,9 +186,11 @@ body {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -197,13 +206,14 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-.animate-admin-page-enter,
-.animate-fade-in-up,
-.animate-admin-card-in,
-.animate-event-card-in,
-.animate-prayer-card-in,
-.animate-mtc-float,
-.animate-mtc-gradient {
+
+  .animate-admin-page-enter,
+  .animate-fade-in-up,
+  .animate-admin-card-in,
+  .animate-event-card-in,
+  .animate-prayer-card-in,
+  .animate-mtc-float,
+  .animate-mtc-gradient {
     animation: none !important;
   }
 }
@@ -224,6 +234,7 @@ body {
     top: 1rem !important;
     margin: 0 auto !important;
   }
+
   .Toastify__toast {
     margin-bottom: 0.5rem !important;
     border-radius: 12px !important;
@@ -233,13 +244,25 @@ body {
 
 /* Modal Popup Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .animate-fadeIn {
@@ -253,77 +276,144 @@ body {
 /* Pastor Avatar Placeholder Fix */
 .pastor-card-image,
 .pastor-placeholder {
-    width: 100%;
-    height: 240px;
-    display: block;
-    object-fit: cover;
-    object-position: center;
-    background: #eef2f7;
+  width: 100%;
+  height: 240px;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  background: #eef2f7;
 }
+
 @layer components {
   .admin-card {
-    @apply rounded-[20px] bg-white border border-[#E8DCCB] shadow-[0_10px_30px_rgba(83,27,36,0.08)] p-4 sm:p-5;
+    @apply bg-white border p-4 sm:p-5;
+    border-color: #E8DCCB;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(83, 27, 36, 0.08);
   }
 
   /* Buttons */
   .admin-btn-primary {
-    @apply bg-[#531B24] hover:bg-[#6F2435] text-white rounded-xl px-5 py-2 text-[14px] font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[42px];
+    @apply text-white rounded-xl px-5 py-2 font-bold transition-all shadow flex items-center justify-center gap-2;
+    background-color: #531B24;
+    font-size: 14px;
+    min-height: 42px;
   }
+  .admin-btn-primary:hover {
+    background-color: #6F2435;
+  }
+
   .admin-btn-secondary {
-    @apply bg-[#F8F4EC] border border-[#531B24] text-[#531B24] hover:bg-[#E8DCCB] rounded-xl px-5 py-2 text-[14px] font-bold transition-all flex items-center justify-center gap-2 min-h-[42px];
+    @apply border rounded-xl px-5 py-2 font-bold transition-all flex items-center justify-center gap-2;
+    background-color: #F8F4EC;
+    border-color: #531B24;
+    color: #531B24;
+    font-size: 14px;
+    min-height: 42px;
   }
+  .admin-btn-secondary:hover {
+    background-color: #E8DCCB;
+  }
+
   .admin-btn-green {
-    @apply bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 py-2 text-[14px] font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[42px];
+    @apply bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 py-2 font-bold transition-all shadow flex items-center justify-center gap-2;
+    font-size: 14px;
+    min-height: 42px;
   }
+
   .admin-btn-blue {
-    @apply bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-5 py-2 text-[14px] font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[42px];
+    @apply bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-5 py-2 font-bold transition-all shadow flex items-center justify-center gap-2;
+    font-size: 14px;
+    min-height: 42px;
   }
+
   .admin-btn-orange {
-    @apply bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-5 py-2 text-[14px] font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[42px];
+    @apply bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-5 py-2 font-bold transition-all shadow flex items-center justify-center gap-2;
+    font-size: 14px;
+    min-height: 42px;
   }
+
   .admin-btn-red {
-    @apply bg-red-600 hover:bg-red-700 text-white rounded-xl px-5 py-2 text-[14px] font-bold transition-all shadow flex items-center justify-center gap-2 min-h-[42px];
+    @apply bg-red-600 hover:bg-red-700 text-white rounded-xl px-5 py-2 font-bold transition-all shadow flex items-center justify-center gap-2;
+    font-size: 14px;
+    min-height: 42px;
   }
+
   .admin-btn-icon {
     @apply w-10 h-10 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg shrink-0;
   }
 
   /* Forms */
   .admin-input {
-    @apply w-full border-2 border-[#E8DCCB] rounded-xl px-3.5 py-2.5 outline-none transition-all focus:border-[#531B24] focus:bg-white focus:ring-4 focus:ring-[#531B24]/20 bg-[#F8F4EC]/30 text-slate-900 min-h-[44px];
+    @apply w-full border-2 rounded-xl px-3.5 py-2.5 outline-none transition-all focus:bg-white focus:ring-4 text-slate-900;
+    border-color: #E8DCCB;
+    background-color: rgba(248, 244, 236, 0.3);
+    min-height: 44px;
   }
+  .admin-input:focus {
+    border-color: #531B24;
+    --tw-ring-color: rgba(83, 27, 36, 0.2);
+  }
+
   .admin-label {
-    @apply block text-[13px] font-semibold text-[#531B24] mb-1.5 uppercase tracking-wide;
+    @apply block font-semibold mb-1.5 uppercase tracking-wide;
+    color: #531B24;
+    font-size: 13px;
   }
   
   /* Upload Area */
   .admin-upload-box {
-    @apply relative border-2 border-dashed border-[#531B24]/40 rounded-[20px] p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[160px] hover:bg-[#F8F4EC] hover:border-[#531B24];
+    @apply relative border-2 border-dashed p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all;
+    border-color: rgba(83, 27, 36, 0.4);
+    border-radius: 20px;
+    min-height: 160px;
   }
+  .admin-upload-box:hover {
+    background-color: #F8F4EC;
+    border-color: #531B24;
+  }
+
   .admin-upload-icon {
-    @apply w-12 h-12 rounded-full bg-[#F8F4EC] text-[#531B24] flex items-center justify-center mb-3 transition-colors;
+    @apply w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors;
+    background-color: #F8F4EC;
+    color: #531B24;
   }
 
   /* Tabs */
   .admin-tab-active {
-    @apply px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 bg-[#531B24] text-white shadow-md;
+    @apply px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 text-white shadow-md;
+    background-color: #531B24;
   }
+
   .admin-tab-inactive {
-    @apply px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 bg-white text-[#531B24] border border-[#E8DCCB] hover:bg-[#F8F4EC];
+    @apply px-4 py-2 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 bg-white border;
+    color: #531B24;
+    border-color: #E8DCCB;
+  }
+  .admin-tab-inactive:hover {
+    background-color: #F8F4EC;
   }
 
   /* Page Header */
   .admin-header-container {
-    @apply flex flex-col gap-3 md:flex-row md:items-center justify-between bg-white p-4 sm:p-5 rounded-[20px] shadow-[0_10px_30px_rgba(83,27,36,0.08)] border border-[#E8DCCB] mb-4;
+    @apply flex flex-col gap-3 md:flex-row md:items-center justify-between bg-white p-4 sm:p-5 border mb-4;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(83, 27, 36, 0.08);
+    border-color: #E8DCCB;
   }
+
   .admin-header-title {
-    @apply text-xl sm:text-2xl font-black text-[#531B24] flex items-center gap-2.5 tracking-tight;
+    @apply text-xl sm:text-2xl font-black flex items-center gap-2.5 tracking-tight;
+    color: #531B24;
   }
+
   .admin-header-icon {
-    @apply text-[#531B24];
+    color: #531B24;
   }
+
   .admin-header-desc {
-    @apply text-[#651D32]/70 mt-1.5 text-sm font-medium;
+    @apply mt-1.5 text-sm font-medium;
+    color: rgba(101, 29, 50, 0.7);
   }
 }
 
@@ -334,7 +424,7 @@ body {
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0.2px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 /* Premium YouTube Cards */
@@ -442,9 +532,20 @@ body {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.25); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.25);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes youtubeEntrance {
@@ -456,41 +557,38 @@ body {
 
 /* Timeline Scrollbar */
 .timeline-container {
-    overflow-y: auto;
-    scrollbar-width: thin;                 /* Firefox */
-    scrollbar-color: #531B24 #F5F3EF;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: #531B24 #F5F3EF;
 }
 
 /* Chrome / Edge / Safari */
 .timeline-container::-webkit-scrollbar {
-    width: 8px;
+  width: 8px;
 }
 
 .timeline-container::-webkit-scrollbar-track {
-    background: #F5F3EF;
-    border-radius: 999px;
-    margin: 6px 0;
+  background: #F5F3EF;
+  border-radius: 999px;
+  margin: 6px 0;
 }
 
 .timeline-container::-webkit-scrollbar-thumb {
-    background: linear-gradient(
-        180deg,
-        #531B24,
-        #6B1F34
-    );
-    border-radius: 999px;
-    border: 2px solid #F5F3EF;
-    transition: all .25s ease;
+  background: linear-gradient(180deg,
+      #531B24,
+      #6B1F34);
+  border-radius: 999px;
+  border: 2px solid #F5F3EF;
+  transition: all .25s ease;
 }
 
 .timeline-container::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(
-        180deg,
-        #D4AF37,
-        #C89B1D
-    );
+  background: linear-gradient(180deg,
+      #D4AF37,
+      #C89B1D);
 }
 
 .timeline-container::-webkit-scrollbar-corner {
-    background: transparent;
+  background: transparent;
 }

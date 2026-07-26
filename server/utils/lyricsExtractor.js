@@ -178,7 +178,7 @@ export const isMissingTitle = (title) => {
     return badTitles.includes(lowerTitle);
 };
 
-export const extractLyricsFromHtml = async (html, sourceUrl = "") => {
+export const extractLyricsFromHtml = async (html, sourceUrl = "", selectors = []) => {
     const extractionStart = process.hrtime.bigint();
     const sanitizedHtml = sanitizeScrapedHtml(html);
     const $ = cheerio.load(sanitizedHtml);
@@ -243,7 +243,8 @@ export const extractLyricsFromHtml = async (html, sourceUrl = "") => {
     const contentArea = $(".post-inner, .entry-content, .post-content, article, .td-post-content, .content-area, .site-main, main, #contents").first();
     const adaptive = extractAdaptiveLyrics(sanitizedHtml, {
         titleHint: titleTamil || titleEnglish || rawTitle || "",
-        sourceUrl
+        sourceUrl,
+        selectors
     });
 
     if (adaptive.isCollectionPage || adaptive.multipleSongSignals) {
@@ -334,16 +335,16 @@ export const extractLyricsFromHtml = async (html, sourceUrl = "") => {
     return [songRecord];
 };
 
-export const extractSongsFromHtml = async (html, sourceUrl = "") => {
+export const extractSongsFromHtml = async (html, sourceUrl = "", selectors = []) => {
   const $ = cheerio.load(html);
-  const preview = extractAdaptiveLyrics(html, { sourceUrl });
+  const preview = extractAdaptiveLyrics(html, { sourceUrl, selectors });
   if (preview.isCollectionPage || preview.multipleSongSignals) {
     throw new Error("Collection page detected. Refusing to split into multiple songs.");
   }
 
     let extractedSongsArray = [];
     try {
-        extractedSongsArray = await extractLyricsFromHtml(html, sourceUrl);
+        extractedSongsArray = await extractLyricsFromHtml(html, sourceUrl, selectors);
     } catch (e) {
         console.log(`[Extractor Error] ${e.message}`);
         const hardRejectMessages = [
@@ -424,7 +425,7 @@ export const extractSongsFromHtml = async (html, sourceUrl = "") => {
         for (const s of songs) {
             try {
                 const dummyHtml = `<h1>${s.title}</h1><div class="entry-content">${s.html}</div>`;
-                const extracted = await extractLyricsFromHtml(dummyHtml, sourceUrl);
+                const extracted = await extractLyricsFromHtml(dummyHtml, sourceUrl, selectors);
                 if (extracted && extracted.length > 0) {
                     extractedSongs.push(...extracted);
                 }

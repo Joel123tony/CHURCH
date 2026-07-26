@@ -23,10 +23,13 @@ Rules:
 - Never translate.
 - Never change meaning or theology.
 - STRIP ALL METADATA from the lyrics: remove website names, provider branding (e.g., "Tamil Christians Songs", "god medias"), page titles, SEO titles, breadcrumbs, tags, artist lists, album links, copyright, ads, share links, and navigation text.
+- STOP PROCESSING AT RECOMMENDATIONS: If you encounter "See More", "Related Songs", "Leave a Reply", or "New collections", drop that text and all text following it. They are not part of the song.
 - Normalize the Title: Store only the clean song title (e.g., "உம்மை ஆராதிப்பேன்" or "Ummai Arathippen"). DO NOT include artist/singer/composer information inside the title (e.g., remove "sung by Eva.JEEVA"). Move all artist/singer/composer information into their respective metadata fields.
+- Remove Duplicate Titles from Lyrics: Do not repeat the song title as the first line of the lyrics body. Remove it if it appears there.
 - Preserve Proper Song Structure: Group lines logically into Verse 1, Chorus, Verse 2, Bridge, etc. Do not merge everything into one paragraph.
 - Detect Duplicate Chorus: If a chorus block is identically repeated by mistake due to HTML parsing, keep only one block. Preserve intentional musical structure.
-- Preserve Tamil Formatting: Do not remove Tamil punctuation, break Unicode characters, alter spelling, or merge separate lyric lines. Preserve intentional blank lines.
+- PLAIN TEXT ONLY: Return strictly plain UTF-8 text for the lyrics. Do not include ANY HTML tags (no <font>, <span>, <br>, etc).
+- Preserve Tamil Formatting: Do not remove Tamil punctuation, break Unicode characters, alter spelling, or merge separate lyric lines. Preserve intentional blank lines using "\n\n".
 - Extract metadata when visible into distinct fields (author, composer, album, year).
 - If the content is multiple songs, set multiSong=true and return songs[].
 

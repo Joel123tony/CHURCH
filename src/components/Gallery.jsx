@@ -10,6 +10,85 @@ function getMediaDate(item) {
   return Number.isFinite(time) ? time : 0;
 }
 
+function PremiumPinnedCard({ item, onClick, t, className = "" }) {
+  const isVideo = item.mediaType === "video";
+  const [loading, setLoading] = useState(true);
+
+  const dateStr = item.eventDate || item.createdAt;
+  const formattedDate = dateStr
+    ? new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '';
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={`group relative flex flex-col h-full bg-[#54091b] rounded-[20px] overflow-hidden [transform:translateZ(0)] p-[8px] sm:p-4 border border-[#d4af37]/20 shadow-md shadow-[#54091b]/30 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:border-[#d4af37]/40 hover:shadow-[#54091b]/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37] ${className}`}
+    >
+      <div className="relative w-full overflow-hidden rounded-[14px] sm:rounded-[16px] [transform:translateZ(0)] aspect-video bg-[#3a0613]">
+        {isVideo ? (
+          <img
+            src={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
+            alt={item.title || "video thumbnail"}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            onLoad={() => setLoading(false)}
+          />
+        ) : (
+          <img
+            src={item.url}
+            alt={item.title || "gallery media"}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            onLoad={() => setLoading(false)}
+          />
+        )}
+
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#3a0613] animate-pulse"></div>
+        )}
+
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ring-1 ring-inset ring-[#d4af37]/30 rounded-[14px] sm:rounded-[16px]"></div>
+
+        {isVideo && (
+          <div className="absolute right-1.5 top-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#d4af37] backdrop-blur-md border border-[#d4af37]/30 shadow-sm">
+            VIDEO
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-col flex-1 px-1 sm:px-0">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-sm bg-[#d4af37]/15 text-[#d4af37] text-[9px] font-bold uppercase tracking-widest border border-[#d4af37]/20">
+            ★ {t("Pinned")}
+          </span>
+          {item.category && (
+            <span className="text-[10px] text-[#F4EFE7]/70 uppercase tracking-wide truncate">
+              {item.category}
+            </span>
+          )}
+        </div>
+
+        <h3 className="text-[#F4EFE7] font-bold text-xs sm:text-sm leading-snug line-clamp-2 mb-1 group-hover:text-[#d4af37] transition-colors duration-300">
+          {item.title ? t(item.title) : t("Featured Moment")}
+        </h3>
+
+        <div className="mt-auto pt-1.5 flex items-center text-[#F4EFE7]/70 text-[10px] font-medium">
+          <span className="mr-1.5 opacity-80">📅</span>
+          {formattedDate || t("Recent")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
   const isVideo = item.mediaType === "video";
   const [loading, setLoading] = useState(true);
@@ -96,7 +175,7 @@ export default function Gallery() {
       const response = await fetch(media.url);
       if (!response.ok) throw new Error("Network response was not ok");
       const blob = await response.blob();
-      
+
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
@@ -223,7 +302,6 @@ export default function Gallery() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedMedia, handleNext, handlePrev]);
 
-  const pinnedGridClasses = "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3";
   const modalGridClasses = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] sm:gap-[8px]";
 
   return (
@@ -246,20 +324,25 @@ export default function Gallery() {
           </FadeUp>
 
           {loading ? (
-            <div className={pinnedGridClasses}>
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="aspect-video w-full rounded-[10px] sm:rounded-[12px] animate-pulse bg-[#e5ddd3]" />
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 px-4 -mx-4 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex flex-col bg-[#54091b] rounded-[20px] p-[8px] w-[260px] sm:w-[250px] shrink-0 snap-start md:w-full border border-[#d4af37]/10 animate-pulse">
+                  <div className="w-full aspect-video bg-[#3a0613] rounded-[14px] mb-3"></div>
+                  <div className="h-3 bg-[#3a0613] rounded w-1/4 mb-2 ml-1"></div>
+                  <div className="h-4 bg-[#3a0613] rounded w-3/4 mb-1.5 ml-1"></div>
+                  <div className="mt-auto h-2 bg-[#3a0613] rounded w-1/3 pt-3 ml-1"></div>
+                </div>
               ))}
             </div>
           ) : (
-            <div className={pinnedGridClasses}>
-              {featuredMedia.slice(0, 6).map((item) => (
-                <CompactTile
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 px-4 -mx-4 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {featuredMedia.map((item) => (
+                <PremiumPinnedCard
                   key={item._id}
                   item={item}
                   onClick={() => setSelectedMedia(item)}
                   t={t}
-                  aspectClass="aspect-video"
+                  className="w-[260px] sm:w-[250px] shrink-0 snap-start md:w-full"
                 />
               ))}
             </div>

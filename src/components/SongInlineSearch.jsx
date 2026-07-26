@@ -87,7 +87,7 @@ export default function SongInlineSearch({ className = "" }) {
   const handleSelect = (song) => {
     setQuery("");
     setIsOpen(false);
-    navigate(`/songs/${encodeURIComponent(song.url)}`, { state: { song } });
+    navigate(`/songs/${song._id}`, { state: { song } });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

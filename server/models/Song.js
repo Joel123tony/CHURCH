@@ -297,6 +297,9 @@ const songSchema = new mongoose.Schema(
     keywords: [{
       type: String,
     }],
+    tags: [{
+      type: String,
+    }],
     themes: [{
       type: String,
     }],
