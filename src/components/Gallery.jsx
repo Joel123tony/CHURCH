@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, memo } from "react";
 import { FaTimes, FaDownload, FaSpinner, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
@@ -38,6 +38,7 @@ function PremiumPinnedCard({ item, onClick, t, className = "" }) {
             src={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
             alt={item.title || "video thumbnail"}
             loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             onLoad={() => setLoading(false)}
           />
@@ -46,6 +47,7 @@ function PremiumPinnedCard({ item, onClick, t, className = "" }) {
             src={item.url}
             alt={item.title || "gallery media"}
             loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             onLoad={() => setLoading(false)}
           />
@@ -111,6 +113,7 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
           src={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
           alt={item.title || "video thumbnail"}
           loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
           onLoad={() => setLoading(false)}
         />
@@ -119,6 +122,7 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
           src={item.url}
           alt={item.title || "gallery media"}
           loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
           onLoad={() => setLoading(false)}
         />
@@ -143,7 +147,7 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
   );
 }
 
-export default function Gallery() {
+const Gallery = memo(function Gallery() {
   const { t } = useLanguage();
   const [featuredMedia, setFeaturedMedia] = useState([]);
   const [allMedia, setAllMedia] = useState([]);
@@ -194,28 +198,40 @@ export default function Gallery() {
     }
   };
 
+  const fetchGallery = async () => {
+    try {
+      setLoading(true);
+      const featuredRes = await API.get("/gallery/client");
+      const featured = featuredRes?.data?.data || [];
+      setFeaturedMedia([...featured].sort((a, b) => getMediaDate(b) - getMediaDate(a)));
+    } catch (err) {
+      console.error("Failed to load featured gallery data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchGallery = async () => {
-      try {
-        setLoading(true);
-        const [featuredRes, allRes] = await Promise.all([
-          API.get("/gallery/client"),
-          API.get("/gallery"),
-        ]);
-
-        const featured = featuredRes?.data?.data || [];
-        const all = allRes?.data?.data || [];
-
-        setFeaturedMedia([...featured].sort((a, b) => getMediaDate(b) - getMediaDate(a)));
-        setAllMedia([...all].sort((a, b) => getMediaDate(b) - getMediaDate(a)));
-      } catch (err) {
-        console.error("Failed to load gallery data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchGallery();
   }, []);
+
+  const [loadingAll, setLoadingAll] = useState(false);
+  
+  const handleOpenModal = async () => {
+    setOpenModal(true);
+    if (allMedia.length === 0) {
+      setLoadingAll(true);
+      try {
+        const allRes = await API.get("/gallery");
+        const all = allRes?.data?.data || [];
+        setAllMedia([...all].sort((a, b) => getMediaDate(b) - getMediaDate(a)));
+      } catch (err) {
+        console.error("Failed to load all gallery data:", err);
+      } finally {
+        setLoadingAll(false);
+      }
+    }
+  };
 
   useEffect(() => {
     const shouldLock = openModal || !!selectedMedia;
@@ -315,7 +331,7 @@ export default function Gallery() {
               </h2>
 
               <button
-                onClick={() => setOpenModal(true)}
+                onClick={handleOpenModal}
                 className="rounded-full border border-[#54091b] bg-[#F4EFE7] px-5 py-2.5 text-sm font-bold text-[#54091b] transition hover:bg-[#54091b] hover:text-[#F4EFE7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]/40"
               >
                 {t("All Media")}
@@ -376,7 +392,12 @@ export default function Gallery() {
 
           <div className="flex-1 overflow-y-auto px-2 py-4 sm:p-6 bg-[#F4EFE7]">
             <div className="mx-auto max-w-[1600px]">
-              {filteredMedia.length === 0 ? (
+              {loadingAll ? (
+                <div className="mt-12 text-center text-[#54091b]/60 flex flex-col items-center gap-3">
+                  <FaSpinner className="animate-spin text-2xl" />
+                  <span>{t("Loading all media...")}</span>
+                </div>
+              ) : filteredMedia.length === 0 ? (
                 <div className="mt-12 text-center text-[#54091b]/60">{t("No media found")}</div>
               ) : (
                 <div className={modalGridClasses}>
@@ -467,4 +488,6 @@ export default function Gallery() {
       )}
     </>
   );
-}
+});
+
+export default Gallery;

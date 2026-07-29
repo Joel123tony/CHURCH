@@ -20,6 +20,8 @@ export default function Home() {
 
   // Load custom section order and dynamic block styles from database
   useEffect(() => {
+    let isMounted = true;
+
     const loadOrderAndData = async () => {
       try {
         const res = await getBlock("section-order");
@@ -65,13 +67,13 @@ export default function Home() {
             }
           });
 
-          setSectionOrder(["hero", ...finalMiddle]);
+          if (isMounted) setSectionOrder(["hero", ...finalMiddle]);
         } else {
-          setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
+          if (isMounted) setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
         }
       } catch (err) {
         console.warn("Failed to load section order, using defaults.", err);
-        setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
+        if (isMounted) setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
       }
 
       // Fetch styles/content for all sections concurrently
@@ -88,12 +90,17 @@ export default function Home() {
           }
         });
         
-        setSectionData(fetched);
+        if (isMounted) setSectionData(fetched);
       } catch (err) {
         console.warn("Failed to load CMS section data styles", err);
       }
     };
+    
     loadOrderAndData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const renderSection = (id) => {

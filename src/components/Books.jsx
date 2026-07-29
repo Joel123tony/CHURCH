@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import API from "../api/axios";
 import PdfViewerModal from "./PdfViewerModal";
-import { FaSearch, FaChevronLeft, FaChevronRight, FaTimes, FaCalendarAlt, FaFilePdf } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaFilePdf } from "react-icons/fa";
+import { Search, CalendarDays, X } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 
 const MONTHS = [
@@ -31,6 +32,23 @@ export default function Books() {
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState(null);
   const scrollContainerRef = useRef(null);
+  
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
+  const datePickerRef = useRef(null);
+
+  // Close popover when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setIsDatePickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -104,6 +122,24 @@ export default function Books() {
     }
   };
 
+  const handleScroll = () => {
+    if (!hasScrolled) setHasScrolled(true);
+  };
+
+  const clearDateFilters = (e) => {
+    if (e) e.stopPropagation();
+    setSelectedMonth("");
+    setSelectedYear("");
+  };
+
+  const filterChipText = useMemo(() => {
+    if (!selectedMonth && !selectedYear) return null;
+    const m = MONTHS.find(m => m.value === selectedMonth)?.label || "";
+    const y = selectedYear || "";
+    if (m && y) return `${m} ${y}`;
+    return m || y;
+  }, [selectedMonth, selectedYear]);
+
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const options = { year: 'numeric', month: 'long' };
@@ -123,67 +159,104 @@ export default function Books() {
             
           </div>
 
-          {/* Modern Filter Bar */}
-          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full xl:w-auto">
-            
-            {/* Search */}
-            <div className="relative w-full sm:w-48 md:w-56">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="text-sm text-[#94A3B8]" />
+          {/* Modern Premium Search & Filter Bar */}
+          <div className="flex w-full xl:w-auto relative" ref={datePickerRef}>
+            <div className="relative w-full xl:w-[480px] h-[56px] flex items-center bg-white rounded-[18px] border border-[#E5D7C4] shadow-sm transition-all duration-250 focus-within:border-[#7A0F24] focus-within:ring-4 focus-within:ring-[rgba(122,15,36,0.08)]">
+              
+              {/* Search Icon */}
+              <div className="pl-4 pr-3 flex items-center justify-center shrink-0">
+                <Search className="text-[#9CA3AF] w-5 h-5" />
               </div>
+
+              {/* Search Input */}
               <input
                 type="text"
-                className="w-full bg-white border-2 border-[#E8DCCB] rounded-2xl py-3 pl-10 pr-4 text-base focus:outline-none focus:border-[#54091b] transition-all shadow-sm text-slate-900 placeholder-slate-400 font-medium"
+                className="flex-1 h-full bg-transparent border-none outline-none text-base text-slate-900 placeholder-[#9CA3AF] font-medium min-w-0"
                 placeholder={t("Search Books...")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-            </div>
 
-            {/* Month Picker */}
-            <div className="relative w-full sm:w-36">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full bg-white border-2 border-[#E8DCCB] rounded-2xl py-3 px-4 text-base focus:outline-none focus:border-[#54091b] transition-all shadow-sm text-slate-900 appearance-none cursor-pointer font-medium"
-              >
-                {MONTHS.map(m => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <FaCalendarAlt className="text-xs text-[#94A3B8]" />
+              {/* Selected Filter Chip */}
+              {filterChipText && (
+                <div className="hidden sm:flex items-center bg-[#F8EFD9] text-[#5B0E21] rounded-full px-3 py-1.5 mx-2 shrink-0 text-sm font-semibold whitespace-nowrap">
+                  {filterChipText}
+                  <button 
+                    onClick={clearDateFilters}
+                    className="ml-2 hover:bg-[#E5D7C4] rounded-full p-0.5 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              {filterChipText && (
+                <div className="sm:hidden flex items-center bg-[#F8EFD9] text-[#5B0E21] rounded-full px-2 py-1 mx-1 shrink-0 text-xs font-semibold overflow-hidden max-w-[100px]">
+                  <span className="truncate">{filterChipText}</span>
+                  <button 
+                    onClick={clearDateFilters}
+                    className="ml-1 hover:bg-[#E5D7C4] rounded-full p-0.5 shrink-0 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {/* Calendar Button */}
+              <div className="pr-2 pl-1 shrink-0">
+                <button
+                  onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                  className="w-10 h-10 flex items-center justify-center text-[#7A0F24] hover:bg-[rgba(122,15,36,0.08)] rounded-[10px] transition-all duration-250 hover:scale-[1.08]"
+                >
+                  <CalendarDays className="w-5 h-5" />
+                </button>
               </div>
+
             </div>
 
-            {/* Year Picker */}
-            <div className="relative w-full sm:w-32">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full bg-white border-2 border-[#E8DCCB] rounded-2xl py-3 px-4 text-base focus:outline-none focus:border-[#54091b] transition-all shadow-sm text-slate-900 appearance-none cursor-pointer font-medium"
-              >
-                <option value="">All Years</option>
-                {availableYears.map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <FaCalendarAlt className="text-xs text-[#94A3B8]" />
+            {/* Date Picker Popover */}
+            {isDatePickerOpen && (
+              <div className="absolute top-[64px] right-0 z-50 bg-white rounded-2xl shadow-xl border border-[#E5D7C4] p-4 w-72 origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-sm font-bold text-[#5B0E21] uppercase tracking-wider">{t("Filter by Date")}</h4>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-slate-500">{t("Month")}</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-full bg-[#F4EFE7] border border-transparent rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-[#7A0F24] text-slate-900 font-medium cursor-pointer transition-colors"
+                    >
+                      {MONTHS.map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-slate-500">{t("Year")}</label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      className="w-full bg-[#F4EFE7] border border-transparent rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-[#7A0F24] text-slate-900 font-medium cursor-pointer transition-colors"
+                    >
+                      <option value="">All Years</option>
+                      {availableYears.map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="mt-2 pt-3 border-t border-gray-100 flex justify-end">
+                    <button 
+                      onClick={() => setIsDatePickerOpen(false)}
+                      className="px-4 py-2 bg-[#7A0F24] hover:bg-[#5B0E21] text-white rounded-xl text-sm font-bold transition-colors"
+                    >
+                      {t("Apply")}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Clear Filters */}
-            {(search || selectedMonth || selectedYear) && (
-              <button
-                onClick={clearFilters}
-                className="w-full sm:w-auto px-6 py-3 text-base font-bold text-[#54091b] bg-white border-2 border-[#E8DCCB] hover:bg-[#F8F4EC] rounded-2xl transition flex items-center justify-center gap-2 shadow-sm"
-              >
-                <FaTimes className="text-sm" />
-                {t("Clear")}
-              </button>
             )}
-            
           </div>
         </div>
 
@@ -226,10 +299,21 @@ export default function Books() {
                 <FaChevronRight className="pl-1 text-lg" />
               </button>
 
+              {/* Swipe Indicator (Animated Hint) */}
+              {!hasScrolled && filteredBooks.length > 1 && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-none transition-opacity duration-500 opacity-100 flex flex-col items-center">
+                  <div className="bg-black/60 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 animate-bounce-horizontal shadow-lg">
+                    <span className="hidden sm:inline">← Scroll →</span>
+                    <span className="sm:hidden">← Swipe →</span>
+                  </div>
+                </div>
+              )}
+
               {/* Horizontal Scroll Area */}
               <div
                 ref={scrollContainerRef}
-                className="flex overflow-x-auto gap-5 sm:gap-6 pb-8 pt-4 snap-x snap-mandatory resources-scrollbar scroll-smooth"
+                onScroll={handleScroll}
+                className="flex overflow-x-auto gap-5 sm:gap-6 pb-8 pt-4 snap-x snap-mandatory resources-scrollbar scroll-smooth relative z-10"
               >
                 {filteredBooks.map((book) => (
                   <div

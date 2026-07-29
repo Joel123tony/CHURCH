@@ -4,8 +4,8 @@ import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
 import {
   ChevronLeft, ChevronRight, Search, Moon, Sun,
-  Copy, ChevronDown, Minus, Plus, RotateCcw, X, Image,
-  
+  Copy, Check, ChevronDown, Minus, Plus, RotateCcw, X, Image,
+  Volume2, Pause, Play, Square, SkipBack, SkipForward, Loader2, Headphones
 } from "lucide-react";
 import { toast } from 'react-toastify';
 import ShareImageModal from "../components/ShareImageModal";
@@ -30,24 +30,23 @@ const highlightText = (text, query) => {
   );
 };
 
-const MOBILE_FONT_SIZES = [80, 90, 100, 110, 120];
+const MOBILE_FONT_SIZES = [15, 17, 19, 21, 23];
 
-const VerseItem = memo(({ verseNum, text, zoomLevel, fontIndex, isDark, onToggleSelect, isSelected, showActions, onCopyAction, onShareAction, isMobile }) => {
-  const fontSizeCss = isMobile ? `${MOBILE_FONT_SIZES[fontIndex]}%` : `${22 * (zoomLevel / 100)}px`;
-  const desktopFontSize = 22 * (zoomLevel / 100);
-  const verseNumSizeCss = isMobile ? '12px' : `${Math.max(12, desktopFontSize * 0.65)}px`;
+const VerseItem = memo(({ verseNum, text, zoomLevel, fontIndex, isDark, onToggleSelect, isSelected, isReadingVerse, showActions, onCopyAction, onShareAction, isMobile }) => {
+  const fontSize = isMobile ? MOBILE_FONT_SIZES[fontIndex] : 22 * (zoomLevel / 100);
+  const verseNumSize = isMobile ? 12 : Math.max(12, fontSize * 0.65);
 
   return (
     <div 
       id={`verse-${verseNum}`} 
       onClick={() => onToggleSelect(verseNum)}
-      className={`flex group relative px-2 py-4 sm:px-4 sm:py-6 rounded-2xl transition-all duration-300 border-l-4 cursor-pointer select-none ${isDark ? 'hover:bg-gray-800' : 'hover:bg-white'} ${isSelected ? '!bg-[#D4AF37]/20 !border-[#D4AF37]' : 'border-transparent'} `}>
-      <span className={`w-10 sm:w-14 flex-shrink-0 font-bold select-none pt-[0.3em] transition-colors ${isDark ? "text-[#D4AF37]" : "text-[#D4AF37]"}`} style={{ fontSize: verseNumSizeCss }}>
+      className={`flex group relative px-2 py-4 sm:px-4 sm:py-6 rounded-2xl transition-all duration-300 border-l-4 cursor-pointer select-none ${isDark ? 'hover:bg-gray-800' : 'hover:bg-white'} ${isSelected ? '!bg-[#D4AF37]/20 !border-[#D4AF37]' : 'border-transparent'} ${isReadingVerse ? '!bg-[#D4AF37]/30 !border-[#D4AF37] shadow-[inset_0_0_20px_rgba(212,175,55,0.15)] ring-2 ring-[#D4AF37]/50' : ''}`}>
+      <span className={`w-10 sm:w-14 flex-shrink-0 font-bold select-none pt-[0.3em] transition-colors ${isDark ? "text-[#D4AF37]" : "text-[#D4AF37]"}`} style={{ fontSize: `${verseNumSize}px` }}>
         {verseNum}
       </span>
       <p
         className={`flex-grow font-serif tracking-wide transition-all duration-200 ease-out ${isDark ? 'text-gray-100' : 'text-[#1E293B]'}`}
-        style={{ fontSize: fontSizeCss, lineHeight: isMobile ? 1.8 : 1.95 }}
+        style={{ fontSize: `${fontSize}px`, lineHeight: isMobile ? 1.8 : 1.95 }}
       >
         {text}
       </p>
@@ -192,8 +191,299 @@ export default function Bible() {
   });
 
   const { isDarkMode, toggleTheme } = useTheme();
-    const [chapterLoading, setChapterLoading] = useState(false);
+  const [copiedVerse, setCopiedVerse] = useState(null);
+  const [chapterLoading, setChapterLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+    // --- Audio Player (Cloud TTS + Fallback) State ---
+  const [audioState, setAudioState] = useState('idle'); // 'idle', 'generating', 'playing', 'paused'
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [audioTimestamps, setAudioTimestamps] = useState([]);
+  const [readSpeed, setReadSpeed] = useState(1);
+  const [currentReadingVerse, setCurrentReadingVerse] = useState(null);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const audioRef = useRef(null);
+  
+  const [useFallback, setUseFallback] = useState(false);
+  const [voices, setVoices] = useState([]);
+  const [readingQueue, setReadingQueue] = useState([]);
+  const utteranceRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      if (availableVoices.length > 0) setVoices(availableVoices);
+    };
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+  }, []);
+
+  const getBestVoice = useCallback((lang) => {
+    if (lang === 'ta') {
+      return voices.find(v => v.lang.startsWith('ta-IN')) || 
+             voices.find(v => v.lang.startsWith('ta-LK')) || 
+             voices.find(v => v.lang.startsWith('ta')) || null;
+    } else {
+      return voices.find(v => v.lang.startsWith('en-IN')) || 
+             voices.find(v => v.lang.startsWith('en-US')) || 
+             voices.find(v => v.lang.startsWith('en-GB')) || 
+             voices.find(v => v.lang.startsWith('en')) || null;
+    }
+  }, [voices]);
+
+  const handleStopReading = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setAudioState('idle');
+    setCurrentReadingVerse(null);
+    setAudioUrl(null);
+    setAudioTimestamps([]);
+    setReadingQueue([]);
+    setAudioProgress(0);
+    setAudioDuration(0);
+  }, []);
+
+  const playVerseFallback = useCallback((verseId, queue) => {
+    if (!verseId || typeof window === 'undefined' || !window.speechSynthesis) {
+      handleStopReading();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    setCurrentReadingVerse(verseId);
+    
+    setTimeout(() => {
+      const el = document.getElementById(`verse-${verseId}`);
+      if (el) {
+         const y = el.getBoundingClientRect().top + window.pageYOffset - (window.innerHeight / 2) + 50;
+         window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 100);
+
+    setFullBibleData(prevData => {
+       const bData = prevData[language];
+       if (!bData || !bData[selectedBook] || !bData[selectedBook][selectedChapter]) return prevData;
+       const textToRead = bData[selectedBook][selectedChapter][verseId];
+       if (!textToRead) return prevData;
+
+       const utterance = new SpeechSynthesisUtterance(textToRead);
+       utterance.lang = language === 'ta' ? 'ta-IN' : 'en-US';
+       utterance.rate = readSpeed;
+       const voice = getBestVoice(language);
+       if (voice) utterance.voice = voice;
+
+       utterance.onstart = () => setAudioState('playing');
+       utterance.onend = () => {
+         const currentIndex = queue.indexOf(verseId);
+         if (currentIndex >= 0 && currentIndex < queue.length - 1) {
+            playVerseFallback(queue[currentIndex + 1], queue);
+         } else {
+            handleStopReading();
+         }
+       };
+       utterance.onerror = (e) => {
+         if (e.error === "interrupted" || e.error === "canceled") return;
+         console.error("Speech error:", e);
+         handleStopReading();
+       };
+
+       utteranceRef.current = utterance;
+       setTimeout(() => window.speechSynthesis.speak(utterance), 100);
+       return prevData;
+    });
+  }, [language, selectedBook, selectedChapter, readSpeed, getBestVoice, handleStopReading]);
+
+  const handleStartReading = useCallback(async () => {
+    if (!fullBibleData[language]) return;
+    const vData = fullBibleData[language][selectedBook]?.[selectedChapter];
+    if (!vData) return;
+    
+    let queue = [];
+    if (selectedVerses.length > 0) {
+      queue = [...selectedVerses].sort((a,b) => parseInt(a) - parseInt(b));
+    } else {
+      queue = Object.keys(vData).sort((a,b) => parseInt(a) - parseInt(b));
+    }
+    setReadingQueue(queue);
+    setAudioState('generating');
+    setCurrentReadingVerse(queue[0]);
+    setUseFallback(false);
+
+    const versesToSend = {};
+    for (const vNum of queue) {
+      versesToSend[vNum] = vData[vNum];
+    }
+
+    try {
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language, book: selectedBook, chapter: selectedChapter, verses: versesToSend })
+      });
+      if (!response.ok) throw new Error('Cloud TTS Failed');
+      const data = await response.json();
+      const tsResponse = await fetch(data.timestampsUrl);
+      const timestamps = await tsResponse.json();
+      
+      setAudioTimestamps(timestamps);
+      setAudioUrl(data.audioUrl);
+      
+      // Auto-scroll to first verse immediately
+      setTimeout(() => {
+        const el = document.getElementById(`verse-${queue[0]}`);
+        if (el) {
+           const y = el.getBoundingClientRect().top + window.pageYOffset - (window.innerHeight / 2) + 50;
+           window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 100);
+
+    } catch (err) {
+      console.warn("Cloud TTS Failed, falling back to Browser Speech", err);
+      setUseFallback(true);
+      playVerseFallback(queue[0], queue);
+    }
+  }, [fullBibleData, language, selectedBook, selectedChapter, selectedVerses, playVerseFallback]);
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current && !useFallback) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.playbackRate = readSpeed;
+      audioRef.current.play().then(() => {
+        setAudioState('playing');
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: `${getBookName(selectedBook, language)} ${selectedChapter}`,
+            artist: language === 'ta' ? 'தமிழ் வேதாகமம்' : 'Holy Bible',
+            album: 'Church App',
+          });
+          navigator.mediaSession.setActionHandler('play', handlePauseResumeReading);
+          navigator.mediaSession.setActionHandler('pause', handlePauseResumeReading);
+          navigator.mediaSession.setActionHandler('previoustrack', handlePrevVerseReading);
+          navigator.mediaSession.setActionHandler('nexttrack', handleNextVerseReading);
+        }
+      }).catch((e) => {
+        console.error("Audio Playback Failed:", e);
+        setUseFallback(true);
+        playVerseFallback(readingQueue[0], readingQueue);
+      });
+    }
+  }, [audioUrl, useFallback]);
+
+  const handleTimeUpdate = useCallback(() => {
+    if (!audioRef.current || useFallback || audioTimestamps.length === 0) return;
+    const currentTime = audioRef.current.currentTime;
+    setAudioProgress(currentTime);
+    setAudioDuration(audioRef.current.duration || 0);
+    
+    let activeVerse = null;
+    for (const ts of audioTimestamps) {
+      if (currentTime >= ts.start && currentTime <= ts.end) {
+        activeVerse = ts.verseNum;
+        break;
+      }
+    }
+    if (activeVerse && activeVerse !== currentReadingVerse) {
+      setCurrentReadingVerse(activeVerse);
+      const el = document.getElementById(`verse-${activeVerse}`);
+      if (el) {
+         const y = el.getBoundingClientRect().top + window.pageYOffset - (window.innerHeight / 2) + 50;
+         window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }
+  }, [audioTimestamps, currentReadingVerse, useFallback]);
+
+  const handlePauseResumeReading = useCallback(() => {
+    if (useFallback) {
+      if (typeof window === 'undefined' || !window.speechSynthesis) return;
+      if (audioState === 'paused') {
+        window.speechSynthesis.resume();
+        setAudioState('playing');
+      } else {
+        window.speechSynthesis.pause();
+        setAudioState('paused');
+      }
+    } else {
+      if (audioRef.current) {
+        if (audioState === 'paused') {
+          audioRef.current.play();
+          setAudioState('playing');
+        } else {
+          audioRef.current.pause();
+          setAudioState('paused');
+        }
+      }
+    }
+  }, [audioState, useFallback]);
+
+  const handleNextVerseReading = useCallback(() => {
+    if (!currentReadingVerse || readingQueue.length === 0) return;
+    const currentIndex = readingQueue.indexOf(currentReadingVerse);
+    if (currentIndex >= 0 && currentIndex < readingQueue.length - 1) {
+       if (useFallback) {
+         playVerseFallback(readingQueue[currentIndex + 1], readingQueue);
+       } else {
+         const nextVerseTs = audioTimestamps.find(ts => ts.verseNum === readingQueue[currentIndex + 1]);
+         if (nextVerseTs && audioRef.current) {
+           audioRef.current.currentTime = nextVerseTs.start;
+           setCurrentReadingVerse(readingQueue[currentIndex + 1]);
+         }
+       }
+    }
+  }, [currentReadingVerse, readingQueue, useFallback, playVerseFallback, audioTimestamps]);
+
+  const handlePrevVerseReading = useCallback(() => {
+    if (!currentReadingVerse || readingQueue.length === 0) return;
+    const currentIndex = readingQueue.indexOf(currentReadingVerse);
+    if (currentIndex > 0) {
+       if (useFallback) {
+         playVerseFallback(readingQueue[currentIndex - 1], readingQueue);
+       } else {
+         const prevVerseTs = audioTimestamps.find(ts => ts.verseNum === readingQueue[currentIndex - 1]);
+         if (prevVerseTs && audioRef.current) {
+           audioRef.current.currentTime = prevVerseTs.start;
+           setCurrentReadingVerse(readingQueue[currentIndex - 1]);
+         }
+       }
+    }
+  }, [currentReadingVerse, readingQueue, useFallback, playVerseFallback, audioTimestamps]);
+
+  const cycleSpeed = useCallback(() => {
+    const speeds = [0.75, 1, 1.25, 1.5, 2];
+    const currentIndex = speeds.indexOf(readSpeed);
+    const nextSpeed = speeds[(currentIndex + 1) % speeds.length];
+    setReadSpeed(nextSpeed);
+    if (useFallback) {
+      if (audioState === 'playing' || audioState === 'paused') {
+        playVerseFallback(currentReadingVerse, readingQueue);
+      }
+    } else {
+      if (audioRef.current) {
+        audioRef.current.playbackRate = nextSpeed;
+      }
+    }
+  }, [readSpeed, audioState, useFallback, currentReadingVerse, readingQueue, playVerseFallback]);
+
+  useEffect(() => {
+    if (audioState !== 'idle') handleStopReading();
+  }, [language, selectedChapter, selectedBook]);
+
+  useEffect(() => {
+    return () => handleStopReading();
+  }, [handleStopReading]);
+
+  const formatTime = (time) => {
+    if (!time || isNaN(time)) return "00:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+  // --- End Audio Player State ---
 
   const contentRef = useRef(null);
   const chipsScrollRef = useRef(null);
@@ -564,7 +854,7 @@ export default function Bible() {
                           <div className={`text-xs font-bold mb-1 ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
                             {getBookName(result.book, language)} {result.chapter}:{result.verseNum}
                           </div>
-                          <div className={`font-serif line-clamp-2 ${isDark ? 'text-gray-300' : 'text-[#1E293B]'} ${!isMobile ? 'text-sm' : ''}`} style={{ fontSize: isMobile ? `${MOBILE_FONT_SIZES[fontIndex]}%` : undefined }}>
+                          <div className={`text-sm font-serif line-clamp-2 ${isDark ? 'text-gray-300' : 'text-[#1E293B]'}`}>
                              {highlightText(result.text, debouncedSearch)}
                           </div>
                         </div>
@@ -579,7 +869,34 @@ export default function Bible() {
               )}
             </div>
             <div className="flex items-center justify-end gap-3 ml-auto shrink-0">
-              
+                            {audioState === 'idle' ? (
+                <button 
+                  onClick={handleStartReading}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors min-h-[44px] ${isDark ? 'bg-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/30' : 'bg-[#54091b] text-white hover:bg-[#7A0F24] shadow-sm'}`}
+                >
+                  <Headphones size={18} />
+                  <span className="hidden lg:inline">{selectedVerses.length > 0 ? "Listen Selected" : "Listen Chapter"}</span>
+                  <span className="lg:hidden">Listen</span>
+                </button>
+              ) : audioState === 'generating' ? (
+                <button 
+                  disabled
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors min-h-[44px] ${isDark ? 'bg-gray-800 text-[#D4AF37]' : 'bg-[#F4EFE7] text-[#54091b]'}`}
+                >
+                  <Loader2 size={18} className="animate-spin" />
+                  <span className="hidden lg:inline">Generating Audio...</span>
+                  <span className="lg:hidden">Generating...</span>
+                </button>
+              ) : (
+                <button 
+                  onClick={handlePauseResumeReading}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors min-h-[44px] ${isDark ? 'bg-[#D4AF37]/20 text-[#D4AF37] hover:bg-[#D4AF37]/30' : 'bg-[#54091b] text-white hover:bg-[#7A0F24] shadow-sm'}`}
+                >
+                  {audioState === 'playing' ? <Pause size={18} /> : <Play size={18} />}
+                  <span className="hidden lg:inline">{audioState === 'playing' ? "Pause" : "Resume"}</span>
+                  <span className="lg:hidden">{audioState === 'playing' ? "Pause" : "Resume"}</span>
+                </button>
+              )}
               
               <div className={`flex items-center gap-1 p-1.5 rounded-xl shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
                 <button onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))} className={`p-1.5 rounded-lg transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Decrease zoom"><Minus size={16} /></button>
@@ -649,7 +966,7 @@ export default function Bible() {
                       <div className={`text-xs font-bold mb-1 ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
                         {getBookName(result.book, language)} {result.chapter}:{result.verseNum}
                       </div>
-                      <div className={`font-serif line-clamp-2 ${isDark ? 'text-gray-300' : 'text-[#1E293B]'} ${!isMobile ? 'text-sm' : ''}`} style={{ fontSize: isMobile ? `${MOBILE_FONT_SIZES[fontIndex]}%` : undefined }}>
+                      <div className={`text-sm font-serif line-clamp-2 ${isDark ? 'text-gray-300' : 'text-[#1E293B]'}`}>
                          {highlightText(result.text, debouncedSearch)}
                       </div>
                     </div>
@@ -666,7 +983,23 @@ export default function Bible() {
 
         {/* Row 3: Action Controls */}
         <div className="flex items-center justify-between gap-2 overflow-x-auto resources-scrollbar pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
-          
+          {!isReading ? (
+            <button 
+              onClick={handleStartReading}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors min-w-[70px] min-h-[44px] shrink-0 ${isDark ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-[#54091b] text-white shadow-sm'}`}
+            >
+              <Volume2 size={16} />
+              Read
+            </button>
+          ) : (
+            <button 
+              onClick={handleStopReading}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors min-w-[70px] min-h-[44px] shrink-0 ${isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700 shadow-sm'}`}
+            >
+              <Square size={16} fill="currentColor" />
+              Stop
+            </button>
+          )}
 
           <button 
             onClick={toggleTheme} 
@@ -733,8 +1066,8 @@ export default function Bible() {
                     isDark={isDark}
                     onToggleSelect={handleToggleSelect}
                     isSelected={highlightedVerseId === verseNum || selectedVerses.includes(verseNum)}
-                    
-                    showActions={selectedVerses.length > 0 && selectedVerses[selectedVerses.length - 1] === verseNum }
+                    isReadingVerse={currentReadingVerse === verseNum}
+                    showActions={selectedVerses.length > 0 && selectedVerses[selectedVerses.length - 1] === verseNum && !isReading}
                     onCopyAction={handleCopySelection}
                     onShareAction={handleShareImage}
                     isMobile={isMobile}
@@ -782,7 +1115,63 @@ export default function Bible() {
         verseData={verseToShare} 
       />
 
-      
+      {/* Read Aloud Floating Mini Player */}
+      {isReading && (
+        <div className={`fixed bottom-0 left-0 right-0 z-[100] animate-in slide-in-from-bottom-full duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.2)] ${isDark ? 'bg-gray-900 border-t border-gray-800' : 'bg-white border-t border-[#E8DCCB]'}`}>
+          
+          {/* Progress Bar (Visual Only) */}
+          <div className="w-full h-1 bg-gray-200 dark:bg-gray-800">
+            <div 
+              className="h-full bg-[#D4AF37] transition-all duration-300 ease-linear"
+              style={{ width: `${((readingQueue.indexOf(currentReadingVerse) + 1) / (readingQueue.length || 1)) * 100}%` }}
+            ></div>
+          </div>
+          
+          <div className="max-w-5xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4 pb-safe">
+            
+            {/* Info */}
+            <div className="flex items-center gap-3 overflow-hidden flex-1 sm:flex-none sm:w-[250px]">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7]'}`}>
+                 <Volume2 size={20} className={isDark ? 'text-[#D4AF37]' : 'text-[#54091b]'} />
+              </div>
+              <div className="flex flex-col truncate">
+                 <span className={`text-sm font-bold truncate ${isDark ? 'text-gray-200' : 'text-[#54091b]'}`}>
+                   {getBookName(selectedBook, language)} {selectedChapter}
+                 </span>
+                 <span className={`text-xs truncate ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37] font-semibold'}`}>
+                   {t("Verse")} {currentReadingVerse}
+                 </span>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center justify-center gap-1 sm:gap-6 flex-none sm:flex-1">
+              <button onClick={handlePrevVerseReading} disabled={readingQueue.indexOf(currentReadingVerse) <= 0} className={`p-2 transition-colors disabled:opacity-30 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-[#54091b]'}`}>
+                <SkipBack size={24} fill="currentColor" />
+              </button>
+              
+              <button onClick={handlePauseResumeReading} className={`p-3 sm:p-4 rounded-full transition-transform hover:scale-105 shadow-lg flex items-center justify-center ${isDark ? 'bg-white text-gray-900' : 'bg-[#54091b] text-white'}`}>
+                {isPaused ? <Play size={20} fill="currentColor" className="ml-1" /> : <Pause size={20} fill="currentColor" />}
+              </button>
+
+              <button onClick={handleNextVerseReading} disabled={readingQueue.indexOf(currentReadingVerse) >= readingQueue.length - 1} className={`p-2 transition-colors disabled:opacity-30 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-[#54091b]'}`}>
+                <SkipForward size={24} fill="currentColor" />
+              </button>
+            </div>
+
+            {/* Right Controls */}
+            <div className="flex items-center justify-end gap-1 sm:gap-4 flex-1 sm:flex-none sm:w-[250px]">
+              <button onClick={cycleSpeed} className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-colors w-12 text-center ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-[#F4EFE7] text-[#54091b] hover:bg-[#E8DCCB]'}`}>
+                {readSpeed}×
+              </button>
+              <button onClick={handleStopReading} className={`p-2 rounded-lg transition-colors ${isDark ? 'text-red-400 hover:bg-gray-800' : 'text-red-600 hover:bg-red-50'}`}>
+                <Square size={20} fill="currentColor" />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

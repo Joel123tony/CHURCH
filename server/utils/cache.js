@@ -5,14 +5,18 @@ const MAX_CACHE_SIZE = 1000;
 /**
  * Get an item from the cache.
  * @param {string} key 
+ * @param {boolean} allowStale Return data even if it has expired (Stale-While-Revalidate)
  * @returns {any|null} The cached data or null if not found/expired
  */
-export const getCached = (key) => {
+export const getCached = (key, allowStale = false) => {
   const item = cacheStore.get(key);
   if (!item) return null;
 
   // Check expiration
   if (Date.now() > item.expiresAt) {
+    if (allowStale) {
+      return item.data;
+    }
     cacheStore.delete(key);
     return null;
   }
@@ -22,6 +26,17 @@ export const getCached = (key) => {
   cacheStore.set(key, item);
 
   return item.data;
+};
+
+/**
+ * Check if cache item is stale/expired or missing.
+ * @param {string} key 
+ * @returns {boolean} True if cache needs refresh
+ */
+export const isCacheStale = (key) => {
+  const item = cacheStore.get(key);
+  if (!item) return true;
+  return Date.now() > item.expiresAt;
 };
 
 /**

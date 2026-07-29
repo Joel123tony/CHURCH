@@ -15,6 +15,9 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: var(--navbar-height);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 section {
@@ -24,6 +27,15 @@ section {
 body {
   font-family: "Inter", sans-serif;
   background: #F4EFE7;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .admin-scrollbar {
@@ -591,4 +603,19 @@ body {
 
 .timeline-container::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+@keyframes bounceHorizontal {
+  0%, 100% {
+    transform: translateX(0);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateX(25%);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-horizontal {
+  animation: bounceHorizontal 1s infinite;
 }

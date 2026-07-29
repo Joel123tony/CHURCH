@@ -124,6 +124,7 @@ export const getClientMedia = async (
         $ne: null,
       },
     })
+      .select("url thumbnail title mediaType category eventDate createdAt clientPriority")
       .sort({
         clientPriority: 1,
       })

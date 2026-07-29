@@ -118,7 +118,7 @@ export default function Navbar() {
         <div className="flex h-20 items-center justify-between gap-4">
           
           {/* Logo Area */}
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <Link to="/admin" className="shrink-0">
               <img
                 src={methodistLogo}
@@ -126,10 +126,10 @@ export default function Navbar() {
                 alt="Methodist Logo"
               />
             </Link>
-            <div className="whitespace-nowrap">
-              <Link to="/">
-                <h1 className="font-bold text-cream">{t("Methodist Tamil Church")}</h1>
-                <p className="text-xs text-cream/80">{t("Padikuppam")}</p>
+            <div className="min-w-0 flex-1 break-words">
+              <Link to="/" className="block">
+                <h1 className="font-bold text-cream leading-tight text-[15px] sm:text-base">{t("Methodist Tamil Church")}</h1>
+                <p className="text-xs text-cream/80 mt-0.5">{t("Padikuppam")}</p>
               </Link>
             </div>
           </div>

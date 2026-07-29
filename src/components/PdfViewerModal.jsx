@@ -6,10 +6,19 @@ import PdfBookReader from "./PdfBookReader";
  */
 function normalizePdfUrl(url) {
   if (!url || typeof url !== "string") return url;
-  if (url.includes("/raw/upload/") && !url.toLowerCase().endsWith(".pdf")) {
-    return url + ".pdf";
+  
+  // Remove fl_attachment to ensure inline display
+  let normalized = url;
+  if (normalized.includes("/fl_attachment/")) {
+    normalized = normalized.replace("/fl_attachment/", "/");
+  } else if (normalized.includes("fl_attachment:")) {
+    normalized = normalized.replace(/fl_attachment:[^/]+\//, "");
   }
-  return url;
+
+  if (normalized.includes("/raw/upload/") && !normalized.toLowerCase().endsWith(".pdf")) {
+    return normalized + ".pdf";
+  }
+  return normalized;
 }
 
 /**
@@ -47,15 +56,14 @@ export default function PdfViewerModal({ isOpen, onClose, pdfUrl, title }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity p-0 md:p-4 lg:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-transparent transition-opacity p-0"
       onClick={onClose}
     >
       <div
-        className="flex flex-col w-full h-full md:w-[95vw] md:h-[95vh] bg-slate-900 md:rounded-2xl shadow-2xl overflow-hidden relative"
+        className="flex flex-col w-full h-full bg-transparent overflow-hidden relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Premium Book Reader Container */}
-        <div className="relative flex-1 w-full bg-slate-900 overflow-hidden md:rounded-2xl">
+        <div className="relative flex-1 w-full h-full bg-transparent overflow-hidden">
           <PdfBookReader 
             pdfUrl={resolvedUrl} 
             title={title || "PDF Document"} 

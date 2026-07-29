@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
 import { FaFire, FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 import { FadeUp, FadeLeft, FadeRight, StaggerContainer, StaggerItem } from "./animations/index.jsx";
 
-export default function Events() {
+const Events = memo(function Events() {
   const { t } = useLanguage();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ export default function Events() {
 
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10">
           <FadeLeft delay={100}>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-3 mb-6">
               <FaFire className="text-2xl text-[#F4EFE7]" />
               <h3 className="text-2xl font-bold text-[#F4EFE7]">{t("Featured Event")}</h3>
@@ -162,7 +162,7 @@ export default function Events() {
           </FadeLeft>
 
           <FadeRight delay={200}>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <FaCalendarAlt className="text-2xl text-[#F4EFE7]" />
@@ -224,4 +224,6 @@ export default function Events() {
       </div>
     </section>
   );
-}
+});
+
+export default Events;

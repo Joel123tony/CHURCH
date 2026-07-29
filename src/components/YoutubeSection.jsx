@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
-export default function YoutubeSection() {
+const YoutubeSection = memo(function YoutubeSection() {
   const { t } = useLanguage();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +89,7 @@ export default function YoutubeSection() {
                       src={getBestThumbnail(video)}
                       alt={video.title}
                       loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         if (video.videoId) {
                           e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
@@ -131,4 +132,6 @@ export default function YoutubeSection() {
       </div>
     </section>
   );
-}
+});
+
+export default YoutubeSection;

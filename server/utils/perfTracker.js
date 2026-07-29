@@ -35,7 +35,8 @@ export const recordPerf = (stage, durationMs, isProvider = false) => {
 };
 
 export const perfMiddleware = (req, res, next) => {
-    if (!req.path.includes('/search') && !req.path.includes('/details') && !req.path.includes('/latest') && req.path !== '/') {
+    // Only trace API routes to avoid cluttering static file requests, if any
+    if (!req.path.startsWith('/')) {
         return next();
     }
     
@@ -63,77 +64,34 @@ export const perfMiddleware = (req, res, next) => {
             store.total = Number(end - store.start) / 1000000;
             store.response = Number(end - serializeStart) / 1000000;
             
-            const perfObj = {
-                mongoLookup: Math.round(store.mongoLookup || 0),
-                cacheLookup: Math.round(store.cacheLookup || 0),
-                ...Object.keys(store.providers || {}).reduce((acc, k) => {
-                    let kCamel = k.replace(/[^a-zA-Z0-9]+(.)/g, (m, chr) => chr.toUpperCase());
-                    kCamel = kCamel.charAt(0).toLowerCase() + kCamel.slice(1);
-                    acc[kCamel] = Math.round(store.providers[k]);
-                    return acc;
-                }, {}),
-                htmlDownload: Math.round(store.htmlDownload || 0),
-                parsing: Math.round(store.parsing || 0),
-                cleaning: Math.round(store.cleaning || 0),
-                validation: Math.round(store.validation || 0),
-                merge: Math.round(store.merge || 0),
-                save: Math.round(store.save || 0),
-                response: Math.round(store.response || 0),
-                total: Math.round(store.total || 0)
-            };
+            const dbMs = Math.round((store.mongoLookup || 0) + (store.cacheLookup || 0));
+            const responseMs = Math.round(store.response || 0);
+            const totalMs = Math.round(store.total || 0);
+            // Rough estimation for processing time
+            const processingMs = Math.max(0, totalMs - dbMs - responseMs);
             
-            const query = req.query.search || req.query.q || req.query.title || req.query.slug || (req.path === '/' ? '' : req.path);
-            
-            console.log("\n========== PERFORMANCE ==========");
-            console.log(`Query: ${query}`);
-            console.log("");
-            
-            const logStage = (name, ms) => {
-                if (ms > 0 || name === 'Total' || name === 'Mongo' || name === 'Cache') {
-                    const paddedName = name.padEnd(24, '.');
-                    console.log(`${paddedName}${ms} ms`);
-                }
-            };
-
-            logStage("Mongo", perfObj.mongoLookup);
-            logStage("Cache", perfObj.cacheLookup);
-            
-            for (const [providerName, ms] of Object.entries(store.providers || {})) {
-                logStage(providerName, Math.round(ms));
-            }
-            
-            logStage("HTML Download", perfObj.htmlDownload);
-            logStage("Parsing", perfObj.parsing);
-            logStage("Cleaning", perfObj.cleaning);
-            logStage("Validation", perfObj.validation);
-            logStage("Merge", perfObj.merge);
-            logStage("Save", perfObj.save);
-            logStage("Response", perfObj.response);
-            
-            console.log("");
-            logStage("TOTAL", perfObj.total);
-            console.log("================================\n");
+            console.log(`\nRequest Started`);
+            console.log(`[${req.method} ${req.originalUrl || req.url}]`);
+            console.log(`Database Query: ${dbMs} ms`);
+            console.log(`Processing: ${processingMs} ms`);
+            console.log(`Serialization: ${responseMs} ms`);
+            console.log(`Response Sent: ${responseMs} ms`);
+            console.log(`Total: ${totalMs} ms\n`);
 
             const shouldExposePerf = process.env.ENABLE_PERF_LOGS === 'true' || process.env.NODE_ENV === 'development';
             if (shouldExposePerf && typeof body === 'object' && body !== null) {
                 // Ensure performance block respects original format requested
                 body.performance = {
-                    mongoLookup: perfObj.mongoLookup,
-                    cacheLookup: perfObj.cacheLookup,
-                    ...Object.keys(store.providers || {}).reduce((acc, k) => {
-                        let kCamel = k.replace(/[^a-zA-Z0-9]+(.)/g, (m, chr) => chr.toUpperCase());
-                        kCamel = kCamel.charAt(0).toLowerCase() + kCamel.slice(1);
-                        acc[kCamel] = Math.round(store.providers[k]);
-                        return acc;
-                    }, {}),
-                    htmlDownload: perfObj.htmlDownload,
-                    parsing: perfObj.parsing,
-                    cleaning: perfObj.cleaning,
-                    validation: perfObj.validation,
-                    merge: perfObj.merge,
-                    save: perfObj.save,
-                    response: perfObj.response,
-                    total: perfObj.total
+                    mongoLookup: store.mongoLookup,
+                    cacheLookup: store.cacheLookup,
+                    htmlDownload: store.htmlDownload,
+                    parsing: store.parsing,
+                    cleaning: store.cleaning,
+                    validation: store.validation,
+                    merge: store.merge,
+                    save: store.save,
+                    response: store.response,
+                    total: store.total
                 };
             }
             
@@ -142,3 +100,4 @@ export const perfMiddleware = (req, res, next) => {
         next();
     });
 };
+

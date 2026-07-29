@@ -151,36 +151,49 @@ export const getSongDetailsController = async (req, res) => {
       return res.json(response);
     }
 
-    let lyricsHtml = await scrapeSongDetails(decodedId);
-    
-    // Cross-Provider Fallback Mechanism
-    if (lyricsHtml === "Lyrics not available." && title) {
-      const decodedTitle = decodeURIComponent(title);
-      console.log(`[Fallback] Primary URL failed. Searching other providers for title: "${decodedTitle}"`);
-      
-      // Use the existing search logic to find the same song on other providers
-      // searchSongs now runs fast (AI is async)
-      const fallbackSongs = await searchSongs(decodedTitle, []);
-      
-      // Filter out the primary URL that already failed
-      const alternativeSongs = fallbackSongs.songs ? fallbackSongs.songs.filter(song => song.url !== decodedId) : [];
-      
-      // Use lyrics directly from the alternative songs without re-scraping
-      const validAltSong = alternativeSongs.find(s => s.lyrics && s.lyrics !== "pending_fetch" && s.lyrics !== "Lyrics not available.");
-      
-      if (validAltSong) {
-          console.log(`[Fallback] Success! Recovered lyrics from ${validAltSong.source}`);
-          lyricsHtml = validAltSong.cleanedLyrics || validAltSong.lyrics;
-      }
-    }
+    // Fire-and-forget background scrape
+    (async () => {
+      try {
+        let lyricsHtml = await scrapeSongDetails(decodedId);
+        
+        // Cross-Provider Fallback Mechanism
+        if (lyricsHtml === "Lyrics not available." && title) {
+          const decodedTitle = decodeURIComponent(title);
+          console.log(`[Fallback] Primary URL failed. Searching other providers for title: "${decodedTitle}"`);
+          
+          const fallbackSongs = await searchSongs(decodedTitle, []);
+          
+          const alternativeSongs = fallbackSongs.songs ? fallbackSongs.songs.filter(song => song.url !== decodedId) : [];
+          
+          const validAltSong = alternativeSongs.find(s => s.lyrics && s.lyrics !== "pending_fetch" && s.lyrics !== "Lyrics not available.");
+          
+          if (validAltSong) {
+              console.log(`[Fallback] Success! Recovered lyrics from ${validAltSong.source}`);
+              lyricsHtml = validAltSong.cleanedLyrics || validAltSong.lyrics;
+          }
+        }
 
+        const asyncResponse = {
+          success: true,
+          data: {
+            lyrics: normalizeLyricsText(lyricsHtml)
+          }
+        };
+        setCached(cacheKey, asyncResponse, 86400);
+      } catch (err) {
+        console.error("Background Scrape Error:", err.message);
+      }
+    })();
+
+    // Immediately return a pending state to avoid blocking
     const response = {
       success: true,
       data: {
-        lyrics: normalizeLyricsText(lyricsHtml)
+        lyrics: "pending_fetch"
       }
     };
-    setCached(cacheKey, response, 86400);
+    // Cache the pending state very briefly to debounce rapid requests
+    setCached(cacheKey, response, 5); 
     return res.json(response);
   } catch (error) {
     console.error("GET SONG DETAILS ERROR:", error);

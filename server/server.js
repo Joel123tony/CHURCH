@@ -127,17 +127,17 @@ app.get("/api/health", async (req, res) => {
       const keyPrefix = hasKey ? apiKey.substring(0, 5) : "MISSING";
       const encQuery = encodeURIComponent("test song");
       const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${encQuery}&type=video&key=${apiKey}`;
-      
+
       let fetchResult = "none";
       try {
-          const ytRes = await resilientFetch(url, { timeout: 10000 });
-          fetchResult = { status: ytRes.status, data: ytRes.data };
+        const ytRes = await resilientFetch(url, { timeout: 10000 });
+        fetchResult = { status: ytRes.status, data: ytRes.data };
       } catch (err) {
-          fetchResult = { 
-              error: err.message, 
-              status: err.response?.status, 
-              data: err.response?.data 
-          };
+        fetchResult = {
+          error: err.message,
+          status: err.response?.status,
+          data: err.response?.data
+        };
       }
       return res.status(200).json({ status: "ok", hasKey, keyPrefix, fetchResult });
     } catch (e) {
@@ -221,10 +221,10 @@ app.use((err, req, res, _next) => {
 const startServer = async () => {
   try {
     await connectDB();
-    
+
     // Initialize background cron jobs
     initCronJobs();
-    
+
     // Start independent background workers
     startWorkers();
 

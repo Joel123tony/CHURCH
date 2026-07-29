@@ -2,10 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import HTMLFlipBook from "react-pageflip";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.js";
 import PdfPage from "./PdfPage";
-import { 
-  FaChevronLeft, FaChevronRight, FaSearchPlus, FaSearchMinus, 
-  FaExpand, FaCompress, FaDownload, FaExternalLinkAlt, FaTimes, FaExpandArrowsAlt
-} from "react-icons/fa";
+import { ZoomIn, ZoomOut, Download, ExternalLink, X, ArrowLeft } from "lucide-react";
 
 // Configure pdfjs worker using Vite's official asset URL resolution
 // Check to ensure we only assign it once globally.
@@ -24,11 +21,11 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
   const [error, setError] = useState(null);
   const [aspectRatio, setAspectRatio] = useState(0.707); // Default to A4 portrait (width/height)
   const [pageDims, setPageDims] = useState({ width: 595, height: 842 }); // Default A4 points
-  
+
   // Advanced Desktop Features
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   const bookRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -40,7 +37,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
     const loadPdf = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         loadingTask = pdfjsLib.getDocument({
           url: pdfUrl,
@@ -48,15 +45,15 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
           cMapPacked: true,
           withCredentials: false
         });
-        
+
         const loadedPdf = await loadingTask.promise;
         localPdf = loadedPdf;
-        
+
         // Dynamically calculate aspect ratio from the first page
         const firstPage = await loadedPdf.getPage(1);
         const viewport = firstPage.getViewport({ scale: 1.0 });
         const detectedRatio = viewport.width / viewport.height;
-        
+
         if (isMounted) {
           setAspectRatio(detectedRatio);
           setPageDims({ width: viewport.width, height: viewport.height });
@@ -115,36 +112,77 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Zoom functionality
-  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.5, 3));
-  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.5, 1));
+  // Zoom functionality (75%, 90%, 100%, 125%, 150%, 175%, 200%, 250%, 300%)
+  const ZOOM_LEVELS = [0.75, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => {
+      // Find current or next higher zoom
+      const idx = ZOOM_LEVELS.findIndex(z => z > prev - 0.01);
+      return idx < ZOOM_LEVELS.length - 1 ? ZOOM_LEVELS[idx + 1] : prev;
+    });
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => {
+      // Find current or next lower zoom
+      let idx = ZOOM_LEVELS.findIndex(z => z > prev - 0.01);
+      if (idx === -1) idx = ZOOM_LEVELS.length - 1;
+      return idx > 0 ? ZOOM_LEVELS[idx - 1] : prev;
+    });
+  };
+
   const handleFitToPage = () => setZoomLevel(1);
 
-  // Fullscreen functionality
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else {
-      document.exitFullscreen();
+  // Mobile fixes for Download and Open PDF
+  const handleMobileDownload = async (e) => {
+    e.preventDefault();
+    if (!downloadUrl) return;
+    try {
+      const res = await fetch(downloadUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = title ? `${title}.pdf` : "document.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error("Download fallback failed", err);
+      window.open(downloadUrl, '_blank');
     }
   };
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, []);
+  const handleOpenPdf = (e) => {
+    e.preventDefault();
+    if (!pdfUrl) return;
+    try {
+      const newWin = window.open(pdfUrl, '_blank');
+      if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+        window.location.href = pdfUrl;
+      }
+    } catch (err) {
+      window.location.href = pdfUrl;
+    }
+  };
 
-  // Responsive: single page on small screens
+  // Responsive: exact dimensions for flawless Fit-to-Viewport scaling
+  const [windowDims, setWindowDims] = useState({ 
+    width: window.innerWidth, 
+    height: window.innerHeight 
+  });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
+    let timeoutId;
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768);
+        setWindowDims({ width: window.innerWidth, height: window.innerHeight });
+      }, 50);
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -152,236 +190,325 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-slate-900">
-        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-        <p className="text-white font-bold tracking-wider uppercase text-sm">Loading Book...</p>
+      <div
+        className="flex flex-col items-center justify-center h-full w-full rounded-[28px]"
+        style={{
+          background: 'linear-gradient(180deg, #5B0E21 0%, #651126 45%, #4A0919 100%)',
+          border: '1px solid rgba(212,175,55,.18)',
+          boxShadow: '0 20px 60px rgba(0,0,0,.25)'
+        }}
+      >
+        <span className="text-5xl mb-4 animate-bounce">📖</span>
+        <p className="text-[#F4EFE7] font-bold text-lg mb-1">Loading Book...</p>
+        <p className="text-[#D4AF37] font-medium opacity-80 text-sm">Please wait...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-slate-900">
-        <p className="text-red-400 font-bold mb-4">{error}</p>
-        <a 
-          href={pdfUrl} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="px-6 py-2 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
-        >
-          Open PDF Natively
-        </a>
+      <div
+        className="flex flex-col items-center justify-center h-full w-full rounded-[28px]"
+        style={{
+          background: 'linear-gradient(180deg, #5B0E21 0%, #651126 45%, #4A0919 100%)',
+          border: '1px solid rgba(212,175,55,.18)',
+          boxShadow: '0 20px 60px rgba(0,0,0,.25)'
+        }}
+      >
+        <p className="text-[#F4EFE7] font-bold text-lg mb-6">Unable to load this book.</p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-[#F4EFE7] text-[#5B0E21] rounded-full font-bold hover:bg-white transition"
+          >
+            Retry
+          </button>
+          <button
+            onClick={handleOpenPdf}
+            className="px-6 py-2 bg-transparent border-2 border-[#D4AF37] text-[#D4AF37] rounded-full font-bold hover:bg-[#D4AF37]/10 transition"
+          >
+            Open PDF
+          </button>
+          <button
+            onClick={handleMobileDownload}
+            className="px-6 py-2 bg-transparent border-2 border-[#D4AF37] text-[#D4AF37] rounded-full font-bold hover:bg-[#D4AF37]/10 transition"
+          >
+            Download
+          </button>
+        </div>
       </div>
     );
   }
 
   // Responsive size calculations dynamically matching the PDF's exact aspect ratio
-  // Decide pagesToShow based on available width vs aspect ratio
+  let availableWidth = windowDims.width;
+  let availableHeight = windowDims.height;
+
+  if (isMobile) {
+    availableHeight -= (70 + 64 + 100); // Header, Toolbar, Bottom Nav/Padding
+    availableWidth -= 32; // Minimal side margins
+  } else {
+    // Desktop: Keep generous margins to ensure entire page is comfortably visible
+    availableHeight -= (70 + 44 + 80); // Header, Footer, + 80px extra vertical breathing room
+    availableWidth -= 160; // 80px extra horizontal margin on each side
+  }
+
   let pagesToShow = isMobile ? 1 : 2;
   if (!isMobile) {
-    const availableWidth = window.innerWidth - 160;
-    const availableHeight = window.innerHeight - 160;
     const requiredTwoPageWidth = availableHeight * aspectRatio * 2;
-    // If we require much more width than is available, comfortably drop to a single page
+    // Comfortably drop to a single page if two pages would require too much width
     if (requiredTwoPageWidth > availableWidth * 1.3) {
       pagesToShow = 1;
     }
   }
 
   const bookRatio = aspectRatio * pagesToShow;
+  
+  // Calculate perfectly fitted pixel dimensions to prevent ANY vertical scrolling
+  let targetHeight = availableHeight;
+  let targetWidth = targetHeight * bookRatio;
+
+  if (targetWidth > availableWidth) {
+    targetWidth = availableWidth;
+    targetHeight = targetWidth / bookRatio;
+  }
+  
+  // Logic to prevent artificial blank spaces
+  const isTwoPage = !isMobile && pagesToShow === 2 && numPages > 1;
+
+  let xShift = "0%";
+  if (isTwoPage) {
+    if (currentPage === 0) {
+      xShift = "-25%"; // Center the right-aligned cover
+    } else if (currentPage === numPages - 1 && numPages % 2 === 0) {
+      xShift = "25%"; // Center the left-aligned back cover
+    }
+  }
+
+  // Prevent navigation to artificially generated blank back covers
+  let maxPageIdx = numPages - 1;
+  if (isTwoPage) {
+    maxPageIdx = numPages % 2 === 0 ? numPages - 1 : Math.max(0, numPages - 2);
+  }
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full w-full bg-slate-900 relative overflow-hidden">
-      
-      {/* Unified Premium Toolbar */}
-      <div className="w-full flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 bg-slate-900 border-b border-white/10 shrink-0 z-50 shadow-md">
-        <h2 className="text-white font-semibold text-base sm:text-lg md:text-xl truncate pr-4 max-w-full sm:max-w-[30%]">
-          {title || "PDF Document"}
-        </h2>
-        
-        {/* Desktop Paging Controls */}
-        {numPages > 1 && (
-        <div className="hidden md:flex items-center gap-4 bg-black/30 rounded-full px-4 py-1.5 border border-white/5 shadow-inner">
-          <button 
-            onClick={prevButtonClick} 
-            disabled={currentPage === 0} 
-            className="text-white/70 hover:text-white disabled:opacity-30 transition"
-            title="Previous Page"
-          >
-            <FaChevronLeft size={16} />
-          </button>
-          <div className="text-white text-sm font-bold tracking-widest px-2">
-            {currentPage + 1} / {numPages % 2 !== 0 ? numPages + 1 : numPages}
-          </div>
-          <button 
-            onClick={nextButtonClick} 
-            disabled={currentPage >= (numPages % 2 !== 0 ? numPages + 1 : numPages) - (isMobile ? 1 : pagesToShow)} 
-            className="text-white/70 hover:text-white disabled:opacity-30 transition"
-            title="Next Page"
-          >
-            <FaChevronRight size={16} />
-          </button>
-        </div>
-        )}
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full w-full relative overflow-hidden animate-in fade-in duration-300"
+      style={{
+        background: 'linear-gradient(180deg, #5B0E21 0%, #651126 45%, #4A0919 100%)',
+      }}
+    >
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0 mt-3 sm:mt-0">
-          {/* Zoom Controls */}
-          <div className="hidden md:flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5 mr-2">
-            <button onClick={handleZoomOut} disabled={zoomLevel <= 1} className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded transition disabled:opacity-30" title="Zoom Out"><FaSearchMinus size={14}/></button>
-            <button onClick={handleFitToPage} disabled={zoomLevel === 1} className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded transition disabled:opacity-30" title="Fit to Page"><FaExpandArrowsAlt size={14}/></button>
-            <button onClick={handleZoomIn} disabled={zoomLevel >= 3} className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded transition disabled:opacity-30" title="Zoom In"><FaSearchPlus size={14}/></button>
-          </div>
-
-          <button onClick={toggleFullscreen} className="hidden md:flex p-2 sm:px-4 sm:py-2 text-white/80 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all items-center justify-center border border-white/5" title="Fullscreen">
-             {isFullscreen ? <FaCompress size={14} /> : <FaExpand size={14} />}
-          </button>
-
-          {downloadUrl && (
-             <a href={downloadUrl} download className="text-white/80 hover:text-white bg-white/5 hover:bg-white/10 p-2 sm:px-4 sm:py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium border border-white/5" title="Download PDF">
-               <FaDownload size={14} />
-               <span className="hidden lg:inline">Download</span>
-             </a>
-          )}
-          {pdfUrl && (
-             <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-white/80 hover:text-white bg-white/5 hover:bg-white/10 p-2 sm:px-4 sm:py-2 rounded-lg transition-all flex items-center gap-2 text-sm font-medium border border-white/5" title="Open in new tab">
-               <FaExternalLinkAlt size={14} />
-               <span className="hidden lg:inline">Open</span>
-             </a>
-          )}
-          <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block"></div>
+      {/* Header: 70px */}
+      <div 
+        className="w-full h-[70px] shrink-0 flex items-center justify-between px-4 sm:px-6 z-50"
+        style={{
+          background: '#5B0E21',
+          borderBottom: '1px solid rgba(212,175,55,0.15)'
+        }}
+      >
+        <div className="flex items-center flex-1 overflow-hidden">
           {onClose && (
-            <button onClick={onClose} className="text-white/80 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-all flex items-center justify-center border border-transparent hover:border-red-500/20" title="Close">
-              <FaTimes size={20} />
+            <button
+              onClick={onClose}
+              className="mr-4 text-[#F4EFE7] hover:text-[#D4AF37] transition flex items-center gap-2 font-bold shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Back</span>
+            </button>
+          )}
+          <h2 className="text-[#F4EFE7] font-bold text-lg truncate pr-4" title={title}>
+            {title || "PDF Document"}
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#D4AF37] font-medium text-sm whitespace-nowrap hidden md:block">
+            Page {currentPage + 1} / {numPages}
+          </div>
+          {onClose && !isMobile && (
+            <button onClick={onClose} className="w-[40px] h-[40px] rounded-full flex items-center justify-center bg-white/5 hover:bg-[#7A0F24] text-[#F4EFE7] transition-all duration-250 shrink-0" title="Close">
+              <X className="w-5 h-5" />
+            </button>
+          )}
+          {onClose && isMobile && (
+            <button onClick={onClose} className="w-[44px] h-[44px] rounded-xl flex items-center justify-center bg-white/10 hover:bg-[#7A0F24] text-[#F4EFE7] transition-all duration-250 shrink-0" title="Close">
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Main Content Area with Zoom & Pan */}
-      <div className="flex-1 relative w-full h-full overflow-auto custom-scrollbar flex items-center justify-center bg-slate-900 pt-4 pb-20 md:pb-10">
-        
-        {/* Floating Side Navigation Arrows (Desktop) */}
-        {numPages > 1 && (
-        <div className="absolute top-1/2 left-4 lg:left-10 z-10 -translate-y-1/2 hidden md:block">
-          <button 
-            onClick={prevButtonClick}
-            disabled={currentPage === 0}
-            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
-            title="Previous Page"
-          >
-            <FaChevronLeft size={20} />
-          </button>
-        </div>
-        )}
+      {/* Toolbar */}
+      <div className={`w-full flex items-center justify-center shrink-0 z-50 ${isMobile ? 'h-[64px]' : 'absolute top-[90px] left-1/2 -translate-x-1/2 w-auto pointer-events-none'}`}>
+        <div 
+          className={`flex items-center ${isMobile ? 'gap-2 w-full px-4 h-full' : 'gap-1 shadow-2xl rounded-full px-2 py-1.5 pointer-events-auto transition-transform hover:-translate-y-[2px]'}`}
+          style={isMobile ? {
+            background: 'rgba(122,15,36,0.85)',
+            backdropFilter: 'blur(14px)',
+            borderBottom: '1px solid rgba(212,175,55,0.18)'
+          } : {
+            background: 'rgba(122,15,36,0.85)',
+            backdropFilter: 'blur(14px)',
+            border: '1px solid rgba(212,175,55,0.18)'
+          }}
+        >
+          {/* Zoom Controls */}
+          <div className={`flex items-center overflow-hidden ${isMobile ? 'gap-2' : 'bg-[#7A0F24] rounded-full p-0.5'}`}>
+            <button onClick={handleZoomOut} disabled={zoomLevel <= 0.75} className={`flex items-center justify-center text-[#F4EFE7] transition-all duration-250 disabled:opacity-30 ${isMobile ? 'w-[44px] h-[44px] rounded-xl bg-[#7A0F24] hover:bg-[#8F1730]' : 'w-[36px] h-[36px] rounded-full hover:bg-[#8F1730]'}`} title="Zoom Out">
+              <ZoomOut className={isMobile ? 'w-5 h-5' : 'w-[16px] h-[16px]'} />
+            </button>
+            <div className={`text-center text-[#F4EFE7] font-bold ${isMobile ? 'w-16 text-sm' : 'w-14 text-[13px]'}`}>
+              {Math.round(zoomLevel * 100)}%
+            </div>
+            <button onClick={handleZoomIn} disabled={zoomLevel >= 3} className={`flex items-center justify-center text-[#F4EFE7] transition-all duration-250 disabled:opacity-30 ${isMobile ? 'w-[44px] h-[44px] rounded-xl bg-[#7A0F24] hover:bg-[#8F1730]' : 'w-[36px] h-[36px] rounded-full hover:bg-[#8F1730]'}`} title="Zoom In">
+              <ZoomIn className={isMobile ? 'w-5 h-5' : 'w-[16px] h-[16px]'} />
+            </button>
+          </div>
 
-        {numPages > 1 && (
-        <div className="absolute top-1/2 right-4 lg:right-10 z-10 -translate-y-1/2 hidden md:block">
-          <button 
-            onClick={nextButtonClick}
-            disabled={currentPage >= (numPages % 2 !== 0 ? numPages + 1 : numPages) - (isMobile ? 1 : pagesToShow)}
-            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
-            title="Next Page"
-          >
-            <FaChevronRight size={20} />
-          </button>
+          <div className={`w-px ${isMobile ? 'h-8 bg-white/20 mx-2' : 'h-5 bg-white/20 mx-2'}`}></div>
+
+          {downloadUrl && (
+            <button onClick={handleMobileDownload} className={`flex items-center justify-center text-[#F4EFE7] transition-all duration-250 ${isMobile ? 'w-[44px] h-[44px] rounded-xl bg-[#7A0F24] hover:bg-[#8F1730]' : 'h-[36px] px-3 rounded-full hover:bg-[#7A0F24]'}`} title="Download">
+              <Download className={isMobile ? 'w-5 h-5' : 'w-[16px] h-[16px]'} />
+              {!isMobile && <span className="ml-2 text-[13px] font-semibold">Download</span>}
+            </button>
+          )}
+
+          {pdfUrl && (
+            <button onClick={handleOpenPdf} className={`flex items-center justify-center text-[#F4EFE7] transition-all duration-250 ${isMobile ? 'w-[44px] h-[44px] rounded-xl bg-[#7A0F24] hover:bg-[#8F1730]' : 'h-[36px] px-3 rounded-full hover:bg-[#7A0F24]'}`} title="Open PDF">
+              <ExternalLink className={isMobile ? 'w-5 h-5' : 'w-[16px] h-[16px]'} />
+              {!isMobile && <span className="ml-2 text-[13px] font-semibold">Open PDF</span>}
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className={`flex-1 min-h-0 relative w-full overflow-auto custom-scrollbar flex items-center justify-center transition-transform duration-300 ${isMobile ? 'p-2 sm:p-4 pb-24' : 'px-8 pt-[20px] pb-[20px]'}`}>
+        
+        {/* Floating Navigation Arrows (Desktop) */}
+        {!isMobile && numPages > 1 && (
+          <>
+            <button
+              onClick={prevButtonClick}
+              disabled={currentPage === 0}
+              className="absolute left-[24px] top-1/2 -translate-y-1/2 z-40 w-[56px] h-[56px] rounded-full bg-[#7A0F24] border border-[#D4AF37]/30 hover:bg-[#D4AF37] hover:text-[#5B0E21] text-white flex items-center justify-center transition-all duration-300 disabled:opacity-0 shadow-xl"
+              title="Previous Page"
+            >
+              ◀
+            </button>
+            <button
+              onClick={nextButtonClick}
+              disabled={currentPage >= maxPageIdx}
+              className="absolute right-[24px] top-1/2 -translate-y-1/2 z-40 w-[56px] h-[56px] rounded-full bg-[#7A0F24] border border-[#D4AF37]/30 hover:bg-[#D4AF37] hover:text-[#5B0E21] text-white flex items-center justify-center transition-all duration-300 disabled:opacity-0 shadow-xl"
+              title="Next Page"
+            >
+              ▶
+            </button>
+          </>
         )}
 
         {/* Zoom Transform Wrapper */}
         {numPages === 1 ? (
-          <div 
+          <div
             className="relative flex items-center justify-center transition-transform duration-300 origin-center shadow-2xl"
-            style={{ 
-              width: isMobile ? "100%" : "auto",
-              height: isMobile ? "auto" : "88vh",
-              aspectRatio: aspectRatio,
-              maxWidth: "100%",
-              margin: "auto",
+            style={{
+              width: `${targetWidth}px`,
+              height: `${targetHeight}px`,
               transform: `scale(${zoomLevel})`
             }}
           >
-            <PdfPage 
-              pageNum={1} 
-              pdf={pdf} 
+            <PdfPage
+              pageNum={1}
+              pdf={pdf}
               currentPage={0}
-              isCover={true} 
+              isCover={false}
             />
           </div>
         ) : (
-          <div 
-            className="relative flex items-center justify-center transition-transform duration-300 origin-center"
-          style={{ 
-            width: isMobile ? "100%" : "auto",
-            height: isMobile ? "auto" : `min(85vh, calc(95vw / ${bookRatio}))`,
-            aspectRatio: bookRatio,
-            maxWidth: "95vw",
-            margin: "auto",
-            transform: `scale(${zoomLevel})`
-          }}
-        >
-          <HTMLFlipBook
-            width={pageDims.width}
-            height={pageDims.height}
-            size="stretch"
-            minWidth={100}
-            maxWidth={9999}
-            minHeight={100}
-            maxHeight={9999}
-            maxShadowOpacity={0.5}
-            showCover={true}
-            mobileScrollSupport={true}
-            useMouseEvents={zoomLevel === 1} // Disable drag-to-flip while zoomed for panning
-            onFlip={onFlip}
-            usePortrait={pagesToShow === 1}
-            ref={bookRef}
-            className="mx-auto shadow-2xl"
-            style={{ margin: '0 auto' }}
+          <div
+            className="relative flex items-center justify-center transition-transform duration-500 origin-center"
+            style={{
+              width: `${targetWidth}px`,
+              height: `${targetHeight}px`,
+              transform: `scale(${zoomLevel}) translateX(${xShift})`
+            }}
           >
-            {Array.from({ length: numPages }).map((_, i) => (
-              <PdfPage 
-                key={i} 
-                pageNum={i + 1} 
-                pdf={pdf} 
-                currentPage={currentPage}
-                isCover={i === 0 || (i === numPages - 1 && numPages % 2 === 0)} 
-              />
-            ))}
-            {numPages % 2 !== 0 && (
-              <div 
-                key="blank-back-cover"
-                className="bg-white overflow-hidden relative w-full h-full"
-                data-density="hard"
-              ></div>
-            )}
-          </HTMLFlipBook>
-        </div>
+            <HTMLFlipBook
+              width={pageDims.width}
+              height={pageDims.height}
+              size="stretch"
+              minWidth={100}
+              maxWidth={9999}
+              minHeight={100}
+              maxHeight={9999}
+              maxShadowOpacity={0.5}
+              showCover={true}
+              mobileScrollSupport={true}
+              useMouseEvents={zoomLevel === 1} // Disable drag-to-flip while zoomed for panning
+              onFlip={onFlip}
+              usePortrait={pagesToShow === 1}
+              ref={bookRef}
+              className={`mx-auto shadow-2xl ${isMobile ? '' : 'rounded-sm overflow-hidden'}`}
+              style={{ margin: '0 auto' }}
+            >
+              {Array.from({ length: numPages }).map((_, i) => (
+                <PdfPage
+                  key={i}
+                  pageNum={i + 1}
+                  pdf={pdf}
+                  currentPage={currentPage}
+                  isCover={i === 0 || (i === numPages - 1 && numPages % 2 === 0)}
+                />
+              ))}
+              {numPages % 2 !== 0 && (
+                <div
+                  key="blank-back-cover"
+                  className="bg-transparent overflow-hidden relative w-full h-full"
+                  data-density="hard"
+                ></div>
+              )}
+            </HTMLFlipBook>
+          </div>
         )}
       </div>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Desktop Footer: 44px */}
+      {!isMobile && (
+        <div 
+          className="w-full h-[44px] shrink-0 flex items-center justify-center px-8 z-50"
+          style={{ background: '#5B0E21' }}
+        >
+          <div className="text-[#F4EFE7]/80 font-bold tracking-widest text-xs">
+            {currentPage + 1} / {numPages}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation (Floating) */}
       {isMobile && numPages > 1 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[360px]">
-          <div className="bg-black/60 backdrop-blur-md text-white rounded-full flex items-center justify-between p-1.5 shadow-2xl border border-white/20">
-            <button 
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-[400px]">
+          <div className="bg-[#5B0E21] text-white rounded-full flex items-center justify-between p-2 shadow-[0_10px_25px_rgba(0,0,0,0.5)] border border-[#D4AF37]/30 backdrop-blur-md">
+            <button
               onClick={prevButtonClick}
               disabled={currentPage === 0}
-              className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-white/20 active:bg-white/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-              aria-label="Previous Page"
+              className="h-[48px] px-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-[#D4AF37] active:bg-[#D4AF37]/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 font-bold tracking-wide"
             >
-              <FaChevronLeft size={16} />
+              ◀ Previous
             </button>
-            
-            <div className="text-sm font-bold tracking-widest px-4 truncate">
-              {currentPage + 1} / {numPages % 2 !== 0 ? numPages + 1 : numPages}
+
+            <div className="text-sm font-bold tracking-widest px-2 truncate text-[#D4AF37]">
+              {currentPage + 1} / {numPages}
             </div>
-            
-            <button 
+
+            <button
               onClick={nextButtonClick}
-              disabled={currentPage >= (numPages % 2 !== 0 ? numPages + 1 : numPages) - 1}
-              className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-white/20 active:bg-white/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-              aria-label="Next Page"
+              disabled={currentPage >= maxPageIdx}
+              className="h-[48px] px-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-[#D4AF37] active:bg-[#D4AF37]/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 font-bold tracking-wide"
             >
-              <FaChevronRight size={16} />
+              Next ▶
             </button>
           </div>
         </div>

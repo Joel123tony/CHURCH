@@ -77,10 +77,7 @@ const getLatestVideo = async (apiKey) => {
 ========================= */
 export const getCurrentVideo = async (req, res) => {
   try {
-    const cachedData = getCached(CACHE_KEY);
-    if (cachedData) {
-      return res.json(cachedData);
-    }
+    const cachedData = getCached(CACHE_KEY, true); // true = allow stale data
 
     const apiKey = process.env.YOUTUBE_API_KEY;
 
@@ -93,24 +90,42 @@ export const getCurrentVideo = async (req, res) => {
       });
     }
 
-    // STEP 1: try live
-    const liveVideo = await getLiveVideo(apiKey);
+    // Import isCacheStale from cache.js
+    const { isCacheStale } = await import("../utils/cache.js");
+    const needsRefresh = isCacheStale(CACHE_KEY);
 
-    // STEP 2: fallback latest
-    const latestVideo = await getLatestVideo(apiKey);
+    if (needsRefresh) {
+      // Fire & Forget background fetch
+      (async () => {
+        try {
+          const liveVideo = await getLiveVideo(apiKey);
+          const latestVideo = await getLatestVideo(apiKey);
+          const selected = liveVideo || latestVideo;
+          const responsePayload = {
+            success: true,
+            isLive: !!liveVideo,
+            videoId: selected?.videoId || null,
+            title: selected?.title || "No video found",
+          };
+          setCached(CACHE_KEY, responsePayload, 120); // Cache for 2 minutes
+        } catch (error) {
+          console.error("Controller Crash Background:", error.message);
+        }
+      })();
+    }
 
-    const selected = liveVideo || latestVideo;
+    if (cachedData) {
+      return res.json(cachedData);
+    }
 
-    const responsePayload = {
+    // Immediately return loading state or a fallback if there's no cache at all
+    return res.status(200).json({
       success: true,
-      isLive: !!liveVideo,
-      videoId: selected?.videoId || null,
-      title: selected?.title || "No video found",
-    };
-
-    setCached(CACHE_KEY, responsePayload, 120); // Cache for 2 minutes to save quota
-
-    return res.json(responsePayload);
+      isLive: false,
+      videoId: null,
+      title: "Loading...",
+      backgroundFetch: true
+    });
   } catch (error) {
     console.error("Controller Crash:", error.message);
 

@@ -354,22 +354,21 @@ export const searchSongs = async (query, selectedCategories = [], sortOrder = "l
           };
       }
     } else {
-      console.log(`[SongService] No local results for "${searchQuery}". Synchronously importing...`);
+      console.log(`[SongService] No local results for "${searchQuery}". Asynchronously importing in background...`);
       
       const perfStart = Date.now();
-      try {
-          // Synchronous fetch and AI clean!
-          const newlyImportedSong = await importSongOnDemand(searchQuery, selectedCategories);
-          
-          if (newlyImportedSong) {
-              dbSongs = [newlyImportedSong];
-              totalCount = 1;
-          }
-      } catch (err) {
-          console.error(`[SongService] On-demand synchronous import error:`, err.stack);
-      } finally {
+      // Fire-and-forget: do not await this
+      importSongOnDemand(searchQuery, selectedCategories)
+        .catch((err) => {
+          console.error(`[SongService] On-demand background import error:`, err.stack);
+        })
+        .finally(() => {
           recordPerf("providerSearch", Number(Date.now() - perfStart));
-      }
+        });
+
+      // Immediately return empty response without blocking
+      dbSongs = [];
+      totalCount = 0;
     }
   }
 

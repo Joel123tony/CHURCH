@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, memo } from "react";
 import { getBlock } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import { FadeUp, StaggerContainer, StaggerItem } from "./animations/index.jsx";
@@ -53,7 +53,7 @@ function MessageCard({ item, index, t }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function Testimonials() {
+const Testimonials = memo(function Testimonials() {
   const [data, setData] = useState({ messages: [] });
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
@@ -141,4 +141,6 @@ export default function Testimonials() {
       </div>
     </section>
   );
-}
+});
+
+export default Testimonials;

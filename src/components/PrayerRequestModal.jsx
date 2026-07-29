@@ -181,7 +181,7 @@ export default function PrayerRequestModal({ isOpen, onClose }) {
                     {t("Submitting...")}
                   </>
                 ) : (
-                  t("Submit Request")
+                  t("Request To Pray")
                 )}
               </button>
             </div>

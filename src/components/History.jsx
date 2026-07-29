@@ -1,7 +1,8 @@
+import React, { memo } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { FadeLeft, FadeRight, FadeUp } from "./animations/index.jsx";
 
-export default function History() {
+const History = memo(function History() {
   const { t } = useLanguage();
 
   const imgSrcOverride = null;
@@ -33,9 +34,9 @@ export default function History() {
         </div>
 
         <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 xl:gap-24 items-start mt-8 lg:mt-10">
-          <div className="order-1">
+          <div className="order-1 min-w-0">
             <FadeRight delay={150}>
-              <div className="max-w-2xl lg:pr-8">
+              <div className="max-w-2xl lg:pr-8 min-w-0 break-words">
                 {hasCmsContent ? (
                   <p 
                     className="leading-8 md:leading-9 whitespace-pre-line text-base md:text-lg text-[#54091b]"
@@ -61,6 +62,8 @@ export default function History() {
               <img
                 src={imgSrc}
                 alt={t("Methodist Tamil Church")}
+                loading="lazy"
+                decoding="async"
                 className="
                   block
                   w-full
@@ -81,4 +84,6 @@ export default function History() {
       </div>
     </section>
   );
-}
+});
+
+export default History;

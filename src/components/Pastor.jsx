@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 import { FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { getFallbackAvatar, handleImageError } from "../utils/avatarFallback";
+import { ShieldCheck, UserRound, Cross, CalendarDays, Quote, ChevronRight } from "lucide-react";
 
-export default function Pastor() {
+const Pastor = memo(function Pastor() {
   const { t } = useLanguage();
   const [pastors, setPastors] = useState([]);
   const [searchName, setSearchName] = useState("");
@@ -165,37 +166,108 @@ export default function Pastor() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-4 lg:items-start">
-            <div className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3 bg-[#d8cbb7] flex flex-col justify-center lg:h-[400px]">
+            <div 
+              className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3 flex flex-col justify-center lg:h-[400px]"
+              style={{ background: "linear-gradient(180deg, #E7DAC3 0%, #DDD0B8 100%)" }}
+            >
               {loading ? (
                 <div className="py-10 text-center text-base font-bold text-[#1E293B]">
                   {t("Loading...")}
                 </div>
               ) : currentPastor ? (
                 <div className="grid items-center gap-8 md:grid-cols-2">
-                  <div>
-                    <h3 className="mb-6 text-xl font-bold text-[#54091b]">
-                      {t("Current Pastor")}
-                    </h3>
+                  <div className="relative flex items-center group/info transition-all duration-300">
+                    {/* Left Gold Accent */}
+                    <div 
+                      className="absolute left-[-16px] md:left-[-24px] top-1/2 -translate-y-1/2 w-[4px] h-[90px] rounded-full" 
+                      style={{ background: "#D4AF37", boxShadow: "0 0 10px rgba(212,175,55,0.4)" }}
+                    ></div>
 
-                    <div className="space-y-4 text-base text-[#1E293B]">
-                      <p>
-                        <strong>{t("Name")}:</strong> {currentPastor.name}
-                      </p>
+                    <div className="w-full">
+                      {/* Premium Heading */}
+                      <div className="mb-6 border-b border-[#D4AF37]/30 pb-3 relative overflow-hidden">
+                        <div className="flex items-center gap-3">
+                          <ShieldCheck size={28} color="#D4AF37" />
+                          <h3 className="text-[34px] font-[800] text-[#5B0E21] tracking-[-0.5px]">
+                            {t("Current Pastor")}
+                          </h3>
+                        </div>
+                        {/* Heading Underline Animation */}
+                        <div className="absolute bottom-0 left-0 h-[2px] bg-[#D4AF37] w-0 transition-all duration-500 group-hover/info:w-full"></div>
+                      </div>
 
-                      <p className="text-sm text-[#475569]">
-                        <strong>{t("Role")}:</strong> {t(currentPastor.role)}
-                      </p>
+                      <div className="space-y-4">
+                        {/* Name Row */}
+                        <div 
+                          className="flex items-center gap-4 rounded-[16px] px-[16px] py-[14px] transition-all duration-300 hover:translate-x-[6px] border border-white/40 hover:border-[#D4AF37] hover:shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
+                          style={{
+                            background: "rgba(255,255,255,0.25)",
+                            backdropFilter: "blur(8px)",
+                          }}
+                        >
+                          <div className="flex w-[42px] h-[42px] shrink-0 items-center justify-center rounded-full border border-[#7A0F24]/12 bg-[#F6EFE4]">
+                            <UserRound size={20} color="#7A0F24" />
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-[700] tracking-[2px] uppercase text-[#8A6D58]">
+                              {t("NAME")}
+                            </p>
+                            <p className="text-[22px] font-[700] text-[#2F3545] leading-[1.2]">
+                              {currentPastor.name}
+                            </p>
+                          </div>
+                        </div>
 
-                      <p>
-                        <strong>{t("Years of Service")}:</strong> {serviceYears}{" "}
-                        {serviceYears === 1 ? t("Year") : t("Years")}
-                      </p>
+                        {/* Role Row */}
+                        <div 
+                          className="flex items-center gap-4 rounded-[16px] px-[16px] py-[14px] transition-all duration-300 hover:translate-x-[6px] border border-white/40 hover:border-[#D4AF37] hover:shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
+                          style={{
+                            background: "rgba(255,255,255,0.25)",
+                            backdropFilter: "blur(8px)",
+                          }}
+                        >
+                          <div className="flex w-[42px] h-[42px] shrink-0 items-center justify-center rounded-full border border-[#7A0F24]/12 bg-[#F6EFE4]">
+                            <Cross size={20} color="#7A0F24" />
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-[700] tracking-[2px] uppercase text-[#8A6D58]">
+                              {t("ROLE")}
+                            </p>
+                            <p className="text-[22px] font-[700] text-[#2F3545] leading-[1.2]">
+                              {t(currentPastor.role)}
+                            </p>
+                          </div>
+                        </div>
 
-                      {currentPastor.bio?.trim() && (
-                        <p>
-                          <strong>{t("Bio")}:</strong> {t(currentPastor.bio)}
-                        </p>
-                      )}
+                        {/* Ministry Row */}
+                        <div 
+                          className="flex items-center gap-4 rounded-[16px] px-[16px] py-[14px] transition-all duration-300 hover:translate-x-[6px] border border-white/40 hover:border-[#D4AF37] hover:shadow-[0_8px_18px_rgba(0,0,0,0.08)]"
+                          style={{
+                            background: "rgba(255,255,255,0.25)",
+                            backdropFilter: "blur(8px)",
+                          }}
+                        >
+                          <div className="flex w-[42px] h-[42px] shrink-0 items-center justify-center rounded-full border border-[#7A0F24]/12 bg-[#F6EFE4]">
+                            <CalendarDays size={20} color="#7A0F24" />
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-[700] tracking-[2px] uppercase text-[#8A6D58]">
+                              {t("MINISTRY")}
+                            </p>
+                            <p className="text-[22px] font-[700] text-[#2F3545] leading-[1.2]">
+                              {t("Serving for")} {serviceYears} {serviceYears === 1 ? t("Year") : t("Years")}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Quote Section */}
+                        <div className="mt-[18px] flex items-start gap-3 pr-4">
+                          <Quote size={20} color="#D4AF37" className="shrink-0 mt-0.5" />
+                          <p className="text-[15px] italic text-[#6B6B6B]">
+                            {currentPastor.bio?.trim() ? t(currentPastor.bio) : t("Serving God's people with faith, love and prayer.")}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -205,6 +277,8 @@ export default function Pastor() {
                         <img
                           src={getImage(currentPastor)}
                           alt={currentPastor.name}
+                          loading="lazy"
+                          decoding="async"
                           onError={(e) => handleImageError(e)}
                           className="pastor-placeholder transition-transform duration-700 ease-out group-hover:scale-105"
                         />
@@ -376,6 +450,8 @@ export default function Pastor() {
                         <img
                           src={getImage(p)}
                           alt={p.name}
+                          loading="lazy"
+                          decoding="async"
                           onError={(e) => handleImageError(e)}
                           className="pastor-placeholder transition-transform duration-500 ease-out group-hover:scale-105"
                         />
@@ -412,4 +488,6 @@ export default function Pastor() {
       )}
     </>
   );
-}
+});
+
+export default Pastor;
