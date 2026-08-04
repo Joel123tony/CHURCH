@@ -5,20 +5,26 @@ import { FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { getFallbackAvatar, handleImageError } from "../utils/avatarFallback";
 import { ShieldCheck, UserRound, Cross, CalendarDays, Quote, ChevronRight } from "lucide-react";
 
-const Pastor = memo(function Pastor() {
+const Pastor = memo(function Pastor({ initialPastors }) {
   const { t } = useLanguage();
-  const [pastors, setPastors] = useState([]);
+  const [pastors, setPastors] = useState(() => initialPastors || []);
   const [searchName, setSearchName] = useState("");
   const [searchYear, setSearchYear] = useState("");
   const [results, setResults] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !initialPastors);
   const [activeTab, setActiveTab] = useState("search");
 
   const getImage = (pastor) => pastor?.image?.url || getFallbackAvatar();
 
   useEffect(() => {
+    if (initialPastors) {
+      setPastors(initialPastors);
+      setLoading(false);
+      return;
+    }
+
     const fetchPastors = async () => {
       try {
         setLoading(true);
@@ -33,7 +39,7 @@ const Pastor = memo(function Pastor() {
     };
 
     fetchPastors();
-  }, []);
+  }, [initialPastors]);
 
   const currentPastor = pastors.find((p) => p?.isCurrent === true) || null;
   const serviceYears = currentPastor?.joinedYear

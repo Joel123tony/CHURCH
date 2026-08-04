@@ -147,9 +147,12 @@ app.get("/api/health", async (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
+import homeRoutes from "./routes/home.routes.js";
+
 /* =========================
    ROUTES
 ========================= */
+app.use("/api/home", homeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/pastors", pastorRoutes);
@@ -220,22 +223,37 @@ app.use((err, req, res, _next) => {
 ========================= */
 const startServer = async () => {
   try {
+    const t0 = performance.now();
     await connectDB();
-
-    // Initialize background cron jobs
-    initCronJobs();
-
-    // Start independent background workers
-    startWorkers();
+    const dbConnectedMs = Math.round(performance.now() - t0);
+    console.log(`⏱️ MongoDB connected in ${dbConnectedMs} ms`);
 
     const PORT = process.env.PORT || 5000;
 
     const server = app.listen(PORT, () => {
+      const listenMs = Math.round(performance.now() - t0);
       console.log("==================================");
-      console.log("🚀 SERVER RUNNING");
+      console.log("🚀 SERVER RUNNING & READY FOR HTTP REQUESTS");
       console.log(`📡 Port: ${PORT}`);
-      console.log("📍 API Base: /api");
+      console.log(`📍 API Base: /api`);
+      console.log(`⏱️ Time to listen: ${listenMs} ms`);
       console.log("==================================");
+
+      // Defer background cron jobs and workers asynchronously so Express accepts HTTP requests immediately
+      setImmediate(async () => {
+        try {
+          console.log("⏳ Starting background cron jobs and workers asynchronously...");
+          const workerStart0 = performance.now();
+
+          initCronJobs();
+          startWorkers();
+
+          const workerStartMs = Math.round(performance.now() - workerStart0);
+          console.log(`✅ Background cron jobs and workers initialized in ${workerStartMs} ms`);
+        } catch (workerErr) {
+          console.error("⚠️ Background worker initialization error:", workerErr);
+        }
+      });
     });
 
     // Prevent connection drops during long video FFmpeg compression

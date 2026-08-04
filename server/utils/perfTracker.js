@@ -1,4 +1,4 @@
-import { AsyncLocalStorage } from "async_hooks";
+import { AsyncLocalStorage } from 'async_hooks';
 
 export const perfStorage = new AsyncLocalStorage();
 
@@ -11,7 +11,7 @@ export const withPerfTimer = async (stage, fn, isProvider = false) => {
     return await fn();
   } finally {
     const end = process.hrtime.bigint();
-    const durationMs = Number(end - start) / 1e6;
+    const durationMs = Number(end - start) / 1000000;
 
     if (isProvider) {
       store.providers = store.providers || {};
@@ -35,88 +35,69 @@ export const recordPerf = (stage, durationMs, isProvider = false) => {
 };
 
 export const perfMiddleware = (req, res, next) => {
-  const startTime = process.hrtime.bigint();
-  const reqPath = req.originalUrl || req.url;
+  // Only trace API routes to avoid cluttering static file requests, if any
+  if (!req.path.startsWith('/')) {
+    return next();
+  }
 
   const store = {
-    url: reqPath,
-    startTime,
-    routeStartTime: null,
-    middlewareMs: 0,
-    cacheMs: 0,
-    mongoMs: 0,
-    youtubeMs: 0,
-    serializeMs: 0,
-    responseMs: 0,
-    totalMs: 0,
+    start: process.hrtime.bigint(),
+    mongoLookup: 0,
+    cacheLookup: 0,
+    providers: {},
+    parsing: 0,
+    cleaning: 0,
+    validation: 0,
+    merge: 0,
+    save: 0,
+    htmlDownload: 0,
+    response: 0
   };
-
-  const labelPrefix = `[${req.method} ${reqPath}]`;
-  console.time(`${labelPrefix} total`);
-  console.time(`${labelPrefix} middleware`);
 
   perfStorage.run(store, () => {
     const originalJson = res.json;
 
-    // Hook route handler start
-    res.on("route", () => {
-      if (!store.routeStartTime) {
-        store.routeStartTime = process.hrtime.bigint();
-        store.middlewareMs = Number(store.routeStartTime - store.startTime) / 1e6;
-      }
-    });
-
     res.json = function (body) {
-      if (!store.routeStartTime) {
-        store.routeStartTime = process.hrtime.bigint();
-        store.middlewareMs = Number(store.routeStartTime - store.startTime) / 1e6;
-      }
-      try {
-        console.timeEnd(`${labelPrefix} middleware`);
-      } catch {}
-
-      try {
-        console.time(`${labelPrefix} serialize`);
-      } catch {}
       const serializeStart = process.hrtime.bigint();
-      const serialized = JSON.stringify(body);
-      const serializeEnd = process.hrtime.bigint();
-      store.serializeMs = Number(serializeEnd - serializeStart) / 1e6;
-      try {
-        console.timeEnd(`${labelPrefix} serialize`);
-      } catch {}
 
-      try {
-        console.time(`${labelPrefix} response`);
-      } catch {}
-      const resSendStart = process.hrtime.bigint();
+      const end = process.hrtime.bigint();
+      store.total = Number(end - store.start) / 1000000;
+      store.response = Number(end - serializeStart) / 1000000;
 
-      res.on("finish", () => {
-        const totalEnd = process.hrtime.bigint();
-        store.responseMs = Number(totalEnd - resSendStart) / 1e6;
-        store.totalMs = Number(totalEnd - store.startTime) / 1e6;
+      const dbMs = Math.round((store.mongoLookup || 0) + (store.cacheLookup || 0));
+      const responseMs = Math.round(store.response || 0);
+      const totalMs = Math.round(store.total || 0);
+      // Rough estimation for processing time
+      const processingMs = Math.max(0, totalMs - dbMs - responseMs);
 
-        try {
-          console.timeEnd(`${labelPrefix} response`);
-          console.timeEnd(`${labelPrefix} total`);
-        } catch {}
+      console.log(`\nRequest Started`);
+      console.log(`[${req.method} ${req.originalUrl || req.url}]`);
+      console.log(`Database Query: ${dbMs} ms`);
+      console.log(`Processing: ${processingMs} ms`);
+      console.log(`Serialization: ${responseMs} ms`);
+      console.log(`Response Sent: ${responseMs} ms`);
+      console.log(`Total: ${totalMs} ms\n`);
 
-        console.log(`\n==================================================`);
-        console.log(`📊 PERF LOG: ${labelPrefix}`);
-        console.log(`  total:      ${store.totalMs.toFixed(2)} ms`);
-        console.log(`  middleware: ${store.middlewareMs.toFixed(2)} ms`);
-        console.log(`  cache:      ${store.cacheMs.toFixed(2)} ms`);
-        console.log(`  mongodb:    ${store.mongoMs.toFixed(2)} ms`);
-        console.log(`  youtube:    ${store.youtubeMs.toFixed(2)} ms`);
-        console.log(`  serialize:  ${store.serializeMs.toFixed(2)} ms`);
-        console.log(`  response:   ${store.responseMs.toFixed(2)} ms`);
-        console.log(`==================================================\n`);
-      });
+      const shouldExposePerf = process.env.ENABLE_PERF_LOGS === 'true' || process.env.NODE_ENV === 'development';
+      if (shouldExposePerf && typeof body === 'object' && body !== null) {
+        // Ensure performance block respects original format requested
+        body.performance = {
+          mongoLookup: store.mongoLookup,
+          cacheLookup: store.cacheLookup,
+          htmlDownload: store.htmlDownload,
+          parsing: store.parsing,
+          cleaning: store.cleaning,
+          validation: store.validation,
+          merge: store.merge,
+          save: store.save,
+          response: store.response,
+          total: store.total
+        };
+      }
 
-      res.setHeader("Content-Type", "application/json");
-      return res.send(serialized);
+      return originalJson.call(this, body);
     };
-
     next();
   });
 };
+

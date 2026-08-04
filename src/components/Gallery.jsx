@@ -147,11 +147,16 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
   );
 }
 
-const Gallery = memo(function Gallery() {
+const Gallery = memo(function Gallery({ initialGallery }) {
   const { t } = useLanguage();
-  const [featuredMedia, setFeaturedMedia] = useState([]);
+  const [featuredMedia, setFeaturedMedia] = useState(() => {
+    if (initialGallery && initialGallery.length > 0) {
+      return [...initialGallery].sort((a, b) => getMediaDate(b) - getMediaDate(a));
+    }
+    return [];
+  });
   const [allMedia, setAllMedia] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !initialGallery);
   const [openModal, setOpenModal] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -212,8 +217,13 @@ const Gallery = memo(function Gallery() {
   };
 
   useEffect(() => {
+    if (initialGallery) {
+      setFeaturedMedia([...initialGallery].sort((a, b) => getMediaDate(b) - getMediaDate(a)));
+      setLoading(false);
+      return;
+    }
     fetchGallery();
-  }, []);
+  }, [initialGallery]);
 
   const [loadingAll, setLoadingAll] = useState(false);
   

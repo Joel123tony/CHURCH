@@ -1,6 +1,11 @@
 import API from "../api/axios";
 
 // ✅ NAMED EXPORTS (REQUIRED)
+export const getHomePage = async () => {
+  const res = await API.get("/home");
+  return res.data;
+};
+
 export const getBlock = async (key) => {
   const res = await API.get(`/content/${key}`);
   return res.data;

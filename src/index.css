@@ -17,7 +17,7 @@ html {
   scroll-padding-top: var(--navbar-height);
   width: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 section {
@@ -29,13 +29,13 @@ body {
   background: #F4EFE7;
   width: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 #root {
   width: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 .admin-scrollbar {
@@ -311,6 +311,7 @@ body {
     font-size: 14px;
     min-height: 42px;
   }
+
   .admin-btn-primary:hover {
     background-color: #6F2435;
   }
@@ -323,6 +324,7 @@ body {
     font-size: 14px;
     min-height: 42px;
   }
+
   .admin-btn-secondary:hover {
     background-color: #E8DCCB;
   }
@@ -362,6 +364,7 @@ body {
     background-color: rgba(248, 244, 236, 0.3);
     min-height: 44px;
   }
+
   .admin-input:focus {
     border-color: #531B24;
     --tw-ring-color: rgba(83, 27, 36, 0.2);
@@ -372,7 +375,7 @@ body {
     color: #531B24;
     font-size: 13px;
   }
-  
+
   /* Upload Area */
   .admin-upload-box {
     @apply relative border-2 border-dashed p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all;
@@ -380,6 +383,7 @@ body {
     border-radius: 20px;
     min-height: 160px;
   }
+
   .admin-upload-box:hover {
     background-color: #F8F4EC;
     border-color: #531B24;
@@ -402,6 +406,7 @@ body {
     color: #531B24;
     border-color: #E8DCCB;
   }
+
   .admin-tab-inactive:hover {
     background-color: #F8F4EC;
   }
@@ -606,10 +611,13 @@ body {
 }
 
 @keyframes bounceHorizontal {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
     animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
   }
+
   50% {
     transform: translateX(25%);
     animation-timing-function: cubic-bezier(0, 0, 0.2, 1);

@@ -2,15 +2,20 @@ import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
-const Hero = memo(function Hero() {
+const Hero = memo(function Hero({ initialVideo }) {
   const { t } = useLanguage();
 
-  const [video, setVideo] = useState({
-    videoId: "",
-    title: "",
+  const [video, setVideo] = useState(() => {
+    if (initialVideo) {
+      return {
+        videoId: initialVideo.videoId || "",
+        title: initialVideo.title || "",
+      };
+    }
+    return { videoId: "", title: "" };
   });
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !initialVideo);
   const intervalRef = useRef(null);
 
   const fetchYoutubeVideo = useCallback(async () => {
@@ -27,8 +32,6 @@ const Hero = memo(function Hero() {
         return { videoId: newVideoId, title: newTitle };
       });
     } catch {
-      // Intentionally ignoring errors (e.g. ad blockers blocking /youtube route)
-      // to keep console clean as requested.
       setVideo((prev) => {
         if (prev.videoId === "" && prev.title === "") return prev;
         return { videoId: "", title: "" };
@@ -39,7 +42,15 @@ const Hero = memo(function Hero() {
   }, []);
 
   useEffect(() => {
-    void fetchYoutubeVideo();
+    if (initialVideo) {
+      setVideo({
+        videoId: initialVideo.videoId || "",
+        title: initialVideo.title || "",
+      });
+      setLoading(false);
+    } else {
+      void fetchYoutubeVideo();
+    }
 
     if (intervalRef.current) clearInterval(intervalRef.current);
 
@@ -48,7 +59,7 @@ const Hero = memo(function Hero() {
     }, 60000);
 
     return () => clearInterval(intervalRef.current);
-  }, [fetchYoutubeVideo]);
+  }, [fetchYoutubeVideo, initialVideo]);
 
   return (
     <section id="hero" className="py-16 text-white bg-[#54091b]">
@@ -63,8 +74,8 @@ const Hero = memo(function Hero() {
           </p>
         </div>
 
-        <div className="group min-w-0 rounded-3xl bg-cream p-4 shadow-2xl transition-all duration-500 ease-out transform-gpu will-change-transform [backface-visibility:hidden] hover:-translate-y-2 hover:shadow-[0_30px_70px_rgba(0,0,0,0.22)]">
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black transition-transform duration-700 ease-out transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-[1.01]">
+        <div className="group min-w-0 rounded-3xl bg-cream p-4 shadow-2xl transition-[transform,box-shadow] duration-300 ease-out hover:-translate-y-1 hover:shadow-3xl">
+          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
             {loading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white">
                 <p className="font-semibold text-gray-500">{t("Loading...")}</p>
@@ -84,7 +95,7 @@ const Hero = memo(function Hero() {
             )}
           </div>
 
-          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 transition-transform duration-500 ease-out transform-gpu will-change-transform [backface-visibility:hidden] group-hover:translate-y-0.5">
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <span className="font-bold text-primary text-center sm:text-left break-words">
               {video.videoId ? `🔴 ${t("Latest Sermon")}` : t("No Video")}
             </span>
@@ -97,10 +108,7 @@ const Hero = memo(function Hero() {
               }
               target="_blank"
               rel="noopener noreferrer"
-              className={`rounded-full px-5 py-2 font-medium transition text-center w-full sm:w-auto break-words ${video.videoId
-                  ? "hover:opacity-90"
-                  : "hover:opacity-90"
-                } bg-[#54091b] text-[#FFFFFF]`}
+              className="rounded-full px-5 py-2 font-medium transition-opacity duration-200 text-center w-full sm:w-auto break-words bg-[#54091b] text-[#FFFFFF] hover:opacity-90"
             >
               {video.videoId ? `▶ ${t("Watch Video on YouTube")}` : t("Watch on YouTube")}
             </a>

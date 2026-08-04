@@ -1,6 +1,7 @@
 import express from "express";
 import fetch from "node-fetch";
 import { getCached, setCached, isCacheStale } from "../utils/cache.js";
+import { perfStorage } from "../utils/perfTracker.js";
 
 const router = express.Router();
 
@@ -10,8 +11,6 @@ const API_KEY = process.env.YOUTUBE_API_KEY;
 const CACHE_TTL_PLAYLIST = 86400; // 24 hours
 const CACHE_TTL_VIDEOS = 300;     // 5 minutes
 const CACHE_TTL_LIVE = 60;        // 60 seconds for live detection
-
-import { perfStorage } from "../utils/perfTracker.js";
 
 /* =========================
    FETCH HELPER
@@ -31,7 +30,6 @@ const fetchYT = async (url) => {
     }
   }
 };
-
 
 /* =========================
    GET UPLOADS PLAYLIST ID
@@ -107,23 +105,19 @@ const getPlaylistVideos = async (limit = 6) => {
 };
 
 /* =========================
-   HERO ENDPOINT (/api/youtube)
+   EXPORTS FOR AGGREGATOR
 ========================= */
-router.get("/", async (req, res) => {
+export const getYoutubeHeroData = async () => {
   try {
     const cachedHero = getCached("yt_endpoint_hero_response");
-    if (cachedHero) {
-      return res.json(cachedHero);
-    }
+    if (cachedHero) return cachedHero;
 
-    // First check if channel is currently live (60s cache)
     const liveVideo = await getLiveStream();
     if (liveVideo && liveVideo.videoId) {
       setCached("yt_endpoint_hero_response", liveVideo, CACHE_TTL_LIVE);
-      return res.json(liveVideo);
+      return liveVideo;
     }
 
-    // Fall back to latest uploaded video
     const videos = await getPlaylistVideos(1);
     const latest = videos[0];
 
@@ -134,39 +128,43 @@ router.get("/", async (req, res) => {
     };
 
     setCached("yt_endpoint_hero_response", responsePayload, CACHE_TTL_VIDEOS);
-    return res.json(responsePayload);
+    return responsePayload;
   } catch (err) {
-    console.error("YouTube Hero Endpoint Error:", err);
-    return res.json({
-      videoId: null,
-      title: "Service unavailable",
-      live: false,
-    });
+    console.error("YouTube Hero Error:", err);
+    return { videoId: null, title: "Service unavailable", live: false };
   }
+};
+
+export const getYoutubeLatestData = async () => {
+  try {
+    const cachedLatest = getCached("yt_endpoint_latest_response");
+    if (cachedLatest) return cachedLatest;
+
+    const videos = await getPlaylistVideos(6);
+    if (videos.length > 0) {
+      setCached("yt_endpoint_latest_response", videos, CACHE_TTL_VIDEOS);
+    }
+    return videos || [];
+  } catch (err) {
+    console.error("YouTube Latest Error:", err);
+    return [];
+  }
+};
+
+/* =========================
+   HERO ENDPOINT (/api/youtube)
+========================= */
+router.get("/", async (req, res) => {
+  const hero = await getYoutubeHeroData();
+  return res.json(hero);
 });
 
 /* =========================
    LATEST VIDEOS ENDPOINT (/api/youtube/latest)
 ========================= */
 router.get("/latest", async (req, res) => {
-  try {
-    const cachedLatest = getCached("yt_endpoint_latest_response");
-    if (cachedLatest) {
-      return res.json(cachedLatest);
-    }
-
-    const videos = await getPlaylistVideos(6);
-
-    if (videos.length > 0) {
-      setCached("yt_endpoint_latest_response", videos, CACHE_TTL_VIDEOS);
-    }
-
-    return res.json(videos);
-  } catch (err) {
-    console.error("YouTube Latest Endpoint Error:", err);
-    return res.json([]);
-  }
+  const latest = await getYoutubeLatestData();
+  return res.json(latest);
 });
 
 export default router;
-

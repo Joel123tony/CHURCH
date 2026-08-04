@@ -115,15 +115,10 @@ export default function ShareImageModal({ isOpen, onClose, verseData }) {
     }
   }, [isOpen, language]);
 
-  // Auto scale font size based on text length
+  // Reset to default max font size when verse changes, letting the canvasRenderer auto-fit it down if needed
   useEffect(() => {
     if (isOpen && text) {
-      const len = text.length;
-      if (len < 100) setFontSize(36);
-      else if (len < 200) setFontSize(30);
-      else if (len < 300) setFontSize(26);
-      else if (len < 450) setFontSize(22);
-      else setFontSize(18);
+      setFontSize(36);
     }
   }, [isOpen, text]);
 
@@ -195,7 +190,7 @@ export default function ShareImageModal({ isOpen, onClose, verseData }) {
     let isMounted = true;
     const generatePreview = async () => {
       try {
-        const { blob, dataUrl } = await renderVerseCanvas({
+        const { blob, dataUrl, finalFontSize } = await renderVerseCanvas({
           width: 1080,
           height: 1080,
           theme: activeTheme,
@@ -213,6 +208,9 @@ export default function ShareImageModal({ isOpen, onClose, verseData }) {
         if (isMounted) {
           setPreviewDataUrl(dataUrl);
           setPreviewBlob(blob);
+          if (finalFontSize && finalFontSize !== fontSize) {
+            setFontSize(finalFontSize);
+          }
         }
       } catch (err) {
         console.error("Preview generation failed:", err);

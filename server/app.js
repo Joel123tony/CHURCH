@@ -17,6 +17,7 @@ import eventRoutes from "./routes/eventRoutes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
 import songRoutes from "./routes/songRoutes.js";
 import contentRoutes from "./routes/content.routes.js";
+import homeRoutes from "./routes/home.routes.js";
 
 const envPath = fs.existsSync(path.join(process.cwd(), "server", ".env"))
   ? path.join(process.cwd(), "server", ".env")
@@ -38,6 +39,7 @@ app.use(cookieParser());
 /* =========================
    ROUTES
 ========================= */
+app.use("/api/home", homeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin/songs", adminSongRoutes);
 app.use("/api/admin", adminRoutes);

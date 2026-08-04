@@ -7,36 +7,31 @@ import Pastor from "../components/Pastor";
 import YoutubeSection from "../components/YoutubeSection";
 import Testimonials from "../components/Testimonials";
 import { useLanguage } from "../context/LanguageContext";
-import { getBlock } from "../services/api";
+import { getHomePage } from "../services/api";
 
 export default function Home() {
   const { t } = useLanguage();
   const [sectionOrder, setSectionOrder] = useState(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
   const [sectionData, setSectionData] = useState({});
+  const [homeData, setHomeData] = useState(null);
 
   useEffect(() => {
     document.title = t("MTC Padikuppam");
   }, [t]);
 
-  // Load custom section order and dynamic block styles from database concurrently
+  // Load aggregated homepage data in ONE optimized request
   useEffect(() => {
     let isMounted = true;
 
-    const loadOrderAndData = async () => {
-      const sections = ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"];
-
+    const loadHomeData = async () => {
       try {
-        const [orderRes, ...sectionResults] = await Promise.all([
-          getBlock("section-order").catch(() => null),
-          ...sections.map((sec) => getBlock(sec).catch(() => null)),
-        ]);
+        const res = await getHomePage();
+        if (!isMounted || !res) return;
 
-        if (!isMounted) return;
+        setHomeData(res);
 
         // Process section order
-        const orderData = orderRes?.data || [];
-        const loadedArray = Array.isArray(orderData) ? orderData : orderData?.order;
-
+        const loadedArray = res.sectionOrder;
         if (loadedArray && loadedArray.length > 0) {
           const defaultMiddle = ["history", "events", "gallery", "pastor", "testimonials", "youtube"];
           const savedMiddle = loadedArray.filter((sec) => defaultMiddle.includes(sec));
@@ -69,24 +64,24 @@ export default function Home() {
           });
 
           setSectionOrder(["hero", ...finalMiddle]);
-        } else {
-          setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
         }
 
         // Process section block styles/content
-        const fetched = {};
-        sectionResults.forEach((res, index) => {
-          if (res && res.data) {
-            fetched[sections[index]] = res.data;
-          }
+        setSectionData({
+          hero: res.hero || {},
+          history: res.history || {},
+          events: res.eventsContent || {},
+          gallery: res.galleryContent || {},
+          pastor: res.pastorContent || {},
+          testimonials: res.testimonialsContent || {},
+          youtube: res.youtubeContent || {}
         });
-        setSectionData(fetched);
       } catch (err) {
-        console.warn("Failed to load CMS section order and data", err);
+        console.warn("Failed to load aggregated home page data", err);
       }
     };
 
-    loadOrderAndData();
+    loadHomeData();
 
     return () => {
       isMounted = false;
@@ -151,7 +146,7 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Hero />
+            <Hero initialVideo={homeData?.youtubeHero} />
           </div>
         );
       case "history":
@@ -165,21 +160,21 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Events />
+            <Events initialEvents={homeData?.events} />
           </div>
         );
       case "gallery":
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Gallery />
+            <Gallery initialGallery={homeData?.gallery} />
           </div>
         );
       case "pastor":
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Pastor />
+            <Pastor initialPastors={homeData?.pastors} />
           </div>
         );
       case "testimonials":
@@ -193,7 +188,7 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <YoutubeSection />
+            <YoutubeSection initialVideos={homeData?.youtubeLatest} />
           </div>
         );
       default:

@@ -2,10 +2,19 @@ import React, { useEffect, useState, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
-const YoutubeSection = memo(function YoutubeSection() {
+const YoutubeSection = memo(function YoutubeSection({ initialVideos }) {
   const { t } = useLanguage();
-  const [videos, setVideos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [videos, setVideos] = useState(() => {
+    if (Array.isArray(initialVideos) && initialVideos.length > 0) {
+      return initialVideos.slice(0, 4).map((video) => ({
+        ...video,
+        videoId: video.videoId || video.id || video?.id?.videoId || "",
+        title: video.title || video.snippet?.title || "No Title",
+      }));
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(() => !initialVideos || initialVideos.length === 0);
 
   const loadVideos = async () => {
     try {
@@ -44,8 +53,18 @@ const YoutubeSection = memo(function YoutubeSection() {
   };
 
   useEffect(() => {
+    if (Array.isArray(initialVideos) && initialVideos.length > 0) {
+      setVideos(initialVideos.slice(0, 4).map((video) => ({
+        ...video,
+        videoId: video.videoId || video.id || video?.id?.videoId || "",
+        title: video.title || video.snippet?.title || "No Title",
+      })));
+      setLoading(false);
+      return;
+    }
+
     void loadVideos();
-  }, []);
+  }, [initialVideos]);
 
   const getBestThumbnail = (video) => {
     const t = video.snippet?.thumbnails;

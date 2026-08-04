@@ -5,10 +5,10 @@ import { useLanguage } from "../context/LanguageContext";
 import { FaFire, FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 import { FadeUp, FadeLeft, FadeRight, StaggerContainer, StaggerItem } from "./animations/index.jsx";
 
-const Events = memo(function Events() {
+const Events = memo(function Events({ initialEvents }) {
   const { t } = useLanguage();
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [eventsData, setEventsData] = useState(() => initialEvents || { featuredEvent: null, upcomingEvents: [] });
+  const [loading, setLoading] = useState(() => !initialEvents);
 
   const parseEventTimestamp = (event) => {
     const date = new Date(event?.date);
@@ -37,32 +37,13 @@ const Events = memo(function Events() {
   };
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const res = await API.get("/events");
-        setEvents(res?.data?.data || []);
-      } catch (err) {
-        console.error("Events fetch error:", err);
-        setEvents([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (initialEvents) {
+      setEventsData(initialEvents);
+      setLoading(false);
+    }
+  }, [initialEvents]);
 
-    fetchEvents();
-  }, []);
-
-  const now = new Date();
-
-  const latestEvent =
-    events
-      .filter((e) => new Date(e.date) <= now)
-      .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
-
-  const upcomingEvents = events
-    .filter((e) => new Date(e.date) > now)
-    .sort((a, b) => parseEventTimestamp(a) - parseEventTimestamp(b))
-    .slice(0, 2);
+  const { featuredEvent: latestEvent, upcomingEvents } = eventsData;
 
   if (loading) {
     return (
@@ -95,7 +76,7 @@ const Events = memo(function Events() {
             {latestEvent ? (
               <div className="rounded-[28px] p-5 sm:p-6 shadow-2xl border border-white/50 transition-all duration-300 hover:-translate-y-1.5 max-w-[620px] bg-[#f4efe7]">
                 <div className="inline-flex px-3.5 py-1.5 rounded-full bg-primary text-white text-xs sm:text-sm font-medium mb-4 sm:mb-5">
-                  {t("Latest Event")}
+                  {t("Featured Event")}
                 </div>
 
                 <h3 className="sm:text-3xl mb-5 sm:mb-6 leading-tight text-2xl font-bold text-[#54091b]">
@@ -155,7 +136,7 @@ const Events = memo(function Events() {
               </div>
             ) : (
               <div className="bg-white/10 backdrop-blur rounded-3xl p-8 text-white">
-                {t("No latest event available.")}
+                {t("No upcoming events available.")}
               </div>
             )}
           </div>

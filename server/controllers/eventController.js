@@ -44,6 +44,7 @@ export const getEvents = async (req, res) => {
   }
 };
 
+
 /* UPDATE */
 export const updateEvent = async (req, res) => {
   try {

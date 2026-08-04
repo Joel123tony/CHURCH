@@ -98,7 +98,7 @@ export default function Navbar() {
       // Already on the same page and same hash. Just force scroll.
       const el = document.getElementById(id);
       if (el) {
-        const yOffset = -80; 
+        const yOffset = -80;
         const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
         window.scrollTo({ top: y, behavior: "smooth" });
       }
@@ -108,15 +108,14 @@ export default function Navbar() {
   };
 
   const linkClass = (id) =>
-    `transition-colors duration-300 ${
-      active === id ? "text-cream font-bold" : "text-cream/80 hover:text-cream"
+    `transition-colors duration-300 ${active === id ? "text-cream font-bold" : "text-cream/80 hover:text-cream"
     }`;
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-primary text-cream shadow-lg transition-colors duration-500 ease-out">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-primary text-cream shadow-lg transition-colors duration-500 ease-out">
       <div className="container-custom">
         <div className="flex h-20 items-center justify-between gap-4">
-          
+
           {/* Logo Area */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <Link to="/admin" className="shrink-0">
@@ -137,9 +136,8 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden flex-1 items-center justify-center lg:flex">
             <ul
-              className={`flex items-center justify-center ${
-                language === "ta" ? "gap-3 xl:gap-5 text-[15px]" : "gap-6 xl:gap-8 text-base"
-              }`}
+              className={`flex items-center justify-center ${language === "ta" ? "gap-3 xl:gap-5 text-[15px]" : "gap-6 xl:gap-8 text-base"
+                }`}
             >
               {links.slice(0, 6).map((link) => (
                 <li key={link.id} className="whitespace-nowrap">
@@ -153,15 +151,14 @@ export default function Navbar() {
               <li className="relative whitespace-nowrap" ref={dropdownRef}>
                 <button
                   onClick={() => setResourcesOpen(!resourcesOpen)}
-                  className={`flex items-center gap-1 transition-colors duration-300 ${
-                    pathname.match(/^\/(bible|songs|books)/)
+                  className={`flex items-center gap-1 transition-colors duration-300 ${pathname.match(/^\/(bible|songs|books)/)
                       ? "text-cream font-bold"
                       : "text-cream/80 hover:text-cream"
-                  }`}
+                    }`}
                 >
                   {t("Resources")} <ChevronDown size={16} className={`transition-transform ${resourcesOpen ? "rotate-180" : ""}`} />
                 </button>
-                
+
                 {resourcesOpen && (
                   <div className="absolute left-0 mt-4 w-52 rounded-xl bg-white shadow-xl ring-1 ring-black/5 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="py-2">
@@ -194,22 +191,20 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
-                className={`px-4 py-2 text-sm font-medium transition-colors duration-300 ${
-                  language === "en"
+                className={`px-4 py-2 text-sm font-medium transition-colors duration-300 ${language === "en"
                     ? "bg-cream text-primary"
                     : "text-cream hover:bg-white/10"
-                }`}
+                  }`}
               >
                 EN
               </button>
               <button
                 type="button"
                 onClick={() => setLanguage("ta")}
-                className={`px-4 py-2 text-sm font-medium transition-colors duration-300 ${
-                  language === "ta"
+                className={`px-4 py-2 text-sm font-medium transition-colors duration-300 ${language === "ta"
                     ? "bg-cream text-primary"
                     : "text-cream hover:bg-white/10"
-                }`}
+                  }`}
               >
                 தமிழ்
               </button>
@@ -227,17 +222,16 @@ export default function Navbar() {
 
       {/* Mobile Drawer Overlay */}
       {menuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-300"
           onClick={() => setMenuOpen(false)}
         />
       )}
 
       {/* Mobile Drawer Panel */}
-      <div 
-        className={`fixed inset-y-0 right-0 z-[70] w-[280px] sm:w-[320px] bg-primary border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${
-          menuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+      <div
+        className={`fixed inset-y-0 right-0 z-[70] w-[280px] sm:w-[320px] bg-primary border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${menuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
       >
         <div className="flex items-center justify-between p-5 border-b border-white/10 bg-black/20">
           <span className="font-bold text-cream text-lg">{t("Menu")}</span>
@@ -253,9 +247,8 @@ export default function Navbar() {
                 key={link.id}
                 href={link.href}
                 onClick={(e) => handleNavClick(e, link.href, link.id)}
-                className={`block py-3.5 px-4 rounded-xl font-medium transition-colors duration-300 ${
-                  active === link.id ? "bg-white/10 text-white" : "text-cream/80 hover:bg-white/5 hover:text-white"
-                } ${language === "ta" ? "text-[15px]" : "text-base"}`}
+                className={`block py-3.5 px-4 rounded-xl font-medium transition-colors duration-300 ${active === link.id ? "bg-white/10 text-white" : "text-cream/80 hover:bg-white/5 hover:text-white"
+                  } ${language === "ta" ? "text-[15px]" : "text-base"}`}
               >
                 {t(link.key)}
               </a>
@@ -265,15 +258,14 @@ export default function Navbar() {
             <div className="py-1">
               <button
                 onClick={() => setResourcesOpen(!resourcesOpen)}
-                className={`flex w-full items-center justify-between py-3.5 px-4 rounded-xl font-medium transition-colors duration-300 ${
-                  pathname.match(/^\/(bible|songs|books)/)
+                className={`flex w-full items-center justify-between py-3.5 px-4 rounded-xl font-medium transition-colors duration-300 ${pathname.match(/^\/(bible|songs|books)/)
                     ? "bg-white/10 text-white"
                     : "text-cream/80 hover:bg-white/5 hover:text-white"
-                } ${language === "ta" ? "text-[15px]" : "text-base"}`}
+                  } ${language === "ta" ? "text-[15px]" : "text-base"}`}
               >
                 {t("Resources")} <ChevronDown size={18} className={`transition-transform duration-300 ${resourcesOpen ? "rotate-180" : ""}`} />
               </button>
-              
+
               <div className={`overflow-hidden transition-all duration-300 ease-in-out ${resourcesOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}>
                 <div className="pl-6 pr-2 py-2 flex flex-col gap-1 border-l-2 border-white/10 ml-6 mt-1 mb-2">
                   {resources.map((item) => (
@@ -284,9 +276,8 @@ export default function Navbar() {
                         setResourcesOpen(false);
                         setMenuOpen(false);
                       }}
-                      className={`block py-2.5 px-3 rounded-lg text-cream/80 font-medium hover:text-white hover:bg-white/5 transition-colors text-sm ${
-                        pathname === item.href ? "text-white bg-white/5" : ""
-                      }`}
+                      className={`block py-2.5 px-3 rounded-lg text-cream/80 font-medium hover:text-white hover:bg-white/5 transition-colors text-sm ${pathname === item.href ? "text-white bg-white/5" : ""
+                        }`}
                     >
                       {t(item.key)}
                     </Link>
@@ -299,9 +290,8 @@ export default function Navbar() {
               key={links[6].id}
               href={links[6].href}
               onClick={(e) => handleNavClick(e, links[6].href, links[6].id)}
-              className={`block py-3.5 px-4 rounded-xl font-medium transition-colors duration-300 ${
-                active === links[6].id ? "bg-white/10 text-white" : "text-cream/80 hover:bg-white/5 hover:text-white"
-              } ${language === "ta" ? "text-[15px]" : "text-base"}`}
+              className={`block py-3.5 px-4 rounded-xl font-medium transition-colors duration-300 ${active === links[6].id ? "bg-white/10 text-white" : "text-cream/80 hover:bg-white/5 hover:text-white"
+                } ${language === "ta" ? "text-[15px]" : "text-base"}`}
             >
               {t(links[6].key)}
             </a>
@@ -317,11 +307,10 @@ export default function Navbar() {
                 setLanguage("en");
                 setMenuOpen(false);
               }}
-              className={`flex-1 py-3 text-sm font-bold transition-colors duration-300 ${
-                language === "en"
+              className={`flex-1 py-3 text-sm font-bold transition-colors duration-300 ${language === "en"
                   ? "bg-cream text-primary"
                   : "text-cream hover:bg-white/10"
-              }`}
+                }`}
             >
               English
             </button>
@@ -331,11 +320,10 @@ export default function Navbar() {
                 setLanguage("ta");
                 setMenuOpen(false);
               }}
-              className={`flex-1 py-3 text-sm font-bold transition-colors duration-300 ${
-                language === "ta"
+              className={`flex-1 py-3 text-sm font-bold transition-colors duration-300 ${language === "ta"
                   ? "bg-cream text-primary"
                   : "text-cream hover:bg-white/10"
-              }`}
+                }`}
             >
               தமிழ்
             </button>

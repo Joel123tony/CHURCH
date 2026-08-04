@@ -39,7 +39,7 @@ export default function MainLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-[#F4EFE7]">
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-grow pt-20">
         <Outlet />
       </main>
       <Contact theme={contactTheme} />
