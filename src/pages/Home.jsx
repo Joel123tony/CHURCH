@@ -18,31 +18,33 @@ export default function Home() {
     document.title = t("MTC Padikuppam");
   }, [t]);
 
-  // Load custom section order and dynamic block styles from database
+  // Load custom section order and dynamic block styles from database concurrently
   useEffect(() => {
     let isMounted = true;
 
     const loadOrderAndData = async () => {
+      const sections = ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"];
+
       try {
-        const res = await getBlock("section-order");
-        const orderData = res?.data || [];
-        const loadedArray = Array.isArray(orderData) ? orderData : orderData.order;
+        const [orderRes, ...sectionResults] = await Promise.all([
+          getBlock("section-order").catch(() => null),
+          ...sections.map((sec) => getBlock(sec).catch(() => null)),
+        ]);
+
+        if (!isMounted) return;
+
+        // Process section order
+        const orderData = orderRes?.data || [];
+        const loadedArray = Array.isArray(orderData) ? orderData : orderData?.order;
 
         if (loadedArray && loadedArray.length > 0) {
-          // Always enforce correct relative order for all known middle sections
           const defaultMiddle = ["history", "events", "gallery", "pastor", "testimonials", "youtube"];
+          const savedMiddle = loadedArray.filter((sec) => defaultMiddle.includes(sec));
+          const unsaved = defaultMiddle.filter((sec) => !savedMiddle.includes(sec));
 
-          // Build the final middle by: keep loaded sections in their saved order,
-          // then inject any missing ones at their canonical position.
-          // Re-sort to match the user-saved order where possible
-          const savedMiddle = loadedArray.filter(sec => defaultMiddle.includes(sec));
-          const unsaved = defaultMiddle.filter(sec => !savedMiddle.includes(sec));
-
-          // Insert each unsaved section at its canonical index
           let finalMiddle = [...savedMiddle];
-          unsaved.forEach(sec => {
+          unsaved.forEach((sec) => {
             const canonIdx = defaultMiddle.indexOf(sec);
-            // Find the best insertion point: after the nearest predecessor that exists in finalMiddle
             const predecessors = defaultMiddle.slice(0, canonIdx).reverse();
             const afterIdx = predecessors.reduce((found, pred) => {
               if (found !== -1) return found;
@@ -52,7 +54,6 @@ export default function Home() {
             if (afterIdx !== -1) {
               finalMiddle.splice(afterIdx + 1, 0, sec);
             } else {
-              // No predecessor found — put before first successor that exists
               const successors = defaultMiddle.slice(canonIdx + 1);
               const beforeIdx = successors.reduce((found, succ) => {
                 if (found !== -1) return found;
@@ -67,35 +68,24 @@ export default function Home() {
             }
           });
 
-          if (isMounted) setSectionOrder(["hero", ...finalMiddle]);
+          setSectionOrder(["hero", ...finalMiddle]);
         } else {
-          if (isMounted) setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
+          setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
         }
-      } catch (err) {
-        console.warn("Failed to load section order, using defaults.", err);
-        if (isMounted) setSectionOrder(["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"]);
-      }
 
-      // Fetch styles/content for all sections concurrently
-      try {
-        const sections = ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"];
+        // Process section block styles/content
         const fetched = {};
-        
-        const promises = sections.map((sec) => getBlock(sec).catch(() => null));
-        const results = await Promise.all(promises);
-
-        results.forEach((res, index) => {
+        sectionResults.forEach((res, index) => {
           if (res && res.data) {
             fetched[sections[index]] = res.data;
           }
         });
-        
-        if (isMounted) setSectionData(fetched);
+        setSectionData(fetched);
       } catch (err) {
-        console.warn("Failed to load CMS section data styles", err);
+        console.warn("Failed to load CMS section order and data", err);
       }
     };
-    
+
     loadOrderAndData();
 
     return () => {

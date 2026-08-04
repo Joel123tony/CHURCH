@@ -1,70 +1,142 @@
 import express from "express";
 import fetch from "node-fetch";
+import { getCached, setCached, isCacheStale } from "../utils/cache.js";
 
 const router = express.Router();
 
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const API_KEY = process.env.YOUTUBE_API_KEY;
 
+const CACHE_TTL_PLAYLIST = 86400; // 24 hours
+const CACHE_TTL_VIDEOS = 300;     // 5 minutes
+const CACHE_TTL_LIVE = 60;        // 60 seconds for live detection
+
+import { perfStorage } from "../utils/perfTracker.js";
+
 /* =========================
    FETCH HELPER
 ========================= */
 const fetchYT = async (url) => {
+  const store = perfStorage.getStore();
+  const start = process.hrtime.bigint();
   try {
     const res = await fetch(url);
     return await res.json();
   } catch {
     return {};
+  } finally {
+    if (store) {
+      const duration = Number(process.hrtime.bigint() - start) / 1e6;
+      store.youtubeMs += duration;
+    }
   }
 };
+
 
 /* =========================
    GET UPLOADS PLAYLIST ID
 ========================= */
 const getUploadsPlaylistId = async () => {
+  const cachedId = getCached("yt_uploads_playlist_id");
+  if (cachedId) return cachedId;
+
   const url = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
-
   const data = await fetchYT(url);
 
-  return data?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads || null;
+  const playlistId = data?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads || null;
+  if (playlistId) {
+    setCached("yt_uploads_playlist_id", playlistId, CACHE_TTL_PLAYLIST);
+  }
+  return playlistId;
 };
 
 /* =========================
-   GET LATEST VIDEO (GOD MODE RELIABLE)
+   CHECK ACTIVE LIVE STREAM (60s TTL)
 ========================= */
-const getLatestVideo = async () => {
-  const playlistId = await getUploadsPlaylistId();
+const getLiveStream = async () => {
+  const cachedLive = getCached("yt_active_live_stream");
+  if (cachedLive !== null && !isCacheStale("yt_active_live_stream")) {
+    return cachedLive;
+  }
 
-  if (!playlistId) return null;
+  try {
+    const liveUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=live&type=video&maxResults=1&key=${API_KEY}`;
+    const data = await fetchYT(liveUrl);
+    const item = data?.items?.[0];
 
-  const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=1&key=${API_KEY}`;
+    const liveData = item ? {
+      videoId: item.id?.videoId || null,
+      title: item.snippet?.title || "Live Stream",
+      live: true
+    } : null;
 
-  const data = await fetchYT(url);
-
-  const item = data?.items?.[0];
-
-  return {
-    videoId: item?.snippet?.resourceId?.videoId || null,
-    title: item?.snippet?.title || "No video",
-    thumbnail: item?.snippet?.thumbnails?.high?.url || "",
-  };
+    setCached("yt_active_live_stream", liveData, CACHE_TTL_LIVE);
+    return liveData;
+  } catch {
+    setCached("yt_active_live_stream", null, CACHE_TTL_LIVE);
+    return null;
+  }
 };
 
 /* =========================
-   HERO ENDPOINT (100% STABLE)
+   GET PLAYLIST VIDEOS (HERO & LATEST SHARE THIS)
+========================= */
+const getPlaylistVideos = async (limit = 6) => {
+  const cacheKey = `yt_playlist_videos_${limit}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const playlistId = await getUploadsPlaylistId();
+  if (!playlistId) return [];
+
+  const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=${limit}&key=${API_KEY}`;
+  const data = await fetchYT(url);
+
+  const videos = (data?.items || []).map((item) => ({
+    videoId: item?.snippet?.resourceId?.videoId,
+    title: item?.snippet?.title,
+    thumbnail: item?.snippet?.thumbnails?.high?.url,
+    publishedAt: item?.snippet?.publishedAt,
+  }));
+
+  if (videos.length > 0) {
+    setCached(cacheKey, videos, CACHE_TTL_VIDEOS);
+  }
+
+  return videos;
+};
+
+/* =========================
+   HERO ENDPOINT (/api/youtube)
 ========================= */
 router.get("/", async (req, res) => {
   try {
-    const video = await getLatestVideo();
+    const cachedHero = getCached("yt_endpoint_hero_response");
+    if (cachedHero) {
+      return res.json(cachedHero);
+    }
 
-    return res.json({
-      videoId: video?.videoId || null,
-      title: video?.title || "No video",
+    // First check if channel is currently live (60s cache)
+    const liveVideo = await getLiveStream();
+    if (liveVideo && liveVideo.videoId) {
+      setCached("yt_endpoint_hero_response", liveVideo, CACHE_TTL_LIVE);
+      return res.json(liveVideo);
+    }
+
+    // Fall back to latest uploaded video
+    const videos = await getPlaylistVideos(1);
+    const latest = videos[0];
+
+    const responsePayload = {
+      videoId: latest?.videoId || null,
+      title: latest?.title || "No video",
       live: false,
-    });
-  } catch (err) {
-    console.error("YouTube GOD MODE error:", err);
+    };
 
+    setCached("yt_endpoint_hero_response", responsePayload, CACHE_TTL_VIDEOS);
+    return res.json(responsePayload);
+  } catch (err) {
+    console.error("YouTube Hero Endpoint Error:", err);
     return res.json({
       videoId: null,
       title: "Service unavailable",
@@ -74,30 +146,27 @@ router.get("/", async (req, res) => {
 });
 
 /* =========================
-   LATEST VIDEOS (6 ITEMS)
+   LATEST VIDEOS ENDPOINT (/api/youtube/latest)
 ========================= */
 router.get("/latest", async (req, res) => {
   try {
-    const playlistId = await getUploadsPlaylistId();
+    const cachedLatest = getCached("yt_endpoint_latest_response");
+    if (cachedLatest) {
+      return res.json(cachedLatest);
+    }
 
-    if (!playlistId) return res.json([]);
+    const videos = await getPlaylistVideos(6);
 
-    const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=6&key=${API_KEY}`;
-
-    const data = await fetchYT(url);
-
-    const videos = (data?.items || []).map((item) => ({
-      videoId: item?.snippet?.resourceId?.videoId,
-      title: item?.snippet?.title,
-      thumbnail: item?.snippet?.thumbnails?.high?.url,
-      publishedAt: item?.snippet?.publishedAt,
-    }));
+    if (videos.length > 0) {
+      setCached("yt_endpoint_latest_response", videos, CACHE_TTL_VIDEOS);
+    }
 
     return res.json(videos);
   } catch (err) {
-    console.error(err);
+    console.error("YouTube Latest Endpoint Error:", err);
     return res.json([]);
   }
 });
 
 export default router;
+

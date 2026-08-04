@@ -113,7 +113,7 @@ export default function Navbar() {
     }`;
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/10 bg-primary text-cream shadow-lg transition-colors duration-500 ease-out">
+    <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-primary text-cream shadow-lg transition-colors duration-500 ease-out">
       <div className="container-custom">
         <div className="flex h-20 items-center justify-between gap-4">
           

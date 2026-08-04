@@ -71,6 +71,8 @@ const gallerySchema = new mongoose.Schema(
   }
 );
 
+gallerySchema.index({ clientPriority: 1 });
+
 export default mongoose.model(
   "Gallery",
   gallerySchema

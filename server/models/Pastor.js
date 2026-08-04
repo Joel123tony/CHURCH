@@ -97,4 +97,6 @@ const pastorSchema = new mongoose.Schema(
   }
 );
 
+pastorSchema.index({ active: 1, joinedYear: -1 });
+
 export default mongoose.model("Pastor", pastorSchema);
