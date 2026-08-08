@@ -13,6 +13,9 @@ import {
   FaTrashAlt,
   FaFileExcel,
   FaUsers,
+  FaCheckCircle,
+  FaSpinner,
+  FaInfoCircle
 } from "react-icons/fa";
 import API from "../../api/axios";
 import { toast } from "react-toastify";
@@ -81,8 +84,10 @@ export default function Pastors() {
 
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [uploadingImage] = useState(false);
+  const [uploadStage, setUploadStage] = useState("idle"); // idle, processing, done, error
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStats, setUploadStats] = useState(null);
+  const [uploadMeta, setUploadMeta] = useState(null);
 
   const [educations, setEducations] = useState([""]);
   const [customEducation, setCustomEducation] = useState("");
@@ -169,18 +174,44 @@ export default function Pastors() {
     }
 
     try {
+      // Setup meta for UI
+      const originalSize = selected.size || 0;
+      const ext = selected.name.split('.').pop()?.toUpperCase() || "IMAGE";
+      const estimatedRatio = 0.35;
+      const estimatedCompressedSize = originalSize * estimatedRatio;
+      const estimatedSavings = originalSize - estimatedCompressedSize;
+
+      setUploadMeta({ originalSize, ext, estimatedCompressedSize, estimatedSavings, name: selected.name });
+      setPreview(URL.createObjectURL(selected));
+      setUploadStage("processing");
+      setUploadProgress(0);
+
       const formData = new FormData();
       formData.append("file", selected);
       formData.append("folder", "mtc-padikuppam/pastors/profile-images");
 
-      const res = await API.post("/upload/image", formData);
+      const res = await API.post("/upload/image", formData, {
+        timeout: 5 * 60 * 1000,
+        onUploadProgress: (event) => {
+          if (event.total) {
+            setUploadProgress(Math.min(99, Math.round((event.loaded * 100) / event.total)));
+          }
+        }
+      });
       const data = res.data;
 
-      setFile(data.url); // Use the URL directly for submission
-      setPreview(data.url);
+      setUploadProgress(100);
+      setUploadStage("done");
+      setFile(data.url);
       setUploadStats(data);
+      
+      setTimeout(() => {
+        setUploadStage("idle");
+        setUploadProgress(0);
+      }, 3000);
     } catch (err) {
       console.error(err);
+      setUploadStage("error");
       toast.error("Failed to upload image");
     }
   }, []);
@@ -218,6 +249,9 @@ export default function Pastors() {
     setEditId(null);
     setFile(null);
     setPreview(null);
+    setUploadStats(null);
+    setUploadMeta(null);
+    setUploadStage("idle");
     setEducations([""]);
     setCustomEducation("");
   };
@@ -300,6 +334,8 @@ export default function Pastors() {
     setCustomEducation(nextCustomEducation);
     setFile(p?.image?.url || null);
     setUploadStats(null);
+    setUploadMeta(null);
+    setUploadStage("idle");
     setPreview(p?.image?.url || null);
     toast.info("Editing pastor");
     setView("add");
@@ -352,6 +388,8 @@ export default function Pastors() {
     setFile(null);
     setPreview(null);
     setUploadStats(null);
+    setUploadMeta(null);
+    setUploadStage("idle");
   };
 
   const handleExport = async () => {
@@ -373,52 +411,59 @@ export default function Pastors() {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-6xl p-3 sm:p-4 lg:p-5">
-
-      <div className="admin-header-container">
-        <div>
-          <h1 className="admin-header-title">
-            <FaUsers className="admin-header-icon" />
-            Pastors Management
-          </h1>
-          <p className="admin-header-desc">
-            Search, edit, pin, and update pastors with a responsive admin flow.
-          </p>
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F6F4] min-h-screen w-full font-sans">
+      <div className="max-w-[1200px] mx-auto">
+        
+        {/* HEADER SECTION */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#531B24] flex items-center gap-2 tracking-tight">
+              Pastors Management
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Manage and update pastor profiles and assignments.</p>
+          </div>
+          <div className="relative w-full sm:w-72 md:w-80">
+            <input
+              className="w-full pl-4 pr-4 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-white shadow-sm"
+              placeholder="Search pastor, role, or year..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
 
-        <div className="relative w-full md:w-80">
-          <input
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-            placeholder="Search pastor, role, or year..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        {/* TABS NAVIGATION */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-max">
+            <button
+              onClick={() => setView("add")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                view === "add" 
+                  ? "bg-[#531B24] text-white shadow-md" 
+                  : "text-slate-600 hover:bg-slate-50 hover:text-[#531B24]"
+              }`}
+            >
+              {editId ? <FaEdit size={12} /> : <FaPlus size={12} />} {editId ? "Edit Pastor" : "Add Pastor"}
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                view === "list" 
+                  ? "bg-[#531B24] text-white shadow-md" 
+                  : "text-slate-600 hover:bg-slate-50 hover:text-[#531B24]"
+              }`}
+            >
+              <FaUsers size={12} /> Pastor's List
+            </button>
+          </div>
+
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm w-max"
+          >
+            <FaFileExcel className="text-emerald-600" size={14} /> Download Excel
+          </button>
         </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        <button
-          onClick={() => setView("add")}
-          className={view === "add" ? "admin-tab-active" : "admin-tab-inactive"}
-        >
-          {editId ? <FaEdit /> : <FaPlus />} {editId ? "Edit Pastor" : "Add Pastor"}
-        </button>
-
-        <button
-          onClick={() => setView("list")}
-          className={view === "list" ? "admin-tab-active" : "admin-tab-inactive"}
-        >
-          <FaUsers /> Pastor's List
-        </button>
-
-        <button
-          onClick={handleExport}
-          className="admin-btn-secondary ml-auto"
-        >
-          <FaFileExcel />
-          Download Excel
-        </button>
-      </div>
 
       <div
         className={`overflow-hidden transition-all duration-500 ${view === "add"
@@ -428,88 +473,113 @@ export default function Pastors() {
       >
         <form
           onSubmit={handleSubmit}
-          className="admin-card"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
         >
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <input
-              name="name"
-              placeholder="Name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-              required
-            />
+          <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h2 className="text-lg font-bold text-slate-800">
+              {editId ? "Edit Pastor Profile" : "Add New Pastor"}
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">Fill in the details for the pastor's profile.</p>
+          </div>
 
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-            >
-              <option>Pastor</option>
-              <option>Senior Pastor</option>
-              <option>Associate Pastor</option>
-              <option>Youth Pastor</option>
-              <option>Worship Pastor</option>
-              <option>Other</option>
-            </select>
-
-            <div className="lg:col-span-3">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <FaCalendarAlt className="text-blue-600" />
-                Service Period
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="relative">
-                  <FaCalendarAlt className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="p-5 space-y-6">
+            {/* BASIC INFO - 2 Column */}
+            <div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Basic Information</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Name</label>
                   <input
-                    name="joinedYear"
-                    placeholder="Joined Year"
-                    value={form.joinedYear}
+                    name="name"
+                    placeholder="Pastor Name"
+                    value={form.name}
                     onChange={handleChange}
-                    className="admin-input pl-11"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
                     required
                   />
                 </div>
 
-                <div className="relative">
-                  <FaCalendarAlt className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    name="endYear"
-                    placeholder="End Year"
-                    value={form.endYear}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Role</label>
+                  <select
+                    name="role"
+                    value={form.role}
                     onChange={handleChange}
-                    className="admin-input pl-11"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50 appearance-none"
+                  >
+                    <option>Pastor</option>
+                    <option>Senior Pastor</option>
+                    <option>Associate Pastor</option>
+                    <option>Youth Pastor</option>
+                    <option>Worship Pastor</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Email</label>
+                  <input
+                    name="email"
+                    placeholder="Email Address"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Phone</label>
+                  <input
+                    name="phone"
+                    placeholder="Phone Number"
+                    value={form.phone}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
                   />
                 </div>
               </div>
             </div>
 
-            <input
-              name="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={handleChange}
-              className="admin-input"
-            />
-
-            <input
-              name="phone"
-              placeholder="Phone"
-              value={form.phone}
-              onChange={handleChange}
-              className="admin-input"
-            />
-          </div>
-
-          <div className="mt-3 space-y-3">
+            {/* SERVICE PERIOD */}
             <div>
-              <label className="admin-label">
-                Educational Qualifications
-              </label>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Service Period</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Joined Year</label>
+                  <div className="relative">
+                    <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
+                    <input
+                      name="joinedYear"
+                      placeholder="e.g. 2018"
+                      value={form.joinedYear}
+                      onChange={handleChange}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
+                      required
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">End Year (Leave empty if current)</label>
+                  <div className="relative">
+                    <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
+                    <input
+                      name="endYear"
+                      placeholder="e.g. 2022"
+                      value={form.endYear}
+                      onChange={handleChange}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* EDUCATION */}
+            <div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Education & Bio</h3>
+              
+              <div className="space-y-3 mb-4">
                 {educations.map((edu, index) => (
                   <div key={index} className="flex gap-2">
                     <select
@@ -519,7 +589,7 @@ export default function Pastors() {
                         updated[index] = e.target.value;
                         setEducations(updated);
                       }}
-                      className="admin-input min-w-0 flex-1"
+                      className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50 appearance-none"
                     >
                       <option value="">Select Degree</option>
                       {educationOptions.map((option) => (
@@ -532,12 +602,10 @@ export default function Pastors() {
                     {educations.length > 1 && (
                       <button
                         type="button"
-                        onClick={() =>
-                          setEducations(educations.filter((_, i) => i !== index))
-                        }
-                        className="admin-btn-red !px-3"
+                        onClick={() => setEducations(educations.filter((_, i) => i !== index))}
+                        className="px-3 py-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent"
                       >
-                        ×
+                        <FaTimes size={14} />
                       </button>
                     )}
                   </div>
@@ -549,103 +617,104 @@ export default function Pastors() {
                     placeholder="Enter custom degree"
                     value={customEducation}
                     onChange={(e) => setCustomEducation(e.target.value)}
-                    className="admin-input mt-2"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
                   />
                 )}
 
                 <button
                   type="button"
                   onClick={() => setEducations([...educations, ""])}
-                  className="admin-btn-secondary mt-3 w-max"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#531B24] bg-[#531B24]/10 rounded hover:bg-[#531B24]/20 transition-colors w-max"
                 >
-                  <FaPlus />
-                  Add Additional Education
+                  <FaPlus size={10} /> Add Additional Education
                 </button>
               </div>
+
+              <textarea
+                name="bio"
+                placeholder="Write a short biography..."
+                value={form.bio}
+                onChange={handleChange}
+                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50 min-h-[100px] resize-y"
+              />
             </div>
 
-            <textarea
-              name="bio"
-              placeholder="Bio"
-              value={form.bio}
-              onChange={handleChange}
-              className="admin-input min-h-[120px]"
-            />
-
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.05fr_0.95fr]">
-              <div
-                {...getRootProps()}
-                className={`admin-upload-box ${isDragActive ? "border-emerald-500 bg-emerald-50" : ""}`}
-              >
-                <input {...getInputProps()} />
-
-                <div className="flex min-h-28 flex-col items-center justify-center py-1 text-center sm:min-h-32 sm:py-2">
-                  <div className="admin-upload-icon">
-                    <FaCloudUploadAlt className="text-xl" />
-                  </div>
-
-                  <h3 className="mt-2 text-base font-semibold text-slate-800 sm:text-lg">
-                    {isDragActive ? "Drop pastor image here" : "Upload Pastor Image"}
-                  </h3>
-
-                  <p className="mt-2 max-w-sm text-xs leading-5 text-slate-500 sm:text-sm sm:leading-6">
-                    Drag and drop a JPG, PNG, or WEBP image here, or choose a file.
-                    Images are compressed automatically before upload.
+            {/* IMAGE UPLOAD (Gallery Style) */}
+            <div>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Profile Image</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Dropzone */}
+                <div
+                  {...getRootProps()}
+                  className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+                    isDragActive 
+                      ? "border-[#531B24] bg-[#531B24]/5 scale-[1.01]" 
+                      : "border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400"
+                  }`}
+                >
+                  <input {...getInputProps()} />
+                  <FaCloudUploadAlt className={`text-3xl mb-2 transition-transform duration-300 ${isDragActive ? "text-[#531B24] scale-110" : "text-slate-400"}`} />
+                  <p className="text-sm font-bold text-slate-700 mb-1">
+                    Upload Pastor Image
                   </p>
-
-                  <div className="mt-3 flex flex-wrap justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={open}
-                      className="admin-btn-primary"
-                    >
-                      <FaImage />
-                      Choose File
-                    </button>
-                  </div>
-
-                  {uploadingImage && (
-                    <p className="mt-2 text-sm text-blue-700 animate-pulse">
-                      Compressing image...
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="admin-card p-3 sm:p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-800 sm:text-base">
-                    Image Preview
-                  </h3>
-
-                  {preview && (
-                    <button
-                      type="button"
-                      onClick={clearSelectedImage}
-                      className="admin-btn-red"
-                    >
-                      <FaTimes />
-                      Remove
-                    </button>
-                  )}
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest text-center">
+                    JPG • PNG • WEBP
+                  </p>
                 </div>
 
-                <div className="mt-3 overflow-hidden rounded-2xl bg-slate-100">
+                {/* Preview & Stats */}
+                <div className="flex flex-col gap-3">
                   {preview ? (
-                    <div className="relative">
-                      <CompressionBadge stats={uploadStats} />
-                      <img
-                        src={preview}
-                        alt="Pastor preview"
-                        onError={(e) => handleImageError(e)}
-                        className="h-40 w-full object-cover sm:h-44"
-                      />
+                    <div className="relative flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                      <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
+                        <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <div className="flex justify-between items-start mb-1">
+                          <p className="text-xs font-bold text-slate-800 truncate pr-4">{uploadMeta?.name || "Pastor Image"}</p>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); clearSelectedImage(); }}
+                            className="text-slate-400 hover:text-red-500 transition-colors"
+                          >
+                            <FaTimes size={12} />
+                          </button>
+                        </div>
+
+                        {uploadStage === "processing" ? (
+                          <>
+                            <div className="flex justify-between items-end mb-1">
+                              <p className="text-[10px] font-bold text-[#531B24] flex items-center gap-1">
+                                <FaSpinner className="animate-spin" /> Compressing...
+                              </p>
+                              <span className="text-[10px] font-bold text-[#531B24]">{uploadProgress}%</span>
+                            </div>
+                            <div className="h-1 w-full bg-[#531B24]/10 rounded-full overflow-hidden">
+                              <div className="h-full bg-[#531B24] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                            </div>
+                          </>
+                        ) : uploadStage === "done" && uploadStats ? (
+                          <div className="text-[10px] flex items-center gap-1 font-semibold text-emerald-600">
+                            <FaCheckCircle /> Compressed to {(uploadStats.compressedSize / 1024 / 1024).toFixed(1)} MB (Saved {uploadStats.savingsPercentage}%)
+                          </div>
+                        ) : uploadMeta ? (
+                          <div className="text-[10px] flex items-center gap-1 font-semibold text-[#531B24]">
+                            Will compress to ~{(uploadMeta.estimatedCompressedSize / 1024 / 1024).toFixed(1)} MB
+                          </div>
+                        ) : (
+                          <div className="text-[10px] flex items-center gap-1 font-semibold text-slate-500">
+                            Image Ready
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex h-40 items-center justify-center text-slate-400 sm:h-44">
-                      <div className="text-center">
-                        <FaCamera className="mx-auto text-2xl sm:text-3xl" />
-                        <p className="mt-2 text-xs sm:text-sm">No image selected yet</p>
+                    <div className="h-full flex items-center justify-center p-6 bg-white border border-slate-200 rounded-lg text-slate-400">
+                      <div className="flex flex-col items-center gap-2">
+                        <FaCamera size={24} />
+                        <span className="text-xs">No image selected</span>
                       </div>
                     </div>
                   )}
@@ -654,12 +723,16 @@ export default function Pastors() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="admin-btn-primary mt-4 w-full sm:w-auto"
-          >
-            {editId ? "Update Pastor" : "Add Pastor"}
-          </button>
+          <div className="px-5 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+            <button
+              type="submit"
+              disabled={loading || uploadStage === "processing"}
+              className="px-6 py-2.5 text-sm font-bold text-white bg-[#531B24] rounded-lg hover:bg-[#40151c] transition-colors shadow-sm disabled:opacity-70 flex items-center gap-2"
+            >
+              {loading ? <FaSpinner className="animate-spin" /> : null}
+              {editId ? "Update Pastor" : "Add Pastor"}
+            </button>
+          </div>
         </form>
       </div>
 
@@ -667,83 +740,80 @@ export default function Pastors() {
         loading ? (
           <p className="text-center text-slate-500">Loading...</p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredPastors.map((p, index) => (
               <div
                 key={p?._id}
-                className={`animate-admin-card-in overflow-hidden admin-card transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${p?.isCurrent ? "border-green-500" : ""}`}
+                className={`animate-admin-card-in bg-white rounded-xl shadow-sm border ${p?.isCurrent ? "border-emerald-500 shadow-emerald-500/10" : "border-slate-200"} transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col overflow-hidden`}
                 style={{
-                  animationDelay: `${Math.min(index, 10) * 70}ms`,
+                  animationDelay: `${Math.min(index, 10) * 50}ms`,
                 }}
               >
-                <div className="relative">
+                <div className="relative h-48 w-full bg-slate-100 shrink-0">
                   <img
                     src={p?.image?.url || getFallbackAvatar()}
                     alt={p?.name}
                     onError={(e) => handleImageError(e)}
-                    className="pastor-placeholder h-52 w-full object-cover"
+                    className="h-full w-full object-cover"
                   />
 
                   {p?.isCurrent && (
-                    <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-green-600 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-green-600/25">
-                      <FaStar />
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                      <FaStar size={10} />
                       Current
                     </span>
                   )}
                 </div>
 
-                <div className="space-y-3 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">{p?.name}</h2>
-                      <p className="mt-1 text-sm text-slate-500">{p?.role}</p>
-                    </div>
+                <div className="flex flex-col flex-1 p-4">
+                  <div className="mb-3">
+                    <h2 className="text-base font-bold text-slate-800 line-clamp-1">{p?.name}</h2>
+                    <p className="text-xs font-semibold text-[#531B24]">{p?.role}</p>
                   </div>
 
-                  <p className="text-sm text-slate-500">
-                    <span className="font-semibold text-slate-700">Years:</span>{" "}
-                    {p?.joinedYear} - {p?.leftYear ?? p?.endYear ?? "Present"}
-                  </p>
+                  <div className="space-y-1.5 mb-4 flex-1">
+                    <p className="text-[11px] text-slate-500 flex items-center gap-2">
+                      <FaCalendarAlt className="text-slate-400 shrink-0" />
+                      <span>{p?.joinedYear} - {p?.leftYear ?? p?.endYear ?? "Present"}</span>
+                    </p>
+                    <p className="text-[11px] text-slate-500 line-clamp-2">
+                      {p?.bio || "No biography available"}
+                    </p>
+                  </div>
 
-                  <p className="line-clamp-2 text-sm text-slate-600">
-                    {p?.bio || "No biography available"}
-                  </p>
-
-                  <div className="flex flex-wrap gap-2 pt-2">
+                  <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-100">
                     <button
                       onClick={() => setSelectedPastor(p)}
-                      className="admin-btn-blue flex-1 !py-2.5 !text-xs sm:text-sm"
+                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded text-[11px] font-semibold transition-colors"
+                      title="View"
                     >
-                      <FaEye />
-                      View
+                      <FaEye size={12} />
                     </button>
-
                     <button
                       onClick={() => handleEdit(p)}
-                      className="admin-btn-orange flex-1 !py-2.5 !text-xs sm:text-sm"
+                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-slate-100 text-amber-600 border border-slate-200 rounded text-[11px] font-semibold transition-colors"
+                      title="Edit"
                     >
-                      <FaEdit />
-                      Edit
+                      <FaEdit size={12} />
                     </button>
-
                     <button
                       onClick={() => handleDelete(p._id)}
-                      className="admin-btn-red flex-1 !py-2.5 !text-xs sm:text-sm"
+                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-red-50 text-red-600 border border-slate-200 rounded text-[11px] font-semibold transition-colors"
+                      title="Delete"
                     >
-                      <FaTrashAlt />
-                      Delete
+                      <FaTrashAlt size={12} />
                     </button>
-
-                    {!p?.isCurrent && (
-                      <button
-                        onClick={() => setCurrentPastor(p._id)}
-                        className="admin-btn-green w-full mt-2 !py-2 !text-xs"
-                      >
-                        <FaStar />
-                        Pastor Now
-                      </button>
-                    )}
                   </div>
+
+                  {!p?.isCurrent && (
+                    <button
+                      onClick={() => setCurrentPastor(p._id)}
+                      className="w-full mt-1.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[11px] font-bold transition-colors flex items-center justify-center gap-1"
+                    >
+                      <FaStar size={10} />
+                      Set as Current
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -844,6 +914,7 @@ export default function Pastors() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -14,13 +14,15 @@ export default function CompressionBadge({ stats }) {
 
   const { status, savingsPercentage, savings, originalSize, compressedSize } = stats;
   const badgeConfig =
-    status === "Compressed" && savingsPercentage > 0
-      ? { className: "bg-green-600/90", label: `✓ Saved ${savingsPercentage}%` }
-      : status === "Already Optimized"
-        ? { className: "bg-slate-700/90", label: "✓ Already Optimized" }
-        : status === "Error" || status === "Failed"
-          ? { className: "bg-red-600/90", label: "⚠ Compression Failed" }
-          : null;
+    status === "Original Preserved"
+      ? { className: "bg-blue-600/90", label: "✓ Original Preserved" }
+      : status === "Compressed" && savingsPercentage > 0
+        ? { className: "bg-green-600/90", label: `✓ Saved ${savingsPercentage}%` }
+        : status === "Already Optimized"
+          ? { className: "bg-slate-700/90", label: "✓ Already Optimized" }
+          : status === "Error" || status === "Failed"
+            ? { className: "bg-red-600/90", label: "⚠ Upload Failed" }
+            : null;
 
   if (!badgeConfig) return null;
 

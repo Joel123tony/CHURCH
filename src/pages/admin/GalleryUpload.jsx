@@ -2,10 +2,10 @@ import { useCallback, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-toastify";
 import API from "../../api/axios";
-import CompressionBadge from "../../components/CompressionBadge";
+import { FaCloudUploadAlt, FaInfoCircle, FaTimes, FaCheckCircle, FaSpinner } from "react-icons/fa";
 
 const formatBytes = (bytes) => {
-  if (!bytes) return "0 KB";
+  if (!bytes) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
   const index = Math.min(
     Math.floor(Math.log(bytes) / Math.log(1024)),
@@ -15,15 +15,13 @@ const formatBytes = (bytes) => {
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 };
 
-// Compression is now handled on the backend
-
 export default function GalleryUpload({ onSuccess }) {
   const [files, setFiles] = useState([]);
   const [title, setTitle] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage] = useState("idle");
+  const [uploadStage, setUploadStage] = useState("idle"); // idle, processing, done, error
   const [previewFile, setPreviewFile] = useState(null);
 
   const totalBytes = useMemo(
@@ -31,16 +29,35 @@ export default function GalleryUpload({ onSuccess }) {
     [files]
   );
 
+  const totalSavedBytes = useMemo(() => {
+    return files.reduce((sum, item) => {
+      if (item.compressionStats?.savings) return sum + item.compressionStats.savings;
+      if (item.estimatedSavings) return sum + item.estimatedSavings;
+      return sum;
+    }, 0);
+  }, [files]);
+
+  const totalCompressedBytes = totalBytes - totalSavedBytes;
+
   const onDrop = useCallback((acceptedFiles) => {
     const processed = acceptedFiles.map((file) => {
       const originalSize = file.size || 0;
       const isImage = file.type.startsWith("image/");
+      const ext = file.name.split('.').pop()?.toUpperCase() || (isImage ? "IMAGE" : "VIDEO");
       
+      // Rough estimation for UI feedback
+      const estimatedRatio = isImage ? 0.35 : 0.45;
+      const estimatedCompressedSize = originalSize * estimatedRatio;
+      const estimatedSavings = originalSize - estimatedCompressedSize;
+
       return {
         file,
         preview: URL.createObjectURL(file),
         originalSize,
-        label: `${isImage ? "Image" : "Video"} ${formatBytes(originalSize)} (Will compress on upload)`,
+        ext,
+        estimatedCompressedSize,
+        estimatedSavings,
+        compressionStats: null
       };
     });
 
@@ -69,7 +86,7 @@ export default function GalleryUpload({ onSuccess }) {
 
     try {
       setUploading(true);
-      setUploadStage("uploading");
+      setUploadStage("processing");
       setUploadProgress(0);
 
       const createdItems = [];
@@ -87,26 +104,16 @@ export default function GalleryUpload({ onSuccess }) {
         formData.append("eventDate", eventDate || "");
 
         const res = await API.post("/gallery", formData, {
-          timeout: 5 * 60 * 1000, // 5 minutes max per file
+          timeout: 5 * 60 * 1000,
           onUploadProgress: (event) => {
             if (!event.total) return;
-
-            const currentFileLoaded = Math.min(
-              event.loaded || 0,
-              event.total || fileBytes || 1
-            );
-            const currentBytes =
-              baseBytes + (currentFileLoaded / event.total) * (fileBytes || event.total);
-            const nextProgress = Math.min(
-              99,
-              (currentBytes / grandTotalBytes) * 100
-            );
-
+            const currentFileLoaded = Math.min(event.loaded || 0, event.total || fileBytes || 1);
+            const currentBytes = baseBytes + (currentFileLoaded / event.total) * (fileBytes || event.total);
+            const nextProgress = Math.min(99, (currentBytes / grandTotalBytes) * 100);
             setUploadProgress(nextProgress);
           },
         });
 
-        // Keep the file in the UI but update its stats
         setFiles(prev => prev.map((f, i) => i === index ? { ...f, compressionStats: res.data } : f));
         
         createdItems.push(res.data.data);
@@ -114,7 +121,6 @@ export default function GalleryUpload({ onSuccess }) {
         setUploadProgress((completedBytes / grandTotalBytes) * 100);
       }
 
-      // DO NOT setFiles([]) so the badges remain visible
       setTitle("");
       setEventDate("");
       setUploadProgress(100);
@@ -129,7 +135,8 @@ export default function GalleryUpload({ onSuccess }) {
       setTimeout(() => {
         setUploadStage("idle");
         setUploadProgress(0);
-      }, 1200);
+        setFiles([]); // Clear UI after success delay
+      }, 3000);
     } catch (err) {
       console.error(err);
       setUploadStage("error");
@@ -140,151 +147,205 @@ export default function GalleryUpload({ onSuccess }) {
   };
 
   return (
-    <div className="space-y-3">
-      <input
-        type="text"
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="admin-input"
-      />
-
-      <input
-        type="date"
-        value={eventDate}
-        onChange={(e) => setEventDate(e.target.value)}
-        className="admin-input"
-      />
-
-      <div
-        {...getRootProps()}
-        className={`admin-upload-box ${isDragActive ? "border-[#531B24] bg-[#531B24]/5 scale-[1.01]" : ""} ${uploading ? "animate-pulse" : ""}`}
-      >
-        <input {...getInputProps()} />
-
-        <p className="font-semibold text-lg">
-          Drag & Drop Images / Videos
-        </p>
-
-        <p className="text-sm text-gray-500 mt-2">
-          or click to browse files
-        </p>
-
-        {!!files.length && (
-          <div className="mt-4 mx-auto max-w-md">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-              <span>{files.length} file(s) ready</span>
-              <span>{formatBytes(totalBytes)}</span>
-            </div>
-
-            <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  uploadStage === "error"
-                    ? "bg-red-500"
-                    : uploadStage === "done"
-                      ? "bg-green-500"
-                      : "bg-blue-600"
-                }`}
-                style={{ width: `${Math.min(100, uploadProgress)}%` }}
-              />
-            </div>
-
-            {uploading && (
-              <p className="mt-2 text-xs text-blue-700">
-                Uploading based on total file size...
-              </p>
-            )}
-          </div>
-        )}
+    <div className="flex flex-col space-y-5">
+      {/* INPUTS - Compact inline row on desktop */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Media Title (Optional)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
+          />
+        </div>
+        <div className="flex-1">
+          <input
+            type="date"
+            value={eventDate}
+            onChange={(e) => setEventDate(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
+          />
+        </div>
       </div>
 
-      {files.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {files.map((item, index) => (
-            <div
-              key={`${item.file.name}-${index}`}
-              className="relative bg-white rounded-xl overflow-hidden shadow-md border border-gray-100 transition-transform duration-300 hover:-translate-y-1"
-            >
-              {item.file.type.startsWith("video") ? (
-                <video
-                  src={item.preview}
-                  className="w-full h-32 object-cover"
-                  muted
-                />
-              ) : (
-                <img
-                  src={item.preview}
-                  alt=""
-                  className="w-full h-32 object-cover"
-                />
-              )}
-
-              <CompressionBadge stats={item.compressionStats} />
-              <div className="absolute right-2 bottom-2 rounded-full bg-black/70 px-2 py-1 text-[10px] text-white backdrop-blur-sm z-10">
-                {item.label}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setPreviewFile(item)}
-                className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-3 py-1 rounded hover:bg-black"
-              >
-                Full View
-              </button>
-
-              <button
-                type="button"
-                onClick={() => removeFile(index)}
-                className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full hover:bg-red-600"
-              >
-                ×
-              </button>
-            </div>
-          ))}
+      {/* DROPZONE */}
+      {!uploading && uploadStage === "idle" && (
+        <div
+          {...getRootProps()}
+          className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+            isDragActive 
+              ? "border-[#531B24] bg-[#531B24]/5 scale-[1.01]" 
+              : "border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400"
+          }`}
+        >
+          <input {...getInputProps()} />
+          <FaCloudUploadAlt className={`text-4xl mb-3 transition-transform duration-300 ${isDragActive ? "text-[#531B24] scale-110" : "text-slate-400"}`} />
+          <p className="text-sm font-bold text-slate-700 mb-1">
+            Drag & Drop Images / Videos
+          </p>
+          <p className="text-xs text-slate-500 mb-3">or click to browse files</p>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+            JPG • PNG • WEBP • MP4 • MOV • AVI • WEBM
+          </p>
         </div>
       )}
 
-      <button
-        onClick={uploadAll}
-        disabled={uploading}
-        className={`admin-btn-primary disabled:opacity-50 ${uploading ? "animate-pulse" : ""}`}
-      >
-        {uploading
-          ? `Uploading ${Math.round(uploadProgress)}%`
-          : `Upload ${files.length || ""} Media`}
-      </button>
+      {/* FILE PREVIEW CARDS */}
+      {files.length > 0 && (
+        <div className="space-y-3">
+          {files.map((item, index) => {
+            const isVideo = item.file.type.startsWith("video");
+            const isDone = item.compressionStats && uploadStage === "done";
+            
+            const origSizeStr = formatBytes(item.originalSize);
+            const compSizeStr = item.compressionStats 
+              ? formatBytes(item.compressionStats.compressedSize) 
+              : formatBytes(item.estimatedCompressedSize);
+            const percentStr = item.compressionStats
+              ? `${item.compressionStats.savingsPercentage}%`
+              : `~${Math.round((item.estimatedSavings / item.originalSize) * 100)}%`;
 
+            return (
+              <div
+                key={`${item.file.name}-${index}`}
+                className="relative flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm"
+              >
+                <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer" onClick={() => setPreviewFile(item)}>
+                  {isVideo ? (
+                    <video src={item.preview} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={item.preview} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <div className="flex justify-between items-start mb-1">
+                    <p className="text-xs font-bold text-slate-800 truncate pr-4">{item.file.name}</p>
+                    {!uploading && uploadStage !== "done" && (
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        <FaTimes size={12} />
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="text-[10px] text-slate-500 font-medium mb-1.5 flex items-center gap-2">
+                    <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{item.ext}</span>
+                    <span>{origSizeStr}</span>
+                  </div>
+
+                  <div className="text-[10px] flex items-center gap-1.5 font-semibold">
+                    {isDone ? (
+                      <span className="text-emerald-600 flex items-center gap-1"><FaCheckCircle /> Compressed to {compSizeStr} (Saved {percentStr})</span>
+                    ) : (
+                      <span className="text-[#531B24]">Will compress to ~{compSizeStr} (Save {percentStr})</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* UPLOAD & COMPRESSION PANEL */}
+      {files.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center justify-between pt-4 border-t border-slate-100 mt-2">
+          
+          {/* Compression Info / Progress */}
+          <div className="flex-1 w-full bg-slate-50 rounded-lg p-3 border border-slate-200 flex items-center gap-3">
+            {uploadStage === "idle" && (
+              <>
+                <FaInfoCircle className="text-slate-400 text-lg shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-slate-700">Compression enabled</p>
+                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5">Original {formatBytes(totalBytes)} → Estimated {formatBytes(totalCompressedBytes)}</p>
+                </div>
+              </>
+            )}
+            
+            {uploadStage === "processing" && (
+              <div className="w-full">
+                <div className="flex justify-between items-end mb-1.5">
+                  <p className="text-xs font-bold text-[#531B24] flex items-center gap-1.5">
+                    <FaSpinner className="animate-spin" /> Compressing & Uploading...
+                  </p>
+                  <span className="text-[10px] font-bold text-[#531B24]">{Math.round(uploadProgress)}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-[#531B24]/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-[#531B24] transition-all duration-300"
+                    style={{ width: `${Math.min(100, uploadProgress)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 leading-tight mt-1.5 text-right">Optimizing {files.length} file(s)</p>
+              </div>
+            )}
+
+            {uploadStage === "done" && (
+              <>
+                <FaCheckCircle className="text-emerald-500 text-lg shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-emerald-700">Upload Complete</p>
+                  <p className="text-[10px] text-emerald-600 leading-tight mt-0.5">
+                    Original {formatBytes(totalBytes)} → Stored {formatBytes(totalCompressedBytes)}
+                  </p>
+                </div>
+              </>
+            )}
+            
+            {uploadStage === "error" && (
+              <>
+                <FaTimes className="text-red-500 text-lg shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-red-700">Upload Failed</p>
+                  <p className="text-[10px] text-red-600 leading-tight mt-0.5">Check network and try again.</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Upload Button */}
+          {uploadStage !== "done" && (
+            <button
+              onClick={uploadAll}
+              disabled={uploading}
+              className="w-full sm:w-auto px-5 py-2.5 text-sm font-bold text-white bg-[#531B24] rounded-lg hover:bg-[#40151c] transition-colors shadow-sm disabled:opacity-70 flex items-center justify-center gap-2 shrink-0"
+            >
+              {uploading ? (
+                <>
+                  <FaSpinner className="animate-spin" /> Processing
+                </>
+              ) : (
+                <>
+                  ↑ Upload {files.length} Media
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* FULLSCREEN PREVIEW */}
       {previewFile && (
         <div
-          className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4 sm:p-6 backdrop-blur-md"
+          className="fixed inset-0 bg-slate-900/90 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={() => setPreviewFile(null)}
         >
-          <div
-            className="relative flex flex-col items-center justify-center max-w-full max-h-full"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative flex flex-col items-center justify-center max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setPreviewFile(null)}
-              className="absolute -top-12 right-0 md:-right-12 md:top-0 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-colors backdrop-blur-sm z-[110]"
-              title="Close Preview"
+              className="absolute -top-12 right-0 bg-white/10 hover:bg-white/20 p-2.5 rounded-full text-white transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <FaTimes size={16} />
             </button>
-
             {previewFile.file.type.startsWith("video") ? (
-              <video
-                src={previewFile.preview}
-                controls
-                autoPlay
-                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-xl bg-black object-contain shadow-2xl ring-1 ring-white/20"
-              />
+              <video src={previewFile.preview} controls autoPlay className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" />
             ) : (
-              <img
-                src={previewFile.preview}
-                alt=""
-                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-xl object-contain shadow-2xl ring-1 ring-white/20"
-              />
+              <img src={previewFile.preview} alt="" className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" />
             )}
           </div>
         </div>

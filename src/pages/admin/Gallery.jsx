@@ -251,47 +251,60 @@ export default function Gallery() {
   );
 
   return (
-    <div className="p-3 sm:p-4 lg:p-5 bg-slate-50 min-h-screen w-full">
-      {/* HEADER SECTION - strictly functional */}
-      <div className="admin-header-container">
-        <div>
-          <h1 className="admin-header-title">
-            <FaImage className="admin-header-icon" />
-            Gallery Management
-          </h1>
+    <div className="p-4 sm:p-6 lg:p-8 bg-[#F8F6F4] min-h-screen w-full font-sans">
+      <div className="max-w-[1200px] mx-auto">
+        {/* HEADER SECTION */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#531B24] flex items-center gap-2 tracking-tight">
+              Gallery Management
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">Manage and optimize gallery images and videos.</p>
+          </div>
+          <div className="flex items-center gap-2 rounded-full bg-[#531B24]/5 px-3 py-1.5 text-xs font-bold text-[#531B24] border border-[#531B24]/10 shadow-sm w-fit">
+            <span className="w-2 h-2 rounded-full bg-[#531B24] animate-pulse" />
+            Homepage Gallery: {galleryCount}/4
+          </div>
         </div>
-        <div className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800 border border-emerald-200">
-          Homepage Gallery: {galleryCount}/4
+
+        {/* TABS NAVIGATION */}
+        <div className="flex items-center gap-1 mb-6 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-max">
+          <button
+            onClick={() => setActiveTab("add")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === "add" 
+                ? "bg-[#531B24] text-white shadow-md" 
+                : "text-slate-600 hover:bg-slate-50 hover:text-[#531B24]"
+            }`}
+          >
+            <FaPlus size={12} /> Add Media
+          </button>
+          <button
+            onClick={() => setActiveTab("list")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === "list" 
+                ? "bg-[#531B24] text-white shadow-md" 
+                : "text-slate-600 hover:bg-slate-50 hover:text-[#531B24]"
+            }`}
+          >
+            <FaList size={12} /> Gallery List
+          </button>
         </div>
-      </div>
 
-      {/* TABS NAVIGATION */}
-      <div className="flex items-center gap-2 mb-4 bg-white p-2 rounded-2xl shadow-sm w-max border border-slate-100">
-        <button
-          onClick={() => setActiveTab("add")}
-          className={activeTab === "add" ? "admin-tab-active" : "admin-tab-inactive"}
-        >
-          <FaPlus /> Add Media
-        </button>
-        <button
-          onClick={() => setActiveTab("list")}
-          className={activeTab === "list" ? "admin-tab-active" : "admin-tab-inactive"}
-        >
-          <FaList /> Gallery List
-        </button>
-      </div>
-
-      <div className="relative w-full">
+        <div className="relative w-full">
         {/* ADD TAB */}
         {activeTab === "add" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="admin-card">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-                <h2 className="text-xl font-bold text-[#531B24] flex items-center gap-2">
-                  <FaUpload className="text-[#531B24]" /> Upload Media
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h2 className="text-lg font-bold text-slate-800">
+                  Upload Media
                 </h2>
+                <p className="text-xs text-slate-500 mt-0.5">Add images or videos to the gallery.</p>
               </div>
-              <GalleryUpload onSuccess={handleUploadSuccess} />
+              <div className="p-5">
+                <GalleryUpload onSuccess={handleUploadSuccess} />
+              </div>
             </div>
           </div>
         )}
@@ -301,34 +314,37 @@ export default function Gallery() {
           <div className="animate-in fade-in slide-in-from-right-8 duration-500 space-y-4">
             {loading ? (
               <div className="flex h-64 items-center justify-center">
-                <p className="text-slate-500 font-medium">Loading gallery...</p>
+                <p className="text-slate-500 font-medium text-sm flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-slate-300 border-t-[#531B24] rounded-full animate-spin"></span>
+                  Loading gallery...
+                </p>
               </div>
             ) : (
               <>
-                <div className="admin-card">
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                   {/* SEARCH & FILTERS */}
-                  <div className="relative mb-4">
-                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <div className="relative mb-5 max-w-sm">
+                    <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
                     <input
                       type="text"
                       placeholder="Search gallery by title..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="admin-input pl-11 !bg-white focus:!bg-white"
+                      className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
                     />
                   </div>
 
                   {/* BULK ACTIONS */}
                   {filteredMedia.length > 0 && (
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4">
-                      <div className="text-sm font-bold text-slate-600">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-slate-50/80 px-4 py-3 rounded-lg border border-slate-200 mb-6">
+                      <div className="text-xs font-semibold text-slate-600">
                         {selectedCount > 0 ? (
-                          <span className="text-[#ee0039]">
+                          <span className="text-[#531B24]">
                             {selectedCount} selected
                             {visibleSelectedCount > 0 ? ` (${visibleSelectedCount} visible)` : ""}
                           </span>
                         ) : (
-                          "Select items to perform bulk actions"
+                          "Select items for bulk actions"
                         )}
                       </div>
 
@@ -336,14 +352,14 @@ export default function Gallery() {
                         <button
                           type="button"
                           onClick={toggleSelectAllVisible}
-                          className="admin-btn-secondary !py-2"
+                          className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors shadow-sm"
                         >
                           {allVisibleSelected ? "Unselect All" : "Select All"}
                         </button>
                         <button
                           type="button"
                           onClick={clearSelection}
-                          className="admin-btn-secondary !py-2"
+                          className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors shadow-sm"
                         >
                           Clear
                         </button>
@@ -351,7 +367,7 @@ export default function Gallery() {
                           type="button"
                           onClick={bulkDeleteMedia}
                           disabled={!selectedCount}
-                          className="admin-btn-red !py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 py-1.5 text-xs font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Delete Selected
                         </button>
@@ -449,48 +465,53 @@ export default function Gallery() {
 
       {/* EDIT MODAL */}
       {editItem && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="admin-card w-full max-w-md space-y-4 animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col overflow-y-auto">
-            <h2 className="text-xl font-black text-[#531B24] border-b border-slate-100 pb-4">Edit Media Details</h2>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm space-y-4 animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+              <h2 className="text-base font-bold text-slate-800">Edit Media Details</h2>
+            </div>
+            
+            <div className="px-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Title</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Media Title"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-white"
+                />
+              </div>
 
-            <div>
-              <label className="admin-label">Title</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Media Title"
-                className="admin-input"
-              />
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Event Date</label>
+                <input
+                  type="date"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-white"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="admin-label">Event Date</label>
-              <input
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="admin-input"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="px-5 py-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50/50">
               <button
                 onClick={() => setEditItem(null)}
-                className="admin-btn-secondary"
+                className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors shadow-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={saveEdit}
-                className="admin-btn-primary"
+                className="px-4 py-2 text-sm font-semibold text-white bg-[#531B24] rounded-md hover:bg-[#40151c] transition-colors shadow-sm"
               >
-                Save Changes
+                Save
               </button>
             </div>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

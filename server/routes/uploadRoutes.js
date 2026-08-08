@@ -1,6 +1,7 @@
 import express from "express";
 import upload from "../middleware/upload.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
+import fs from "fs";
 
 const router = express.Router();
 
@@ -19,14 +20,14 @@ router.post("/image", upload.single("file"), async (req, res) => {
     const isVideo = req.file.mimetype?.startsWith("video/");
     const targetFolder = req.body.folder || "mtc-padikuppam/website/images";
 
-    const result = await uploadToCloudinary(req.file.buffer, {
+    const result = await uploadToCloudinary(req.file.path, {
       folder: targetFolder,
       resource_type: isVideo ? "video" : "image"
     });
 
     res.status(200).json({
       success: true,
-      url: result.optimized_url || result.url,
+      url: result.url || result.optimized_url,
       public_id: result.public_id,
       resource_type: result.resource_type,
       originalSize: result.originalSize,
@@ -41,6 +42,14 @@ router.post("/image", upload.single("file"), async (req, res) => {
       success: false,
       message: err.message,
     });
+  } finally {
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        console.error("Cleanup error in uploadRoutes:", e);
+      }
+    }
   }
 });
 

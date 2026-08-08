@@ -3,6 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 import { getCached, setCached, clearCache } from "../utils/cache.js";
+import fs from "fs";
 
 const CACHE_KEY = "gallery_client";
 
@@ -11,46 +12,35 @@ const CACHE_KEY = "gallery_client";
 ========================= */
 export const uploadMedia = async (req, res) => {
   try {
-
-
     if (!req.file) {
-
       return res.status(400).json({
         success: false,
         message: "File is required",
       });
     }
 
-
     const isVideo = req.file.mimetype?.startsWith("video/");
     
-
     // Note: uploadToCloudinary handles both local compression and Cloudinary upload
-    const result = await uploadToCloudinary(req.file.buffer, {
+    const result = await uploadToCloudinary(req.file.path, {
       folder: isVideo ? "mtc-padikuppam/gallery/videos" : "mtc-padikuppam/gallery/images",
       resource_type: isVideo ? "video" : "image",
     });
     
-
-
-
     const media = await Gallery.create({
       title: req.body.title || "Untitled",
       eventDate: req.body.eventDate || null,
-      mediaType:
-        result.resource_type === "video"
-          ? "video"
-          : "image",
+      mediaType: result.resource_type === "video" ? "video" : "image",
+      
       url: result.optimized_url || result.url,
       public_id: result.public_id,
       clientPriority: null,
-      thumbnail: result.resource_type === "video" ? result.url.replace(/\.[^/.]+$/, ".jpg") : null,
+      thumbnail: result.resource_type === "video" ? (result.optimized_url || result.url).replace(/\.[^/.]+$/, ".jpg") : null,
       folder: result.folder || null,
       size: result.bytes || null,
       duration: result.duration || null,
       dimensions: result.width && result.height ? { width: result.width, height: result.height } : null,
     });
-
 
     clearCache(CACHE_KEY);
 
@@ -64,12 +54,18 @@ export const uploadMedia = async (req, res) => {
       status: result.status
     });
   } catch (err) {
-
-
     return res.status(500).json({
       success: false,
       message: err.message,
     });
+  } finally {
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupErr) {
+        console.error("Failed to cleanup temp file:", cleanupErr);
+      }
+    }
   }
 };
 

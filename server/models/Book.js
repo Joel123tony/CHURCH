@@ -23,6 +23,7 @@ const bookSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
     pdf_public_id: {
       type: String,
       required: true,

@@ -164,42 +164,29 @@ const Gallery = memo(function Gallery({ initialGallery }) {
   const [toastMessage, setToastMessage] = useState("");
   const [touchStartX, setTouchStartX] = useState(null);
 
-  const handleDownload = async (media) => {
-    if (downloading || !media?.url) return;
+  const handleDownload = (media) => {
+    if (downloading || (!media?.originalUrl && !media?.url)) return;
 
-    setDownloading(true);
-    setToastMessage("");
     try {
       let baseName = media.title ? media.title.trim() : "Media";
       baseName = baseName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
       if (!baseName) baseName = "Media";
 
-      const urlParts = media.url.split('?')[0].split('/');
-      const filenameFromUrl = urlParts[urlParts.length - 1];
-      const urlExt = filenameFromUrl.split('.').pop();
-      let extension = urlExt && urlExt.length <= 4 ? urlExt : (media.mediaType === "video" ? "mp4" : "jpg");
+      let downloadUrl = media.url;
+      const originalFilename = media.title ? `${baseName}.${media.mediaType === 'video' ? 'mp4' : 'jpg'}` : "download";
 
-      const filename = `${baseName}.${extension}`;
-
-      const response = await fetch(media.url);
-      if (!response.ok) throw new Error("Network response was not ok");
-      const blob = await response.blob();
-
-      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename;
+      link.href = downloadUrl;
+      link.download = originalFilename;
+      link.target = "_blank"; // safely open in new tab if browser refuses to download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
 
     } catch (err) {
       console.error("Download error:", err);
       setToastMessage(t("Unable to download the media. Please try again."));
       setTimeout(() => setToastMessage(""), 4000);
-    } finally {
-      setDownloading(false);
     }
   };
 
@@ -473,13 +460,13 @@ const Gallery = memo(function Gallery({ initialGallery }) {
 
           <div className="relative w-full max-w-7xl px-4 sm:px-16" onClick={(e) => e.stopPropagation()}>
             {selectedMedia.mediaType === "video" ? (
-              <video
-                key={selectedMedia._id}
-                src={selectedMedia.url}
-                controls
-                autoPlay
-                className="max-h-[85vh] w-full rounded-md object-contain"
-              />
+                <video
+                  key={selectedMedia._id}
+                  src={selectedMedia.url}
+                  controls
+                  autoPlay
+                  className="max-h-[85vh] w-full rounded-md object-contain"
+                />
             ) : (
               <img
                 key={selectedMedia._id}

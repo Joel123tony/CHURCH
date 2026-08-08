@@ -11,6 +11,7 @@ import upload from "../middleware/upload.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { spawn } from "child_process";
 import path from "path";
+import fs from "fs";
 import auth from "../middleware/auth.js";
 
 const router = express.Router();
@@ -101,15 +102,15 @@ router.post(
       let image = null;
 
       if (req.file) {
-        const uploadResult = await uploadToCloudinary(req.file.buffer, {
+        const uploadResult = await uploadToCloudinary(req.file.path, {
           folder: "mtc-padikuppam/pastors/profile-images",
           resource_type: "image"
         });
 
         image = {
-          url: uploadResult.url,
+          url: uploadResult.url || uploadResult.optimized_url,
           public_id: uploadResult.public_id,
-          type: uploadResult.type,
+          type: uploadResult.resource_type || uploadResult.type,
         };
       }
 
@@ -129,6 +130,10 @@ router.post(
         success: false,
         message: err.message,
       });
+    } finally {
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        try { fs.unlinkSync(req.file.path); } catch(e) { console.error(e); }
+      }
     }
   }
 );
@@ -156,15 +161,15 @@ router.put(
       let image = pastor.image;
 
       if (req.file) {
-        const uploadResult = await uploadToCloudinary(req.file.buffer, {
+        const uploadResult = await uploadToCloudinary(req.file.path, {
           folder: "mtc-padikuppam/pastors/profile-images",
           resource_type: "image"
         });
 
         image = {
-          url: uploadResult.url,
+          url: uploadResult.url || uploadResult.optimized_url,
           public_id: uploadResult.public_id,
-          type: uploadResult.type,
+          type: uploadResult.resource_type || uploadResult.type,
         };
       }
 
@@ -191,6 +196,10 @@ router.put(
         success: false,
         message: err.message,
       });
+    } finally {
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        try { fs.unlinkSync(req.file.path); } catch(e) { console.error(e); }
+      }
     }
   }
 );

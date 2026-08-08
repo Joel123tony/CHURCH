@@ -7,70 +7,62 @@ import os from "os";
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-export const compressImage = async (buffer) => {
-  const originalSize = buffer.length;
-  const sizeMB = originalSize / (1024 * 1024);
 
-  if (originalSize < 100 * 1024) {
-    return { buffer, originalSize, compressedSize: originalSize, isCompressed: false };
+
+export const compressImage = async (inputPath) => {
+  const originalSize = fs.statSync(inputPath).size;
+
+  if (originalSize < 100 * 1024) { // Don't compress if < 100KB
+    return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
   }
 
   try {
-    let quality = 80;
-    if (sizeMB > 10) quality = 40;
-    else if (sizeMB > 5) quality = 50;
-    else if (sizeMB > 2) quality = 60;
-    else if (sizeMB > 0.5) quality = 70;
+    const tempOutput = path.join(os.tmpdir(), `img-out-${Date.now()}-${Math.random().toString(36).substring(7)}.webp`);
+    
+    // High-quality WebP, preserve metadata, max 1920x1920
+    await sharp(inputPath)
+      .resize({ width: 1920, height: 1920, fit: "inside", withoutEnlargement: true })
+      .toFormat("webp", { quality: 80 })
+      .withMetadata()
+      .toFile(tempOutput);
 
-    const compressedBuffer = await sharp(buffer)
-      .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
-      .toFormat("webp", { quality })
-      .withMetadata(false)
-      .toBuffer();
+    const compressedSize = fs.statSync(tempOutput).size;
 
-    const compressedSize = compressedBuffer.length;
+    // If compression didn't save at least 10%, keep original
     if (compressedSize > originalSize * 0.9) {
-      return { buffer, originalSize, compressedSize: originalSize, isCompressed: false };
+      if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+      return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
     }
 
-    return { buffer: compressedBuffer, originalSize, compressedSize, isCompressed: true };
+    return { filePath: tempOutput, originalSize, compressedSize, isCompressed: true };
   } catch (error) {
     console.error("Image Compression Error:", error);
-    return { buffer, originalSize, compressedSize: originalSize, isCompressed: false };
+    return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
   }
 };
 
-export const compressVideo = (buffer) => {
+export const compressVideo = (inputPath) => {
   return new Promise((resolve) => {
-    const originalSize = buffer.length;
-    const tempInput = path.join(os.tmpdir(), `input-${Date.now()}-${Math.random().toString(36).substring(7)}.mp4`);
-    const tempOutput = path.join(os.tmpdir(), `output-${Date.now()}-${Math.random().toString(36).substring(7)}.mp4`);
+    const originalSize = fs.statSync(inputPath).size;
+    const tempOutput = path.join(os.tmpdir(), `vid-out-${Date.now()}-${Math.random().toString(36).substring(7)}.mp4`);
 
-    if (originalSize < 1024 * 1024) {
-      return resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
+    if (originalSize < 1024 * 1024) { // Don't compress if < 1MB
+      return resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
     }
 
     try {
-      fs.writeFileSync(tempInput, buffer);
-
-      let crf = 24;
-      const sizeMB = originalSize / (1024 * 1024);
-      if (sizeMB > 1000) crf = 32;
-      else if (sizeMB > 500) crf = 30;
-      else if (sizeMB > 100) crf = 28;
+      // Sensible CRF for quality, no extreme degradation
+      const crf = 24; 
 
       const timeoutId = setTimeout(() => {
         console.error("[UPLOAD TRACE] X. FFmpeg timed out after 5 minutes!");
         try {
-          if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
           if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
-        } catch {
-          // Ignore cleanup failures.
-        }
-        resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
+        } catch { /* ignore */ }
+        resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
       }, 5 * 60 * 1000);
 
-      ffmpeg(tempInput)
+      ffmpeg(inputPath)
         .outputOptions([
           "-vcodec libx264",
           `-crf ${crf}`,
@@ -83,39 +75,33 @@ export const compressVideo = (buffer) => {
         .toFormat("mp4")
         .on("end", () => {
           clearTimeout(timeoutId);
-
           try {
-            const compressedBuffer = fs.readFileSync(tempOutput);
-            const compressedSize = compressedBuffer.length;
-
-            fs.unlinkSync(tempInput);
-            fs.unlinkSync(tempOutput);
+            const compressedSize = fs.statSync(tempOutput).size;
 
             if (compressedSize > originalSize * 0.9) {
-              return resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
+              if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+              return resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
             }
 
-            resolve({ buffer: compressedBuffer, originalSize, compressedSize, isCompressed: true });
+            resolve({ filePath: tempOutput, originalSize, compressedSize, isCompressed: true });
           } catch (error) {
-            console.error("Video compression readback error:", error);
-            resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
+            console.error("Video compression output read error:", error);
+            if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+            resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
           }
         })
         .on("error", (error) => {
           clearTimeout(timeoutId);
-          console.error("[UPLOAD TRACE] X. FFmpeg Compression Error:", error);
+          console.error("FFmpeg Compression Error:", error);
           try {
-            if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
             if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
-          } catch {
-            // Ignore cleanup failures.
-          }
-          resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
+          } catch { /* ignore */ }
+          resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
         })
         .save(tempOutput);
     } catch (error) {
       console.error("Video Temp File Error:", error);
-      resolve({ buffer, originalSize, compressedSize: originalSize, isCompressed: false });
+      resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
     }
   });
 };

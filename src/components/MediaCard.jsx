@@ -39,8 +39,8 @@ function MediaCard({
   return (
     <>
       <div
-        className={`group relative aspect-square w-full cursor-pointer overflow-hidden rounded-[10px] sm:rounded-[12px] bg-slate-200 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-          selected ? "ring-2 ring-indigo-500 scale-[0.98]" : "hover:scale-[1.02]"
+        className={`group relative aspect-square w-full cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-200 shadow-sm transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#531B24] ${
+          selected ? "ring-2 ring-[#531B24] scale-[0.98] border-transparent" : "hover:shadow-md hover:scale-[1.02] hover:border-slate-300"
         }`}
       >
         {/* MEDIA LAYER */}
@@ -78,9 +78,8 @@ function MediaCard({
 
         {/* TOP BADGES */}
         <div className="absolute top-0 left-0 right-0 p-2 flex items-start justify-between pointer-events-none">
-          {/* CHECKBOX */}
           <div className="pointer-events-auto">
-            <label className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-sm transition-transform hover:scale-110 ${selected ? 'bg-indigo-500 text-white' : 'opacity-0 group-hover:opacity-100'}`}>
+            <label className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm transition-transform hover:scale-110 ${selected ? 'bg-[#531B24] border-[#531B24] text-white' : 'opacity-0 group-hover:opacity-100 text-transparent'}`}>
               <input
                 type="checkbox"
                 checked={selected}
@@ -109,14 +108,14 @@ function MediaCard({
         </div>
 
         {/* BOTTOM ACTION BAR (Hover) */}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col justify-end">
-          <p className="truncate text-[11px] font-medium text-white mb-2 shadow-sm">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col justify-end">
+          <p className="truncate text-xs font-semibold text-white mb-2 shadow-sm drop-shadow-md">
             {item.title || "Untitled Media"}
           </p>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(item); }}
-              className="flex-1 flex justify-center py-1.5 rounded bg-white/20 hover:bg-white/40 text-white transition-colors backdrop-blur-md"
+              className="flex-1 flex justify-center py-1.5 rounded-md bg-white/20 hover:bg-white/30 text-white transition-colors backdrop-blur-md"
               title="Edit"
             >
               <FaEdit size={12} />
@@ -124,15 +123,15 @@ function MediaCard({
             {onTogglePin && (
               <button
                 onClick={(e) => { e.stopPropagation(); onTogglePin(item._id); }}
-                className={`flex-1 flex justify-center py-1.5 rounded transition-colors backdrop-blur-md ${isPinned ? 'bg-emerald-500/80 hover:bg-emerald-600' : 'bg-white/20 hover:bg-white/40 text-white'}`}
+                className={`flex-1 flex justify-center py-1.5 rounded-md transition-colors backdrop-blur-md ${isPinned ? 'bg-emerald-500/90 hover:bg-emerald-600 text-white' : 'bg-white/20 hover:bg-white/30 text-white'}`}
                 title={isPinned ? "Unpin" : "Pin"}
               >
-                <FaThumbtack size={12} className={isPinned ? "text-white" : ""} />
+                <FaThumbtack size={12} />
               </button>
             )}
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item._id); }}
-              className="flex-1 flex justify-center py-1.5 rounded bg-white/20 hover:bg-rose-500/80 text-white transition-colors backdrop-blur-md"
+              className="flex-1 flex justify-center py-1.5 rounded-md bg-white/20 hover:bg-red-500/90 text-white transition-colors backdrop-blur-md"
               title="Delete"
             >
               <FaTrashAlt size={12} />

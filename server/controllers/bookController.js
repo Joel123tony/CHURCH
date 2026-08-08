@@ -2,6 +2,7 @@ import Book from "../models/Book.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 import { getCached, setCached, clearCache } from "../utils/cache.js";
+import fs from "fs";
 
 const CACHE_KEY = "books_all";
 
@@ -40,7 +41,7 @@ export const createBook = async (req, res) => {
       .replace(/\.pdf$/i, ""); // Remove .pdf temporarily
 
     // Upload PDF — enforce resource_type: "raw" and include .pdf in public_id
-    const pdfUpload = await uploadToCloudinary(req.files.pdfFile[0].buffer, {
+    const pdfUpload = await uploadToCloudinary(req.files.pdfFile[0].path, {
       folder: "mtc-padikuppam/books/pdfs",
       resource_type: "raw",
       public_id: safePdfName + "_" + Date.now() + ".pdf",
@@ -51,16 +52,16 @@ export const createBook = async (req, res) => {
     let coverPublicId = req.body.cover_public_id || null;
 
     if (req.files.coverImage && req.files.coverImage[0]) {
-      const coverUpload = await uploadToCloudinary(req.files.coverImage[0].buffer, {
+      const coverUpload = await uploadToCloudinary(req.files.coverImage[0].path, {
         folder: "mtc-padikuppam/books/covers",
         resource_type: "image",
       });
-      coverUrl = coverUpload.url || coverUpload.secure_url;
+      coverUrl = coverUpload.url || coverUpload.optimized_url;
       coverPublicId = coverUpload.public_id;
     }
 
     // Validate the PDF URL before saving
-    const finalPdfUrl = pdfUpload.url || pdfUpload.secure_url;
+    const finalPdfUrl = pdfUpload.url || pdfUpload.optimized_url;
     console.log("📄 PDF stored at:", finalPdfUrl);
     console.log("📄 PDF public_id:", pdfUpload.public_id);
 
@@ -86,6 +87,14 @@ export const createBook = async (req, res) => {
       success: false,
       message: err.message || "Failed to create book",
     });
+  } finally {
+    // Cleanup temporary files
+    if (req.files?.pdfFile?.[0]?.path && fs.existsSync(req.files.pdfFile[0].path)) {
+      try { fs.unlinkSync(req.files.pdfFile[0].path); } catch (e) { console.error(e); }
+    }
+    if (req.files?.coverImage?.[0]?.path && fs.existsSync(req.files.coverImage[0].path)) {
+      try { fs.unlinkSync(req.files.coverImage[0].path); } catch (e) { console.error(e); }
+    }
   }
 };
 
@@ -149,12 +158,12 @@ export const updateBook = async (req, res) => {
           .replace(/[^a-zA-Z0-9._-]/g, "_")
           .replace(/\.pdf$/i, "");
 
-        const pdfUpload = await uploadToCloudinary(req.files.pdfFile[0].buffer, {
+        const pdfUpload = await uploadToCloudinary(req.files.pdfFile[0].path, {
           folder: "mtc-padikuppam/books/pdfs",
           resource_type: "raw",
           public_id: safePdfName + "_" + Date.now() + ".pdf",
         });
-        updatePayload.pdfUrl = pdfUpload.url || pdfUpload.secure_url;
+        updatePayload.pdfUrl = pdfUpload.url || pdfUpload.optimized_url;
         updatePayload.pdf_public_id = pdfUpload.public_id;
         console.log("📄 Updated PDF stored at:", updatePayload.pdfUrl);
       }
@@ -164,11 +173,11 @@ export const updateBook = async (req, res) => {
         if (book.cover_public_id) {
           await deleteFromCloudinary(book.cover_public_id);
         }
-        const coverUpload = await uploadToCloudinary(req.files.coverImage[0].buffer, {
+        const coverUpload = await uploadToCloudinary(req.files.coverImage[0].path, {
           folder: "mtc-padikuppam/books/covers",
           resource_type: "image",
         });
-        updatePayload.coverImageUrl = coverUpload.url || coverUpload.secure_url;
+        updatePayload.coverImageUrl = coverUpload.url || coverUpload.optimized_url;
         updatePayload.cover_public_id = coverUpload.public_id;
       }
     }
@@ -195,6 +204,14 @@ export const updateBook = async (req, res) => {
       success: false,
       message: err.message || "Failed to update book",
     });
+  } finally {
+    // Cleanup temporary files
+    if (req.files?.pdfFile?.[0]?.path && fs.existsSync(req.files.pdfFile[0].path)) {
+      try { fs.unlinkSync(req.files.pdfFile[0].path); } catch (e) { console.error(e); }
+    }
+    if (req.files?.coverImage?.[0]?.path && fs.existsSync(req.files.coverImage[0].path)) {
+      try { fs.unlinkSync(req.files.coverImage[0].path); } catch (e) { console.error(e); }
+    }
   }
 };
 

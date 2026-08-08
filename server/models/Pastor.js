@@ -25,6 +25,7 @@ const pastorSchema = new mongoose.Schema(
         type: String,
         default: "",
       },
+
       public_id: {
         type: String,
         default: "",

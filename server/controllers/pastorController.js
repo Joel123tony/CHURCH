@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
 import { getCached, setCached, clearCache } from "../utils/cache.js";
+import fs from "fs";
 
 const CACHE_KEY = "pastors_public";
 
@@ -152,15 +153,18 @@ const safeErrorResponse = (res, err, fallbackMessage) => {
 };
 
 const buildImageFromRequest = async ({ req, existingPastor, body }) => {
-  if (req?.file?.buffer) {
+  if (req?.file?.path) {
     if (existingPastor?.image?.public_id) {
       await deleteFromCloudinary(existingPastor.image.public_id);
     }
 
-    const upload = await uploadToCloudinary(req.file.buffer);
+    const upload = await uploadToCloudinary(req.file.path, {
+        folder: "mtc-padikuppam/pastors/profile-images",
+        resource_type: "image"
+    });
 
     return {
-      url: upload?.url || upload?.secure_url || "",
+      url: upload?.url || upload?.optimized_url || "",
       public_id: upload?.public_id || "",
     };
   }
@@ -243,11 +247,16 @@ export const createPastor = async (req, res) => {
 
     return res.status(201).json({
       success: true,
+      message: "Pastor created successfully",
       pastor,
     });
   } catch (err) {
-    console.error("CREATE PASTOR ERROR:", err);
-    return safeErrorResponse(res, err, "Failed to create pastor");
+    console.error("[PASTOR] CREATE ERROR:", err);
+    return sendError(res, err, "Failed to create pastor");
+  } finally {
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch (e) { console.error(e); }
+    }
   }
 };
 
@@ -387,18 +396,22 @@ export const updatePastor = async (req, res) => {
     const updated = await Pastor.findByIdAndUpdate(req.params.id, updatePayload, {
       returnDocument: 'after',
       runValidators: true,
-      lean: true
     });
 
     clearCache(CACHE_KEY);
 
-    return res.json({
+    return res.status(200).json({
       success: true,
+      message: "Pastor updated successfully",
       pastor: updated,
     });
   } catch (err) {
-    console.error("UPDATE PASTOR ERROR:", err);
-    return safeErrorResponse(res, err, "Failed to update pastor");
+    console.error("[PASTOR] UPDATE ERROR:", err);
+    return sendError(res, err, "Failed to update pastor");
+  } finally {
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch (e) { console.error(e); }
+    }
   }
 };
 

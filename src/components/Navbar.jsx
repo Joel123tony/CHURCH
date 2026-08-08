@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { useScrollLock } from "../hooks/useScrollLock";
 import methodistLogo from "../assets/methodist-logo.png";
 import { ChevronDown, X, Menu } from "lucide-react";
 
@@ -8,10 +9,14 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("home");
   const [resourcesOpen, setResourcesOpen] = useState(false);
+  
+  // Lock body scroll when mobile menu is open
+  useScrollLock(menuOpen);
   const { language, setLanguage, t } = useLanguage();
   const { pathname, hash } = useLocation();
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   const isNavigatingRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
 
@@ -79,7 +84,9 @@ export default function Navbar() {
         }
       }
 
-      setActive(currentSection);
+      if (currentSection && currentSection !== active) {
+        setActive(currentSection);
+      }
     };
 
     // Run once on mount to set initial state correctly if scrolled down
@@ -92,7 +99,11 @@ export default function Navbar() {
   // Handle click outside dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      // Only close if clicked outside desktop dropdown AND mobile menu
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+        (!mobileMenuRef.current || !mobileMenuRef.current.contains(event.target))
+      ) {
         setResourcesOpen(false);
       }
     };
@@ -100,17 +111,11 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Lock body scroll when mobile menu is open
+  // Close mobile menu on route change
   useEffect(() => {
-    if (menuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
+    setMenuOpen(false);
+    setResourcesOpen(false);
+  }, [pathname, hash]);
 
   // Close mobile menu on Escape key
   useEffect(() => {
@@ -274,6 +279,7 @@ export default function Navbar() {
 
       {/* Mobile Drawer Panel */}
       <div
+        ref={mobileMenuRef}
         className={`fixed inset-y-0 right-0 z-[70] w-[280px] sm:w-[320px] bg-primary border-l border-white/10 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col ${menuOpen ? "translate-x-0" : "translate-x-full"
           }`}
       >

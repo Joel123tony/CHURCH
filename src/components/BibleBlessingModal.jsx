@@ -1,46 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { bibleVerses } from "../data/bibleVerses";
+import { useScrollLock } from "../hooks/useScrollLock";
 import { X, Download, Loader2 } from "lucide-react";
-import methodistLogo from "../assets/methodist-logo.png";
+import bibleLogo from "../assets/bible-logo.png";
 
 export default function BibleBlessingModal() {
   const [isVisible, setIsVisible] = useState(false);
+  
+  // Lock background scroll purely via JS events (no layout mutation)
+  useScrollLock(isVisible);
+  
   const [isClosing, setIsClosing] = useState(false);
   const [verse, setVerse] = useState(null);
   const [language, setLanguage] = useState("en"); // "en" or "ta"
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [processedLogo, setProcessedLogo] = useState(methodistLogo);
   const modalRef = useRef(null);
   const exportRef = useRef(null);
-
-  useEffect(() => {
-    // Process logo to change white cross to dark charcoal
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = methodistLogo;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      try {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240 && data[i + 3] > 0) {
-            data[i] = 30;
-            data[i + 1] = 30;
-            data[i + 2] = 30;
-          }
-        }
-        ctx.putImageData(imageData, 0, 0);
-        setProcessedLogo(canvas.toDataURL('image/png'));
-      } catch (e) {
-        console.error("Logo processing error:", e);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     // Check if it has already been shown in this session
@@ -169,9 +144,9 @@ export default function BibleBlessingModal() {
             <div className="flex items-center justify-center w-14 h-14 rounded-full bg-[#5D1324]/10 mb-3 p-1.5 shadow-[inset_0_2px_4px_rgba(93,19,36,0.1)] border border-[#5D1324]/10 relative overflow-hidden group">
               <div className="absolute inset-0 bg-white/40 blur-md rounded-full group-hover:bg-white/60 transition-all duration-500" />
               <img
-                src={processedLogo}
-                alt="Methodist Tamil Church"
-                className="w-full h-full object-contain relative z-10 transition-transform duration-500"
+                src={bibleLogo}
+                alt="Bible Logo"
+                className="w-full h-full object-contain relative z-10 p-0.5 transition-transform duration-500"
               />
             </div>
             <h2 className="text-xl sm:text-2xl font-semibold text-[#5D1324] tracking-wide text-center w-full">
@@ -251,7 +226,7 @@ export default function BibleBlessingModal() {
           {/* Logo & Header */}
           <div className="flex flex-col items-center mt-12 w-full">
             <div className="flex items-center justify-center w-40 h-40 rounded-full bg-[#5D1324]/10 mb-8 p-4 shadow-[inset_0_4px_8px_rgba(93,19,36,0.1)] border-2 border-[#5D1324]/10 relative">
-              <img src={processedLogo} alt="Logo" className="w-full h-full object-contain" crossOrigin="anonymous" />
+              <img src={bibleLogo} alt="Bible Logo" className="w-full h-full object-contain p-0.5" crossOrigin="anonymous" />
             </div>
             <h2 className="text-[52px] font-bold text-[#5D1324] tracking-wider uppercase text-center w-full">
               {language === "en" ? "Today's Bible Blessing" : "இன்றைய வேத ஆசீர்வாதம்"}
