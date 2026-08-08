@@ -12,11 +12,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  Inbox
+  Inbox,
+  RefreshCw,
+  X
 } from "lucide-react";
 import API from "../../api/axios";
 import { toast } from "react-toastify";
 import DonationDetailsModal from "./DonationDetailsModal";
+import { formatCurrency } from "../../utils/formatCurrency";
 
 const StatCard = ({ title, value, icon: Icon, colorClass, isMoney = false }) => (
   <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm transition-all hover:shadow-md">
@@ -24,7 +27,7 @@ const StatCard = ({ title, value, icon: Icon, colorClass, isMoney = false }) => 
       <div>
         <p className="text-sm font-medium text-slate-500">{title}</p>
         <h3 className="mt-2 text-2xl font-bold text-[#531B24]">
-          {isMoney ? `â‚¹${value.toLocaleString()}` : value}
+          {isMoney ? formatCurrency(value) : value}
         </h3>
       </div>
       <div className={`flex h-12 w-12 items-center justify-center rounded-full ${colorClass}`}>
@@ -86,6 +89,22 @@ export default function Donations() {
   useEffect(() => {
     setCurrentPage(1);
   }, [search, filterStatus, sortBy, startDate, endDate, minAmount, maxAmount]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setFilterStatus("all");
+    setSortBy("date_desc");
+    setStartDate("");
+    setEndDate("");
+    setMinAmount("");
+    setMaxAmount("");
+    setCurrentPage(1);
+  };
+
+  const handleRefresh = async () => {
+    await fetchData();
+    toast.success("Donation data updated.");
+  };
 
   async function fetchData() {
     console.log("[DEBUG] fetchData started on device. User Agent:", navigator.userAgent);
@@ -215,14 +234,23 @@ export default function Donations() {
             Manage online donations, track payments, and view statistics.
           </p>
         </div>
-        
-        <button
-          onClick={handleExport}
-          className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-        >
-          <Download className="h-4 w-4" />
-          Export CSV
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -301,6 +329,15 @@ export default function Donations() {
               <option value="amount_desc">Highest Amount</option>
               <option value="amount_asc">Lowest Amount</option>
             </select>
+
+            {/* Clear Filters */}
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 w-full"
+            >
+              <X className="h-4 w-4" />
+              Clear Filters
+            </button>
           </div>
 
           {/* Additional Filters (Dates & Amounts) */}
@@ -321,14 +358,14 @@ export default function Donations() {
             />
             <input
               type="number"
-              placeholder="Min Amount (â‚¹)"
+              placeholder="Min Amount (₹)"
               value={minAmount}
               onChange={(e) => setMinAmount(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-white py-2 px-4 text-sm outline-none transition-all focus:border-[#531B24]"
             />
             <input
               type="number"
-              placeholder="Max Amount (â‚¹)"
+              placeholder="Max Amount (₹)"
               value={maxAmount}
               onChange={(e) => setMaxAmount(e.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-white py-2 px-4 text-sm outline-none transition-all focus:border-[#531B24]"
@@ -375,7 +412,7 @@ export default function Donations() {
                         {donation.email && <p className="text-xs text-slate-500 mt-0.5">{donation.email}</p>}
                       </td>
                       <td className="px-6 py-4 font-bold text-slate-800">
-                        â‚¹{donation.amount.toLocaleString()}
+                        {formatCurrency(donation.amount)}
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge status={donation.paymentStatus} />
@@ -412,7 +449,7 @@ export default function Donations() {
                       <p className="text-xs text-slate-500">{new Date(donation.transactionDate).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-slate-800 text-base">â‚¹{donation.amount.toLocaleString()}</p>
+                      <p className="font-bold text-slate-800 text-base">{formatCurrency(donation.amount)}</p>
                       <div className="mt-1">
                         <StatusBadge status={donation.paymentStatus} />
                       </div>

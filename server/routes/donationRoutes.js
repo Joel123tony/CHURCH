@@ -5,6 +5,16 @@ import Donation from "../models/Donation.js";
 import auth from "../middleware/auth.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
+const formatCurrency = (amount) => {
+  if (amount === undefined || amount === null) return "";
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
 const router = express.Router();
 
 // Utility to initialize Razorpay (using dummy keys if not in env to prevent crash)
@@ -113,7 +123,7 @@ router.post("/verify-payment", async (req, res) => {
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount:</strong></td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd;">₹${donation.amount}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${formatCurrency(donation.amount)}</td>
               </tr>
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Transaction ID:</strong></td>

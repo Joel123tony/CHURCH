@@ -15,15 +15,12 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 import { connectDB } from "./config/db.js";
-import { initCronJobs } from "./jobs/cronJobs.js";
-import { startWorkers } from "./workers/index.js";
 
 /* ROUTES */
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import pastorRoutes from "./routes/pastor.routes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import adminSongRoutes from "./routes/adminSongRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import prayerRoutes from "./routes/prayer.js";
@@ -33,7 +30,6 @@ import contentRoutes from "./routes/content.routes.js";
 import translateRoutes from "./routes/translate.routes.js";
 import bookRoutes from "./routes/bookRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
-import songRoutes from "./routes/songRoutes.js";
 import compression from "compression";
 
 const app = express();
@@ -106,7 +102,6 @@ app.use(perfMiddleware);
    TRANSLATE & SONGS (no DB required)
 ========================= */
 app.use("/api/translate", translateRoutes);
-app.use("/api/songs", songRoutes);
 
 import mongoose from "mongoose";
 
@@ -156,7 +151,6 @@ app.use("/api/home", homeRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/pastors", pastorRoutes);
-app.use("/api/admin/songs", adminSongRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/events", eventRoutes);
@@ -242,14 +236,7 @@ const startServer = async () => {
       // Defer background cron jobs and workers asynchronously so Express accepts HTTP requests immediately
       setImmediate(async () => {
         try {
-          console.log("⏳ Starting background cron jobs and workers asynchronously...");
-          const workerStart0 = performance.now();
-
-          initCronJobs();
-          startWorkers();
-
-          const workerStartMs = Math.round(performance.now() - workerStart0);
-          console.log(`✅ Background cron jobs and workers initialized in ${workerStartMs} ms`);
+          console.log("✅ Background initialized successfully");
         } catch (workerErr) {
           console.error("⚠️ Background worker initialization error:", workerErr);
         }

@@ -30,7 +30,7 @@ function PremiumPinnedCard({ item, onClick, t, className = "" }) {
           onClick?.();
         }
       }}
-      className={`group relative flex flex-col h-full bg-[#54091b] rounded-[20px] overflow-hidden [transform:translateZ(0)] p-[8px] sm:p-4 border border-[#d4af37]/20 shadow-md shadow-[#54091b]/30 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:border-[#d4af37]/40 hover:shadow-[#54091b]/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37] ${className}`}
+      className={`group relative flex flex-col h-full bg-[#5d1324] rounded-[20px] overflow-hidden [transform:translateZ(0)] p-[8px] sm:p-4 border border-[#d4af37]/20 shadow-md shadow-[#54091b]/30 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:border-[#d4af37]/40 hover:shadow-[#54091b]/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37] ${className}`}
     >
       <div className="relative w-full overflow-hidden rounded-[14px] sm:rounded-[16px] [transform:translateZ(0)] aspect-video bg-[#3a0613]">
         {isVideo ? (
@@ -106,7 +106,7 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
           onClick?.();
         }
       }}
-      className={`group relative ${aspectClass} w-full cursor-pointer overflow-hidden rounded-[10px] sm:rounded-[12px] bg-[#e5ddd3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]`}
+      className={`group relative ${aspectClass} w-full cursor-pointer overflow-hidden rounded-[10px] sm:rounded-[12px] bg-[#5d1324] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]`}
     >
       {isVideo ? (
         <img
@@ -129,7 +129,7 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
       )}
 
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#e5ddd3] animate-pulse"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-[#5d1324] animate-pulse"></div>
       )}
 
       {isVideo && (
@@ -352,7 +352,7 @@ const Gallery = memo(function Gallery({ initialGallery }) {
           {loading ? (
             <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 px-4 -mx-4 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex flex-col bg-[#54091b] rounded-[20px] p-[8px] w-[260px] sm:w-[250px] shrink-0 snap-start md:w-full border border-[#d4af37]/10 animate-pulse">
+                <div key={i} className="flex flex-col bg-[#5d1324] rounded-[20px] p-[8px] w-[260px] sm:w-[250px] shrink-0 snap-start md:w-full border border-[#d4af37]/10 animate-pulse">
                   <div className="w-full aspect-video bg-[#3a0613] rounded-[14px] mb-3"></div>
                   <div className="h-3 bg-[#3a0613] rounded w-1/4 mb-2 ml-1"></div>
                   <div className="h-4 bg-[#3a0613] rounded w-3/4 mb-1.5 ml-1"></div>

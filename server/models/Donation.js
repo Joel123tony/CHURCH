@@ -17,7 +17,7 @@ const donationSchema = new mongoose.Schema(
     amount: {
       type: Number,
       required: true,
-      min: [10, "Minimum donation amount is ₹10"],
+      min: [10, "Minimum donation amount is INR 10"],
     },
     currency: {
       type: String,

@@ -10,8 +10,6 @@ const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
 const ClientGallery = lazy(() => import("./pages/ClientGallery"));
 const Bible = lazy(() => import("./pages/Bible"));
-const Songs = lazy(() => import("./pages/Songs"));
-const SongDetails = lazy(() => import("./pages/SongDetails"));
 const BooksPage = lazy(() => import("./pages/BooksPage"));
 const MainLayout = lazy(() => import("./components/MainLayout"));
 
@@ -26,7 +24,6 @@ const PastorMessage = lazy(() => import("./pages/admin/PastorMessage"));
 const Books = lazy(() => import("./pages/admin/Books"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Donations = lazy(() => import("./pages/admin/Donations"));
-const SongsLayout = lazy(() => import("./pages/admin/songs/SongsLayout"));
 const PageLoader = () => (
   <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f4efe7] px-4">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(238,0,57,0.08),_transparent_40%),radial-gradient(circle_at_bottom,_rgba(239,191,4,0.12),_transparent_36%)]" />
@@ -70,8 +67,6 @@ export default function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/gallery" element={<ClientGallery />} />
                 <Route path="/bible" element={<Bible />} />
-                <Route path="/songs" element={<Songs />} />
-                <Route path="/songs/:id" element={<SongDetails />} />
                 <Route path="/books" element={<BooksPage />} />
               </Route>
 
@@ -94,7 +89,6 @@ export default function App() {
                 <Route path="pastor-message" element={<PastorMessage />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="donations" element={<Donations />} />
-                <Route path="songs/*" element={<SongsLayout />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -8,7 +8,8 @@ import {
   FaShareAlt,
   FaTrashAlt,
   FaWhatsapp,
-  FaCheck
+  FaCheck,
+  FaSyncAlt
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -38,6 +39,22 @@ export default function PrayerRequests() {
   const [activeTab, setActiveTab] = useState("pending");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      const res = await API.get("/prayer-requests");
+      setRequests(res.data.data || []);
+      toast.success("Prayer requests updated successfully.");
+    } catch (err) {
+      console.error("Refresh prayer requests error:", err);
+      toast.error("Failed to refresh prayer requests");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const fetchRequests = async () => {
     try {
@@ -287,9 +304,19 @@ export default function PrayerRequests() {
         {/* Header Section */}
         <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <h1 className="text-2xl lg:text-3xl font-bold text-[#531B24] tracking-tight">
-              Prayer Requests
-            </h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl lg:text-3xl font-bold text-[#531B24] tracking-tight">
+                Prayer Requests
+              </h1>
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:bg-slate-50 hover:text-[#531B24] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#531B24]/20"
+                title="Refresh"
+              >
+                <FaSyncAlt className={`${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
             <p className="mt-1 text-sm font-medium text-slate-500">
               Manage prayer requests, mark responses, and share translated messages with one clean workflow.
             </p>

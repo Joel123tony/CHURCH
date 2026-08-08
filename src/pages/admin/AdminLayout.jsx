@@ -16,8 +16,7 @@ import {
   MessageSquare,
   BookOpen,
   Globe,
-  HeartHandshake,
-  Music
+  HeartHandshake
 } from "lucide-react";
 
 const AdminClock = () => {
@@ -106,7 +105,6 @@ export default function AdminLayout() {
       title: "",
       links: [
         { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
-        { to: "/admin/songs", label: "Songs", icon: Music },
       ],
     },
     {

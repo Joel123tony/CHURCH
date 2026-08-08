@@ -8,6 +8,7 @@ import YoutubeSection from "../components/YoutubeSection";
 import Testimonials from "../components/Testimonials";
 import { useLanguage } from "../context/LanguageContext";
 import { getHomePage } from "../services/api";
+import DateTime from "../components/DateTime";
 
 export default function Home() {
   const { t } = useLanguage();
@@ -202,9 +203,14 @@ export default function Home() {
 
   return (
     <>
-      <h1 className="bg-[#F4EFE7] text-2xl font-bold text-center py-10 text-[#54091b]">
-        {t("Holy Life , Gospel Ministry")}
-      </h1>
+      <div id="home" className="bg-[#F4EFE7] border-b border-[#54091b]/10 scroll-mt-20">
+        <div className="mx-auto max-w-7xl px-6 py-6 sm:py-8 flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
+          <h1 className="text-2xl sm:text-[26px] font-bold text-center sm:text-left text-[#54091b]">
+            {t("Holy Life , Gospel Ministry")}
+          </h1>
+          <DateTime className="shrink-0" />
+        </div>
+      </div>
 
       {renderLayout()}
     </>

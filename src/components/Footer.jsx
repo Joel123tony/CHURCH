@@ -4,7 +4,7 @@ import { useLanguage } from "../context/LanguageContext";
 export default function Footer() {
   const { t } = useLanguage();
   const { pathname } = useLocation();
-  const isLibraryPage = /^\/(bible|songs|books)(\/|$)/.test(pathname);
+  const isLibraryPage = /^\/(bible|books)(\/|$)/.test(pathname);
 
   return (
     <footer className={isLibraryPage ? "py-8 bg-[#F4EFE7] text-[#54091b]" : "py-8 bg-[#54091b] text-[#F4EFE7]"}>

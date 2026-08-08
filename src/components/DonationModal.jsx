@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiX, FiCheckCircle, FiAlertCircle, FiHeart, FiLoader } from "react-icons/fi";
 import API from "../api/axios";
+import { formatCurrency } from "../utils/formatCurrency";
 
 // Helper to load Razorpay script
 const loadRazorpayScript = () => {
@@ -82,7 +83,7 @@ export default function DonationModal({ isOpen, onClose }) {
   const handleDonate = async (e) => {
     e.preventDefault();
     if (amount < 10) {
-      setError("Minimum donation amount is ₹10");
+      setError(`Minimum donation amount is ${formatCurrency(10)}`);
       return;
     }
 
@@ -227,7 +228,7 @@ export default function DonationModal({ isOpen, onClose }) {
                           : "border-[#531B24]/20 bg-white text-[#531B24] hover:border-[#531B24]/50"
                       }`}
                     >
-                      ₹{preset}
+                      {formatCurrency(preset)}
                     </button>
                   ))}
                 </div>
@@ -301,7 +302,7 @@ export default function DonationModal({ isOpen, onClose }) {
                     Processing...
                   </>
                 ) : (
-                  <>Donate Securely ₹{amount}</>
+                  <>Donate Securely {formatCurrency(amount)}</>
                 )}
               </button>
             </form>
@@ -314,7 +315,7 @@ export default function DonationModal({ isOpen, onClose }) {
                 <FiCheckCircle size={40} />
               </div>
               <h3 className="mb-2 text-2xl font-bold text-slate-800">Thank You! ❤️</h3>
-              <p className="mb-6 text-slate-600">Your donation of <strong className="text-slate-800">₹{transactionData?.amount}</strong> has been received successfully.</p>
+              <p className="mb-6 text-slate-600">Your donation of <strong className="text-slate-800">{formatCurrency(transactionData?.amount)}</strong> has been received successfully.</p>
               
               <div className="bg-white rounded-xl p-4 mb-8 border border-slate-100 text-sm">
                 <p className="text-slate-500 mb-1">Transaction ID</p>

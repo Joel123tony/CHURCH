@@ -104,9 +104,7 @@ export function LanguageProvider({ children }) {
         "Contact Us": "எங்களை தொடர்புகொள்ளுங்கள்",
         "youtube": "யூடியூப்",
         "youtube.loading": "ஏற்றுகிறது...",
-        "youtube.noVideos": "வீடியோக்கள் இல்லை",
-        "Search Christan Songs": "கிறிஸ்தவ பாடல்களைத் தேடுங்கள்",
-        "Search songs by title or lyrics...": "தலைப்பு அல்லது பாடல்வரிகளைத் தேடுங்கள்..."
+        "youtube.noVideos": "வீடியோக்கள் இல்லை"
       };
 
       if (STATIC_DICTIONARY[enText]) {

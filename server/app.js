@@ -9,13 +9,11 @@ import { connectDB } from "./config/db.js";
 /* ROUTES */
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import adminSongRoutes from "./routes/adminSongRoutes.js";
 import pastorRoutes from "./routes/pastor.routes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import galleryRoutes from "./routes/gallery.routes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
-import songRoutes from "./routes/songRoutes.js";
 import contentRoutes from "./routes/content.routes.js";
 import homeRoutes from "./routes/home.routes.js";
 
@@ -41,7 +39,6 @@ app.use(cookieParser());
 ========================= */
 app.use("/api/home", homeRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/admin/songs", adminSongRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/pastors", pastorRoutes);
 
@@ -56,9 +53,6 @@ app.use("/api/events", eventRoutes);
 
 /* YOUTUBE */
 app.use("/api/youtube", youtubeRoutes);
-
-/* SONGS */
-app.use("/api/songs", songRoutes);
 
 /* CMS CONTENT */
 app.use("/api/content", contentRoutes);

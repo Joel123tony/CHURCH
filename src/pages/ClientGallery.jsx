@@ -24,7 +24,7 @@ function CompactTile({ item, onClick, t }) {
           onClick?.();
         }
       }}
-      className="group relative aspect-square w-full cursor-pointer overflow-hidden rounded-[10px] sm:rounded-[12px] bg-[#e5ddd3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]"
+      className="group relative aspect-square w-full cursor-pointer overflow-hidden rounded-[10px] sm:rounded-[12px] bg-[#5c1223] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]"
     >
       {isVideo ? (
         <img
@@ -45,7 +45,7 @@ function CompactTile({ item, onClick, t }) {
       )}
 
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#e5ddd3] animate-pulse"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-[#5c1223] animate-pulse"></div>
       )}
 
       {isVideo && (
@@ -229,7 +229,7 @@ export default function ClientGallery() {
         {loading ? (
           <div className={gridClasses}>
             {[...Array(30)].map((_, i) => (
-              <div key={i} className="aspect-square w-full rounded-[10px] sm:rounded-[12px] animate-pulse bg-[#e5ddd3]" />
+              <div key={i} className="aspect-square w-full rounded-[10px] sm:rounded-[12px] animate-pulse bg-[#5c1223]" />
             ))}
           </div>
         ) : filteredMedia.length === 0 ? (

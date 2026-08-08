@@ -2,7 +2,9 @@ import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Contact from "./Contact";
 import Footer from "./Footer";
-import { useEffect } from "react";
+import { useEffect, Suspense, lazy } from "react";
+
+const BibleBlessingModal = lazy(() => import("./BibleBlessingModal"));
 
 export default function MainLayout() {
   const { pathname, hash } = useLocation();
@@ -33,7 +35,7 @@ export default function MainLayout() {
     return () => window.clearTimeout(timeout);
   }, [pathname, hash]);
 
-  const isDarkContact = pathname.startsWith("/bible") || pathname.startsWith("/songs") || pathname.startsWith("/books");
+  const isDarkContact = pathname.startsWith("/bible") || pathname.startsWith("/books");
   const contactTheme = isDarkContact ? "dark" : "light";
 
   return (
@@ -44,6 +46,9 @@ export default function MainLayout() {
       </main>
       <Contact theme={contactTheme} />
       <Footer />
+      <Suspense fallback={null}>
+        <BibleBlessingModal />
+      </Suspense>
     </div>
   );
 }

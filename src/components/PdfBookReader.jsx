@@ -169,9 +169,9 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
   };
 
   // Responsive: exact dimensions for flawless Fit-to-Viewport scaling
-  const [windowDims, setWindowDims] = useState({ 
-    width: window.innerWidth, 
-    height: window.innerHeight 
+  const [windowDims, setWindowDims] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
   });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -263,7 +263,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
   }
 
   const bookRatio = aspectRatio * pagesToShow;
-  
+
   // Calculate perfectly fitted pixel dimensions to prevent ANY vertical scrolling
   let targetHeight = availableHeight;
   let targetWidth = targetHeight * bookRatio;
@@ -272,7 +272,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
     targetWidth = availableWidth;
     targetHeight = targetWidth / bookRatio;
   }
-  
+
   // Logic to prevent artificial blank spaces
   const isTwoPage = !isMobile && pagesToShow === 2 && numPages > 1;
 
@@ -301,7 +301,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
     >
 
       {/* Header: 70px */}
-      <div 
+      <div
         className="w-full h-[70px] shrink-0 flex items-center justify-between px-4 sm:px-6 z-50"
         style={{
           background: '#5B0E21',
@@ -342,7 +342,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
 
       {/* Toolbar */}
       <div className={`w-full flex items-center justify-center shrink-0 z-50 ${isMobile ? 'h-[64px]' : 'absolute top-[90px] left-1/2 -translate-x-1/2 w-auto pointer-events-none'}`}>
-        <div 
+        <div
           className={`flex items-center ${isMobile ? 'gap-2 w-full px-4 h-full' : 'gap-1 shadow-2xl rounded-full px-2 py-1.5 pointer-events-auto transition-transform hover:-translate-y-[2px]'}`}
           style={isMobile ? {
             background: 'rgba(122,15,36,0.85)',
@@ -387,7 +387,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
 
       {/* Main Content Area */}
       <div className={`flex-1 min-h-0 relative w-full overflow-auto custom-scrollbar flex items-center justify-center transition-transform duration-300 ${isMobile ? 'p-2 sm:p-4 pb-24' : 'px-8 pt-[20px] pb-[20px]'}`}>
-        
+
         {/* Floating Navigation Arrows (Desktop) */}
         {!isMobile && numPages > 1 && (
           <>
@@ -477,7 +477,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
 
       {/* Desktop Footer: 44px */}
       {!isMobile && (
-        <div 
+        <div
           className="w-full h-[44px] shrink-0 flex items-center justify-center px-8 z-50"
           style={{ background: '#5B0E21' }}
         >

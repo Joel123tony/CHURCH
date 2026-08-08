@@ -9,13 +9,15 @@ export default function Navbar() {
   const [active, setActive] = useState("home");
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+  const isNavigatingRef = useRef(false);
+  const scrollTimeoutRef = useRef(null);
 
   const links = useMemo(
     () => [
-      { key: "Home", href: "/#hero", id: "hero" },
+      { key: "Home", href: "/#home", id: "home" },
       { key: "History", href: "/#history", id: "history" },
       { key: "Events", href: "/#events", id: "events" },
       { key: "Gallery", href: "/#gallery", id: "gallery" },
@@ -28,32 +30,63 @@ export default function Navbar() {
 
   const resources = [
     { key: "Bible", href: "/bible" },
-    { key: "Christian Songs", href: "/songs" },
     { key: "Books & Pamphlets", href: "/books" },
   ];
 
-  // Intersection observer for active sections
+  // Active state based strictly on routing/hash (for non-home pages or initial load)
+  useEffect(() => {
+    if (pathname !== "/") {
+      if (pathname.startsWith("/gallery")) setActive("gallery");
+      else if (pathname.startsWith("/message")) setActive("pastor-message");
+      else setActive("");
+      return;
+    }
+
+    if (!isNavigatingRef.current) {
+      const currentHash = hash.replace("#", "");
+      if (currentHash) {
+        setActive(currentHash);
+      }
+    }
+  }, [pathname, hash]);
+
+  // Scroll listener for active sections
   useEffect(() => {
     if (pathname !== "/") return;
 
-    const sections = links.map((l) => document.getElementById(l.id));
+    const handleScroll = () => {
+      if (isNavigatingRef.current) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActive(entry.target.id);
-          }
-        });
-      },
-      { threshold: 0.6 }
-    );
+      const sections = links.map((l) => document.getElementById(l.id)).filter(Boolean);
+      if (sections.length === 0) return;
 
-    sections.forEach((sec) => {
-      if (sec) observer.observe(sec);
-    });
+      // If user has scrolled to the absolute bottom of the page, highlight the last section
+      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10;
+      if (isAtBottom) {
+        setActive(sections[sections.length - 1].id);
+        return;
+      }
 
-    return () => observer.disconnect();
+      // Calculate which section is currently active
+      // We consider a section active if its top edge has scrolled past the navbar (plus a small buffer)
+      const offset = 120; // 80px navbar height + 40px buffer
+      let currentSection = sections[0].id;
+
+      for (const section of sections) {
+        const rect = section.getBoundingClientRect();
+        if (rect.top <= offset) {
+          currentSection = section.id;
+        }
+      }
+
+      setActive(currentSection);
+    };
+
+    // Run once on mount to set initial state correctly if scrolled down
+    handleScroll();
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [links, pathname]);
 
   // Handle click outside dropdown
@@ -93,14 +126,21 @@ export default function Navbar() {
     e.preventDefault();
     setMenuOpen(false);
 
-    const targetHash = href.replace("/", "");
-    if (pathname === "/" && window.location.hash === targetHash) {
-      // Already on the same page and same hash. Just force scroll.
+    // Set immediate state and block observer
+    setActive(id);
+    isNavigatingRef.current = true;
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 1000);
+
+    if (pathname === "/") {
       const el = document.getElementById(id);
       if (el) {
         const yOffset = -80;
         const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
         window.scrollTo({ top: y, behavior: "smooth" });
+        window.history.pushState(null, "", href);
       }
     } else {
       navigate(href);
@@ -151,7 +191,7 @@ export default function Navbar() {
               <li className="relative whitespace-nowrap" ref={dropdownRef}>
                 <button
                   onClick={() => setResourcesOpen(!resourcesOpen)}
-                  className={`flex items-center gap-1 transition-colors duration-300 ${pathname.match(/^\/(bible|songs|books)/)
+                  className={`flex items-center gap-1 transition-colors duration-300 ${pathname.match(/^\/(bible|books)/)
                       ? "text-cream font-bold"
                       : "text-cream/80 hover:text-cream"
                     }`}
@@ -167,7 +207,11 @@ export default function Navbar() {
                           key={item.href}
                           to={item.href}
                           onClick={() => setResourcesOpen(false)}
-                          className="block px-4 py-3 text-sm text-[#54091b] font-medium hover:bg-[#F4EFE7] hover:text-[#54091b] transition-colors"
+                          className={`block px-4 py-3 text-sm font-medium transition-colors ${
+                            pathname.startsWith(item.href)
+                              ? "bg-[#F4EFE7] text-[#54091b]"
+                              : "text-[#54091b] hover:bg-[#F4EFE7]"
+                          }`}
                         >
                           {t(item.key)}
                         </Link>
@@ -258,7 +302,7 @@ export default function Navbar() {
             <div className="py-1">
               <button
                 onClick={() => setResourcesOpen(!resourcesOpen)}
-                className={`flex w-full items-center justify-between py-3.5 px-4 rounded-xl font-medium transition-colors duration-300 ${pathname.match(/^\/(bible|songs|books)/)
+                className={`flex w-full items-center justify-between py-3.5 px-4 rounded-xl font-medium transition-colors duration-300 ${pathname.match(/^\/(bible|books)/)
                     ? "bg-white/10 text-white"
                     : "text-cream/80 hover:bg-white/5 hover:text-white"
                   } ${language === "ta" ? "text-[15px]" : "text-base"}`}
@@ -276,8 +320,9 @@ export default function Navbar() {
                         setResourcesOpen(false);
                         setMenuOpen(false);
                       }}
-                      className={`block py-2.5 px-3 rounded-lg text-cream/80 font-medium hover:text-white hover:bg-white/5 transition-colors text-sm ${pathname === item.href ? "text-white bg-white/5" : ""
-                        }`}
+                      className={`block py-2.5 px-3 rounded-lg text-cream/80 font-medium hover:text-white hover:bg-white/5 transition-colors text-sm ${
+                        pathname.startsWith(item.href) ? "text-white bg-white/5" : ""
+                      }`}
                     >
                       {t(item.key)}
                     </Link>

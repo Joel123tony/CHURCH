@@ -3,7 +3,7 @@ import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 import { FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { getFallbackAvatar, handleImageError } from "../utils/avatarFallback";
-import { ShieldCheck, UserRound, Cross, CalendarDays, Quote, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 const Pastor = memo(function Pastor({ initialPastors }) {
   const { t } = useLanguage();
@@ -192,12 +192,9 @@ const Pastor = memo(function Pastor({ initialPastors }) {
                     <div className="w-full">
                       {/* Premium Heading */}
                       <div className="mb-6 border-b border-[#D4AF37]/30 pb-3 relative overflow-hidden">
-                        <div className="flex items-center gap-3">
-                          <ShieldCheck size={28} color="#D4AF37" />
                           <h3 className="text-[34px] font-[800] text-[#5B0E21] tracking-[-0.5px]">
                             {t("Current Pastor")}
                           </h3>
-                        </div>
                         {/* Heading Underline Animation */}
                         <div className="absolute bottom-0 left-0 h-[2px] bg-[#D4AF37] w-0 transition-all duration-500 group-hover/info:w-full"></div>
                       </div>
@@ -211,9 +208,6 @@ const Pastor = memo(function Pastor({ initialPastors }) {
                             backdropFilter: "blur(8px)",
                           }}
                         >
-                          <div className="flex w-[42px] h-[42px] shrink-0 items-center justify-center rounded-full border border-[#7A0F24]/12 bg-[#F6EFE4]">
-                            <UserRound size={20} color="#7A0F24" />
-                          </div>
                           <div>
                             <p className="text-[12px] font-[700] tracking-[2px] uppercase text-[#8A6D58]">
                               {t("NAME")}
@@ -232,9 +226,6 @@ const Pastor = memo(function Pastor({ initialPastors }) {
                             backdropFilter: "blur(8px)",
                           }}
                         >
-                          <div className="flex w-[42px] h-[42px] shrink-0 items-center justify-center rounded-full border border-[#7A0F24]/12 bg-[#F6EFE4]">
-                            <Cross size={20} color="#7A0F24" />
-                          </div>
                           <div>
                             <p className="text-[12px] font-[700] tracking-[2px] uppercase text-[#8A6D58]">
                               {t("ROLE")}
@@ -253,9 +244,6 @@ const Pastor = memo(function Pastor({ initialPastors }) {
                             backdropFilter: "blur(8px)",
                           }}
                         >
-                          <div className="flex w-[42px] h-[42px] shrink-0 items-center justify-center rounded-full border border-[#7A0F24]/12 bg-[#F6EFE4]">
-                            <CalendarDays size={20} color="#7A0F24" />
-                          </div>
                           <div>
                             <p className="text-[12px] font-[700] tracking-[2px] uppercase text-[#8A6D58]">
                               {t("MINISTRY")}
@@ -268,7 +256,6 @@ const Pastor = memo(function Pastor({ initialPastors }) {
 
                         {/* Quote Section */}
                         <div className="mt-[18px] flex items-start gap-3 pr-4">
-                          <Quote size={20} color="#D4AF37" className="shrink-0 mt-0.5" />
                           <p className="text-[15px] italic text-[#6B6B6B]">
                             {currentPastor.bio?.trim() ? t(currentPastor.bio) : t("Serving God's people with faith, love and prayer.")}
                           </p>

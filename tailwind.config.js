@@ -16,9 +16,19 @@ export default {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        popIn: {
+          "0%": { opacity: "0", transform: "scale(0.95) translateY(10px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
+        fadeOut: {
+          "0%": { opacity: "1", transform: "scale(1) translateY(0)" },
+          "100%": { opacity: "0", transform: "scale(0.95) translateY(10px)" },
+        }
       },
       animation: {
         shimmer: "shimmer 1.5s infinite",
+        popIn: "popIn 0.35s ease-out forwards",
+        fadeOut: "fadeOut 0.35s ease-in forwards",
       },
     },
   },

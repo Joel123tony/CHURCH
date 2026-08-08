@@ -1,4 +1,5 @@
 import { FiX, FiCheckCircle, FiXCircle, FiClock, FiUser, FiMail, FiPhone, FiCreditCard } from "react-icons/fi";
+import { formatCurrency } from "../../utils/formatCurrency";
 
 const InfoRow = ({ label, value, icon: Icon, isCopyable }) => (
   <div className="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0">
@@ -49,7 +50,7 @@ export default function DonationDetailsModal({ donation, isOpen, onClose }) {
               {donation.paymentStatus}
             </span>
             <h1 className="text-4xl font-bold text-slate-900">
-              ₹{donation.amount.toLocaleString()}
+              {formatCurrency(donation.amount)}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               {new Date(donation.transactionDate).toLocaleString()}
