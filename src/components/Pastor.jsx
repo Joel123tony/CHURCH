@@ -173,7 +173,7 @@ const Pastor = memo(function Pastor({ initialPastors }) {
 
           <div className="grid gap-6 lg:grid-cols-4 lg:items-start">
             <div 
-              className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3 flex flex-col justify-center lg:h-[400px]"
+              className="rounded-3xl p-8 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:col-span-3 flex flex-col justify-center lg:h-[400px] min-w-0"
               style={{ background: "linear-gradient(180deg, #E7DAC3 0%, #DDD0B8 100%)" }}
             >
               {loading ? (
@@ -288,7 +288,7 @@ const Pastor = memo(function Pastor({ initialPastors }) {
               )}
             </div>
 
-            <div className="flex flex-col rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:h-[400px]">
+            <div className="flex flex-col min-w-0 rounded-3xl bg-[#d8cbb7] p-6 shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl lg:h-[400px]">
               <div className="mb-6 flex rounded-full bg-[#54091b]/10 p-1 shrink-0">
                 <button
                   onClick={() => setActiveTab("search")}
@@ -313,7 +313,7 @@ const Pastor = memo(function Pastor({ initialPastors }) {
               </div>
 
               {activeTab === "search" ? (
-                <div className="flex-1 flex flex-col justify-center space-y-4 overflow-hidden">
+                <div className="flex-none lg:flex-1 flex flex-col justify-center space-y-4 overflow-hidden">
                 <div className="relative">
                   <input
                     type="text"
@@ -373,20 +373,25 @@ const Pastor = memo(function Pastor({ initialPastors }) {
                 </button>
                 </div>
               ) : (
-                <div className="timeline-container flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-2">
-                  <div className="relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-[2px] before:bg-[#54091b]/20">
+                <div className="timeline-container flex-none lg:flex-1 min-h-0 overflow-x-auto overflow-y-hidden lg:overflow-y-auto lg:overflow-x-hidden pb-4 lg:pb-0 lg:pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="relative flex flex-row lg:flex-col gap-6 lg:gap-0 min-w-max lg:min-w-0 pr-6 lg:pr-0">
+                    {/* The Timeline Line */}
+                    {pastors.filter(p => !p.isCurrent).length > 0 && (
+                      <div className="absolute left-0 top-[11px] h-[2px] w-full lg:left-[11px] lg:top-0 lg:h-full lg:w-[2px] bg-[#54091b]/20 -translate-y-px lg:translate-y-0 lg:-translate-x-px pointer-events-none"></div>
+                    )}
+                    
                     {pastors.filter(p => !p.isCurrent).length > 0 ? (
                       pastors.filter(p => !p.isCurrent).map(p => (
-                        <div key={p._id} className="relative flex items-center group cursor-pointer h-[80px] shrink-0" onClick={() => { setSearchYear(String(p.joinedYear)); searchPastors(); }}>
+                        <div key={p._id} className="relative flex flex-col lg:flex-row items-start lg:items-center group cursor-pointer w-[130px] lg:w-auto lg:h-[80px] shrink-0" onClick={() => { setSearchYear(String(p.joinedYear)); searchPastors(); }}>
                           <div className="flex items-center justify-center w-6 h-6 rounded-full border-[4px] border-[#d8cbb7] bg-[#54091b] shrink-0 z-10 transition-transform duration-300 group-hover:scale-125 group-hover:bg-[#441018]"></div>
-                          <div className="ml-4 py-2">
-                            <span className="font-bold text-[#54091b] text-sm">{p.joinedYear} - {p.leftYear || t("Present")}</span>
-                            <h5 className="font-semibold text-[#1E293B] text-sm">{p.name}</h5>
+                          <div className="mt-3 lg:mt-0 lg:ml-4 py-2 text-left">
+                            <span className="font-bold text-[#54091b] text-sm block">{p.joinedYear} - {p.leftYear || t("Present")}</span>
+                            <h5 className="font-semibold text-[#1E293B] text-sm mt-1">{p.name}</h5>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-center text-sm text-[#54091b]/70 italic mt-10">{t("No timeline data.")}</p>
+                      <p className="text-center text-sm text-[#54091b]/70 italic mt-10 w-full">{t("No timeline data.")}</p>
                     )}
                   </div>
                 </div>
