@@ -35,15 +35,29 @@ export default function BibleBlessingModal() {
 
     const startTimer = () => {
       setTimeout(() => {
-        setIsVisible(true);
-        sessionStorage.setItem("bibleBlessingShown", "true");
-      }, 2000); // 2 second delay after idle
+        const tryShow = () => {
+          setIsVisible(true);
+          sessionStorage.setItem("bibleBlessingShown", "true");
+        };
+
+        const isHomePage = window.location.pathname === '/';
+        
+        if (isHomePage) {
+          if (window.initialHomepageDataReady) {
+            tryShow();
+          } else {
+            window.addEventListener("homepageDataReady", tryShow, { once: true });
+          }
+        } else {
+          tryShow();
+        }
+      }, 1000); // 1 second delay
     };
 
     const handleLoad = () => {
       // Use requestIdleCallback if available to wait for browser to be idle
       if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => startTimer(), { timeout: 2000 });
+        requestIdleCallback(() => startTimer(), { timeout: 1000 });
       } else {
         startTimer();
       }

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
-const Hero = memo(function Hero({ initialVideo }) {
+const Hero = memo(function Hero({ initialVideo, waitForData }) {
   const { t } = useLanguage();
 
   const [video, setVideo] = useState(() => {
@@ -49,17 +49,20 @@ const Hero = memo(function Hero({ initialVideo }) {
       });
       setLoading(false);
     } else {
-      void fetchYoutubeVideo();
+      if (!waitForData) {
+        void fetchYoutubeVideo();
+      }
     }
 
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
+      if (waitForData && !initialVideo) return;
       void fetchYoutubeVideo();
     }, 60000);
 
     return () => clearInterval(intervalRef.current);
-  }, [fetchYoutubeVideo, initialVideo]);
+  }, [fetchYoutubeVideo, initialVideo, waitForData]);
 
   return (
     <section id="hero" className="py-16 text-white bg-[#54091b]">

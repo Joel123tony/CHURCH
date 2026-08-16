@@ -59,16 +59,29 @@ export default function Navbar() {
   useEffect(() => {
     if (pathname !== "/") return;
 
-    const handleScroll = () => {
-      if (isNavigatingRef.current) return;
+    let ticking = false;
+    let rafId = null;
+
+    const performSectionCalculations = () => {
+      if (isNavigatingRef.current) {
+        ticking = false;
+        return;
+      }
 
       const sections = links.map((l) => document.getElementById(l.id)).filter(Boolean);
-      if (sections.length === 0) return;
+      if (sections.length === 0) {
+        ticking = false;
+        return;
+      }
 
       // If user has scrolled to the absolute bottom of the page, highlight the last section
       const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10;
       if (isAtBottom) {
-        setActive(sections[sections.length - 1].id);
+        setActive((prevActive) => {
+          const lastSectionId = sections[sections.length - 1].id;
+          return prevActive !== lastSectionId ? lastSectionId : prevActive;
+        });
+        ticking = false;
         return;
       }
 
@@ -84,16 +97,31 @@ export default function Navbar() {
         }
       }
 
-      if (currentSection && currentSection !== active) {
-        setActive(currentSection);
+      setActive((prevActive) => {
+        return currentSection && currentSection !== prevActive ? currentSection : prevActive;
+      });
+      
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        rafId = window.requestAnimationFrame(performSectionCalculations);
+        ticking = true;
       }
     };
 
     // Run once on mount to set initial state correctly if scrolled down
-    handleScroll();
+    performSectionCalculations();
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, [links, pathname]);
 
   // Handle click outside dropdown

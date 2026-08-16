@@ -147,7 +147,7 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
   );
 }
 
-const Gallery = memo(function Gallery({ initialGallery }) {
+const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
   const { t } = useLanguage();
   const [featuredMedia, setFeaturedMedia] = useState(() => {
     if (initialGallery && initialGallery.length > 0) {
@@ -209,8 +209,11 @@ const Gallery = memo(function Gallery({ initialGallery }) {
       setLoading(false);
       return;
     }
+    
+    if (waitForData) return;
+
     fetchGallery();
-  }, [initialGallery]);
+  }, [initialGallery, waitForData]);
 
   const [loadingAll, setLoadingAll] = useState(false);
   

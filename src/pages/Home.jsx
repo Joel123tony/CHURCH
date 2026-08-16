@@ -30,6 +30,8 @@ export default function Home() {
         if (!isMounted || !res) return;
 
         setHomeData(res);
+        window.initialHomepageDataReady = true;
+        window.dispatchEvent(new Event("homepageDataReady"));
 
         // Process section order
         const loadedArray = res.sectionOrder;
@@ -147,7 +149,7 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Hero initialVideo={homeData?.youtubeHero} />
+            <Hero initialVideo={homeData?.youtubeHero} waitForData={true} />
           </div>
         );
       case "history":
@@ -161,21 +163,21 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Events initialEvents={homeData?.events} />
+            <Events initialEvents={homeData?.events} waitForData={true} />
           </div>
         );
       case "gallery":
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Gallery initialGallery={homeData?.gallery} />
+            <Gallery initialGallery={homeData?.gallery} waitForData={true} />
           </div>
         );
       case "pastor":
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Pastor initialPastors={homeData?.pastors} />
+            <Pastor initialPastors={homeData?.pastors} waitForData={true} />
           </div>
         );
       case "testimonials":
@@ -189,7 +191,7 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <YoutubeSection initialVideos={homeData?.youtubeLatest} />
+            <YoutubeSection initialVideos={homeData?.youtubeLatest} waitForData={true} />
           </div>
         );
       default:

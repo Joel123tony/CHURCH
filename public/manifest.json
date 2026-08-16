@@ -1,0 +1,15 @@
+{
+  "name": "Methodist Tamil Church Padikuppam",
+  "short_name": "MTC Padikuppam",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4EFE7",
+  "theme_color": "#54091b",
+  "icons": [
+    {
+      "src": "/pwa-icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import React, { useEffect, useState, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 
-const YoutubeSection = memo(function YoutubeSection({ initialVideos }) {
+const YoutubeSection = memo(function YoutubeSection({ initialVideos, waitForData }) {
   const { t } = useLanguage();
   const [videos, setVideos] = useState(() => {
     if (Array.isArray(initialVideos) && initialVideos.length > 0) {
@@ -63,8 +63,10 @@ const YoutubeSection = memo(function YoutubeSection({ initialVideos }) {
       return;
     }
 
+    if (waitForData) return;
+
     void loadVideos();
-  }, [initialVideos]);
+  }, [initialVideos, waitForData]);
 
   const getBestThumbnail = (video) => {
     const t = video.snippet?.thumbnails;

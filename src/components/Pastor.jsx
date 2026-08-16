@@ -5,7 +5,7 @@ import { FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { getFallbackAvatar, handleImageError } from "../utils/avatarFallback";
 import { ChevronRight } from "lucide-react";
 
-const Pastor = memo(function Pastor({ initialPastors }) {
+const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
   const { t } = useLanguage();
   const [pastors, setPastors] = useState(() => initialPastors || []);
   const [searchName, setSearchName] = useState("");
@@ -25,6 +25,8 @@ const Pastor = memo(function Pastor({ initialPastors }) {
       return;
     }
 
+    if (waitForData) return;
+
     const fetchPastors = async () => {
       try {
         setLoading(true);
@@ -39,7 +41,7 @@ const Pastor = memo(function Pastor({ initialPastors }) {
     };
 
     fetchPastors();
-  }, [initialPastors]);
+  }, [initialPastors, waitForData]);
 
   const currentPastor = pastors.find((p) => p?.isCurrent === true) || null;
   const serviceYears = currentPastor?.joinedYear
