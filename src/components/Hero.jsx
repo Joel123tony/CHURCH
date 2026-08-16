@@ -17,6 +17,34 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
 
   const [loading, setLoading] = useState(() => !initialVideo);
   const intervalRef = useRef(null);
+  const observerRef = useRef(null);
+
+  const iframeCallbackRef = useCallback((node) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    
+    if (node) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (node.contentWindow) {
+              const action = entry.isIntersecting ? "playVideo" : "pauseVideo";
+              node.contentWindow.postMessage(
+                JSON.stringify({ event: "command", func: action, args: "" }),
+                "*"
+              );
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      
+      observer.observe(node);
+      observerRef.current = observer;
+    }
+  }, []);
 
   const fetchYoutubeVideo = useCallback(async () => {
     try {
@@ -89,8 +117,9 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
               </div>
             ) : (
               <iframe
+                ref={iframeCallbackRef}
                 className="absolute left-0 top-0 h-full w-full"
-                src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
+                src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : ''}`}
                 title={video.title || "YouTube Video"}
                 loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
