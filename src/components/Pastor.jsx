@@ -19,10 +19,20 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
   const getImage = (pastor) => pastor?.image?.url || getFallbackAvatar();
 
   useEffect(() => {
-    if (initialPastors) {
+    let isMounted = true;
+
+    if (initialPastors && initialPastors.length > 0) {
       setPastors(initialPastors);
       setLoading(false);
-      return;
+      
+      // Fetch full history in background for timeline/search
+      API.get("/pastors").then(res => {
+        if (isMounted && res.data?.pastors) {
+           setPastors(res.data.pastors);
+        }
+      }).catch(err => console.error("Background pastor fetch error:", err));
+      
+      return () => { isMounted = false; };
     }
 
     if (waitForData) return;
@@ -31,16 +41,17 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
       try {
         setLoading(true);
         const res = await API.get("/pastors");
-        setPastors(res.data?.pastors || []);
+        if (isMounted) setPastors(res.data?.pastors || []);
       } catch (error) {
         console.error("Pastor fetch error:", error);
-        setPastors([]);
+        if (isMounted) setPastors([]);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchPastors();
+    return () => { isMounted = false; };
   }, [initialPastors, waitForData]);
 
   const currentPastor = pastors.find((p) => p?.isCurrent === true) || null;

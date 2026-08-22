@@ -2,8 +2,7 @@ import ContentBlock from "../models/ContentBlock.js";
 import Event from "../models/Event.js";
 import Gallery from "../models/Gallery.js";
 import Pastor from "../models/Pastor.js";
-import { getCached, setCached } from "../utils/cache.js";
-import { getYoutubeHeroData, getYoutubeLatestData } from "../routes/youtubeRoutes.js";
+import { getCached, setCached, isCacheStale } from "../utils/cache.js";
 
 const cmsKeys = [
   "section-order",
@@ -53,36 +52,17 @@ const getCmsBlocks = async () => {
 };
 
 const getEventsData = async () => {
-  const cached = getCached("events_public_home");
-  if (cached) return cached;
+  const cached = getCached("events_public_home", true);
+  if (cached && !isCacheStale("events_public_home")) return cached;
 
   try {
-    const events = await Event.find().lean();
-    
-    // Use consistent timezone logic (Start of today in UTC)
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
-    const todayTimestamp = today.getTime();
 
-    // Upcoming events: eventDate >= today
-    const upcomingEvents = events.filter((e) => {
-      const eventDate = new Date(e.date);
-      eventDate.setUTCHours(0, 0, 0, 0);
-      return eventDate.getTime() >= todayTimestamp;
-    });
-    
-    // Sort upcoming events by nearest date (Ascending)
-    upcomingEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    // Past events: eventDate < today
-    const pastEvents = events.filter((e) => {
-      const eventDate = new Date(e.date);
-      eventDate.setUTCHours(0, 0, 0, 0);
-      return eventDate.getTime() < todayTimestamp;
-    });
-    
-    // Sort past events descending (newest first)
-    pastEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const upcomingEvents = await Event.find({ date: { $gte: today } })
+      .sort({ date: 1 })
+      .limit(6)
+      .lean();
 
     let featuredEvent = null;
     let upcomingList = [];
@@ -90,15 +70,21 @@ const getEventsData = async () => {
     if (upcomingEvents.length > 0) {
       featuredEvent = upcomingEvents[0];
       upcomingList = upcomingEvents.slice(1);
-    } else if (pastEvents.length > 0) {
-      const latestPastEvent = pastEvents[0];
-      // Calculate days difference strictly based on start-of-day timestamps
-      const latestPastDate = new Date(latestPastEvent.date);
-      latestPastDate.setUTCHours(0, 0, 0, 0);
-      const daysSince = (todayTimestamp - latestPastDate.getTime()) / (1000 * 60 * 60 * 24);
+    } else {
+      const pastEvents = await Event.find({ date: { $lt: today } })
+        .sort({ date: -1 })
+        .limit(1)
+        .lean();
       
-      if (daysSince <= 7) {
-        featuredEvent = latestPastEvent;
+      if (pastEvents.length > 0) {
+        const latestPastEvent = pastEvents[0];
+        const latestPastDate = new Date(latestPastEvent.date);
+        latestPastDate.setUTCHours(0, 0, 0, 0);
+        const daysSince = (today.getTime() - latestPastDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        if (daysSince <= 7) {
+          featuredEvent = latestPastEvent;
+        }
       }
     }
 
@@ -131,16 +117,16 @@ const getGalleryClientData = async () => {
 };
 
 const getPastorsData = async () => {
-  const cached = getCached("pastors_all");
-  if (cached) return cached;
+  const cached = getCached("pastors_current", true);
+  if (cached && !isCacheStale("pastors_current")) return cached;
 
   try {
-    const pastors = await Pastor.find()
+    const pastors = await Pastor.find({ isCurrent: true })
       .select("name role bio image joinedYear leftYear education church email number active isCurrent createdAt")
       .sort({ createdAt: -1 })
       .lean();
 
-    setCached("pastors_all", pastors, 60);
+    setCached("pastors_current", pastors, 60);
     return pastors;
   } catch (err) {
     console.error("Error fetching pastors:", err);
@@ -148,54 +134,55 @@ const getPastorsData = async () => {
   }
 };
 
+const refreshHomePageData = async () => {
+  const [
+    cmsBlocks,
+    events,
+    gallery,
+    pastors
+  ] = await Promise.all([
+    getCmsBlocks(),
+    getEventsData(),
+    getGalleryClientData(),
+    getPastorsData()
+  ]);
+
+  const sectionOrderData = cmsBlocks["section-order"]?.data || cmsBlocks["section-order"] || [];
+  const sectionOrder = Array.isArray(sectionOrderData)
+    ? sectionOrderData
+    : sectionOrderData?.order || ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"];
+
+  const payload = {
+    sectionOrder,
+    hero: cmsBlocks["hero"]?.data || cmsBlocks["hero"] || {},
+    history: cmsBlocks["history"]?.data || cmsBlocks["history"] || {},
+    eventsContent: cmsBlocks["events"]?.data || cmsBlocks["events"] || {},
+    galleryContent: cmsBlocks["gallery"]?.data || cmsBlocks["gallery"] || {},
+    pastorContent: cmsBlocks["pastor"]?.data || cmsBlocks["pastor"] || {},
+    testimonialsContent: cmsBlocks["testimonials"]?.data || cmsBlocks["testimonials"] || {},
+    youtubeContent: cmsBlocks["youtube"]?.data || cmsBlocks["youtube"] || {},
+
+    events: events || { featuredEvent: null, upcomingEvents: [] },
+    gallery: Array.isArray(gallery) ? gallery : [],
+    pastors: Array.isArray(pastors) ? pastors : [],
+  };
+
+  setCached("home_page_aggregate", payload, 60);
+  return payload;
+};
+
 export const getHomePageData = async (req, res) => {
   try {
-    const cachedHomePage = getCached("home_page_aggregate");
+    const cachedHomePage = getCached("home_page_aggregate", true);
     if (cachedHomePage) {
+      if (isCacheStale("home_page_aggregate")) {
+        // Trigger background refresh without awaiting
+        refreshHomePageData().catch(err => console.error("Background home page refresh failed:", err));
+      }
       return res.json({ success: true, ...cachedHomePage });
     }
 
-    const [
-      cmsBlocks,
-      events,
-      gallery,
-      pastors,
-      youtubeHero,
-      youtubeLatest
-    ] = await Promise.all([
-      getCmsBlocks(),
-      getEventsData(),
-      getGalleryClientData(),
-      getPastorsData(),
-      getYoutubeHeroData(),
-      getYoutubeLatestData()
-    ]);
-
-    const sectionOrderData = cmsBlocks["section-order"]?.data || cmsBlocks["section-order"] || [];
-    const sectionOrder = Array.isArray(sectionOrderData)
-      ? sectionOrderData
-      : sectionOrderData?.order || ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"];
-
-    const payload = {
-      sectionOrder,
-      hero: cmsBlocks["hero"]?.data || cmsBlocks["hero"] || {},
-      history: cmsBlocks["history"]?.data || cmsBlocks["history"] || {},
-      eventsContent: cmsBlocks["events"]?.data || cmsBlocks["events"] || {},
-      galleryContent: cmsBlocks["gallery"]?.data || cmsBlocks["gallery"] || {},
-      pastorContent: cmsBlocks["pastor"]?.data || cmsBlocks["pastor"] || {},
-      testimonialsContent: cmsBlocks["testimonials"]?.data || cmsBlocks["testimonials"] || {},
-      youtubeContent: cmsBlocks["youtube"]?.data || cmsBlocks["youtube"] || {},
-
-      events: events || { featuredEvent: null, upcomingEvents: [] },
-      gallery: Array.isArray(gallery) ? gallery : [],
-      pastors: Array.isArray(pastors) ? pastors : [],
-
-      youtubeHero: youtubeHero || { videoId: null, title: "No video", live: false },
-      youtubeLatest: Array.isArray(youtubeLatest) ? youtubeLatest : []
-    };
-
-    setCached("home_page_aggregate", payload, 60);
-
+    const payload = await refreshHomePageData();
     return res.json({
       success: true,
       ...payload
@@ -214,9 +201,7 @@ export const getHomePageData = async (req, res) => {
       youtubeContent: {},
       events: [],
       gallery: [],
-      pastors: [],
-      youtubeHero: { videoId: null, title: "No video", live: false },
-      youtubeLatest: []
+      pastors: []
     });
   }
 };

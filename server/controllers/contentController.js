@@ -1,22 +1,31 @@
 import ContentBlock from "../models/ContentBlock.js";
-import { getCached, setCached, clearCache } from "../utils/cache.js";
+import { getCached, setCached, clearCache, isCacheStale } from "../utils/cache.js";
+
+const refreshBlock = async (key) => {
+  try {
+    const block = await ContentBlock.findOne({ key }).lean();
+    const responseData = block || { key, data: {} };
+    setCached(`content_${key}`, responseData, 60);
+    return responseData;
+  } catch (err) {
+    console.error("refreshBlock ERROR:", err);
+    return { key, data: {} };
+  }
+};
 
 // GET CMS BLOCK
 export const getBlock = async (req, res) => {
   try {
     const cacheKey = `content_${req.params.key}`;
-    const cachedData = getCached(cacheKey);
+    const cachedData = getCached(cacheKey, true);
     if (cachedData) {
+      if (isCacheStale(cacheKey)) {
+        refreshBlock(req.params.key).catch(err => console.error("Background block refresh failed:", err));
+      }
       return res.json(cachedData);
     }
 
-    const block = await ContentBlock.findOne({
-      key: req.params.key
-    }).lean();
-
-    const responseData = block || { key: req.params.key, data: {} };
-    setCached(cacheKey, responseData, 60);
-
+    const responseData = await refreshBlock(req.params.key);
     return res.json(responseData);
   } catch (err) {
     console.error("getBlock ERROR:", err);
