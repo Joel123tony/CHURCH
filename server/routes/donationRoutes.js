@@ -105,6 +105,11 @@ router.post("/verify-payment", async (req, res) => {
         return res.status(404).json({ error: "Donation record not found" });
       }
 
+      if (donation.paymentStatus === "Successful") {
+        // Idempotency check: if already processed by webhook, just return success
+        return res.json({ status: "success", message: "Payment already verified successfully" });
+      }
+
       donation.paymentStatus = "Successful";
       donation.razorpayPaymentId = razorpay_payment_id;
       donation.razorpaySignature = razorpay_signature;
@@ -183,7 +188,7 @@ router.get("/stats", auth, async (req, res) => {
     // Start of this month
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [totalStats, todayStats, monthStats, successCount, failedCount, totalTransactions] = await Promise.all([
+    const [totalStats, todayStats, monthStats, successCount, failedCount, pendingCount, totalTransactions] = await Promise.all([
       Donation.aggregate([
         { $match: { paymentStatus: "Successful" } },
         { $group: { _id: null, total: { $sum: "$amount" } } }
@@ -198,6 +203,7 @@ router.get("/stats", auth, async (req, res) => {
       ]),
       Donation.countDocuments({ paymentStatus: "Successful" }),
       Donation.countDocuments({ paymentStatus: "Failed" }),
+      Donation.countDocuments({ paymentStatus: "Pending" }),
       Donation.countDocuments()
     ]);
 
@@ -207,6 +213,7 @@ router.get("/stats", auth, async (req, res) => {
       monthDonations: monthStats[0]?.total || 0,
       successCount,
       failedCount,
+      pendingCount,
       totalTransactions
     });
 
@@ -215,5 +222,80 @@ router.get("/stats", auth, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+export const donationWebhookHandler = async (req, res) => {
+  try {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret) {
+      console.warn("Webhook secret not configured. Skipping webhook verification.");
+      return res.status(200).send("OK");
+    }
+
+    const signature = req.headers["x-razorpay-signature"];
+    if (!signature) {
+      return res.status(400).send("No signature found");
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(req.body.toString("utf-8"))
+      .digest("hex");
+
+    if (expectedSignature !== signature) {
+      return res.status(400).send("Invalid signature");
+    }
+
+    const payload = JSON.parse(req.body.toString("utf-8"));
+    const event = payload.event;
+    
+    if (event === "payment.captured") {
+      const payment = payload.payload.payment.entity;
+      const razorpay_order_id = payment.order_id;
+      const razorpay_payment_id = payment.id;
+
+      const donation = await Donation.findOne({ razorpayOrderId: razorpay_order_id });
+      
+      if (donation && donation.paymentStatus !== "Successful") {
+        donation.paymentStatus = "Successful";
+        donation.razorpayPaymentId = razorpay_payment_id;
+        donation.transactionDate = new Date();
+        donation.paymentMethod = payment.method || "Razorpay";
+        await donation.save();
+
+        if (donation.email) {
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+              <h2 style="color: #531B24; text-align: center;">Methodist Tamil Church</h2>
+              <h3 style="text-align: center; color: #4CAF50;">Donation Received Successfully!</h3>
+              <p>Dear ${donation.name},</p>
+              <p>Thank you so much for your generous giving. Your support helps sustain our worship services, outreach programs, and community ministries.</p>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount:</strong></td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${formatCurrency(donation.amount)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Transaction ID:</strong></td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${razorpay_payment_id}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Date:</strong></td>
+                  <td style="padding: 8px; border-bottom: 1px solid #ddd;">${new Date().toLocaleDateString()}</td>
+                </tr>
+              </table>
+              <p style="margin-top: 20px; text-align: center; color: #666; font-size: 14px;">God bless you abundantly!</p>
+            </div>
+          `;
+          sendEmail(donation.email, "Thank you for your Donation - MTC", emailHtml).catch(console.error);
+        }
+      }
+    }
+    
+    res.status(200).json({ status: "ok" });
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
 
 export default router;

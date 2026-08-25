@@ -64,6 +64,7 @@ export default function Donations() {
     monthDonations: 0,
     successCount: 0,
     failedCount: 0,
+    pendingCount: 0,
     totalTransactions: 0
   });
   
@@ -254,7 +255,7 @@ export default function Donations() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard 
           title="Total Raised" 
           value={stats.totalDonations} 
@@ -277,10 +278,22 @@ export default function Donations() {
           isMoney
         />
         <StatCard 
-          title="Total Transactions" 
-          value={stats.totalTransactions} 
+          title="Completed Transactions" 
+          value={stats.successCount} 
           icon={CheckCircle2} 
-          colorClass="bg-[#F4EFE7] text-[#531B24]"
+          colorClass="bg-green-100 text-green-700"
+        />
+        <StatCard 
+          title="Pending Transactions" 
+          value={stats.pendingCount || 0} 
+          icon={RefreshCw} 
+          colorClass="bg-orange-100 text-orange-700"
+        />
+        <StatCard 
+          title="Failed Transactions" 
+          value={stats.failedCount} 
+          icon={XCircle} 
+          colorClass="bg-red-100 text-red-700"
         />
       </div>
 

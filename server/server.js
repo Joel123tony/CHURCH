@@ -29,7 +29,7 @@ import youtubeRoutes from "./routes/youtubeRoutes.js";
 import contentRoutes from "./routes/content.routes.js";
 import translateRoutes from "./routes/translate.routes.js";
 import bookRoutes from "./routes/bookRoutes.js";
-import donationRoutes from "./routes/donationRoutes.js";
+import donationRoutes, { donationWebhookHandler } from "./routes/donationRoutes.js";
 import compression from "compression";
 
 const app = express();
@@ -85,6 +85,11 @@ app.use(
     skip: (req) => req.method === "OPTIONS",
   })
 );
+
+/* =========================
+   WEBHOOKS (Must be before body-parser)
+========================= */
+app.post("/api/donations/webhook", express.raw({ type: "application/json" }), donationWebhookHandler);
 
 /* =========================
    BODY PARSER
