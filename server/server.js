@@ -90,6 +90,7 @@ app.use(
    WEBHOOKS (Must be before body-parser)
 ========================= */
 app.post("/api/donations/webhook", express.raw({ type: "application/json" }), donationWebhookHandler);
+console.log("Razorpay webhook route enabled: /api/donations/webhook");
 
 /* =========================
    BODY PARSER
