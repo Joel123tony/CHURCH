@@ -109,34 +109,26 @@ const getPlaylistVideos = async (limit = 6) => {
 ========================= */
 export const getYoutubeHeroData = async () => {
   try {
-    const cacheKey = "yt_endpoint_hero_response";
-    const cachedHero = getCached(cacheKey, true);
-
-    if (isCacheStale(cacheKey) || !cachedHero) {
-      (async () => {
-        try {
-          const liveVideo = await getLiveStream();
-          if (liveVideo && liveVideo.videoId) {
-            setCached(cacheKey, liveVideo, CACHE_TTL_LIVE);
-            return;
-          }
-          const videos = await getPlaylistVideos(1);
-          const latest = videos[0];
-          const responsePayload = {
-            videoId: latest?.videoId || null,
-            title: latest?.title || "No video",
-            live: false,
-          };
-          setCached(cacheKey, responsePayload, CACHE_TTL_VIDEOS);
-        } catch (err) {
-          console.error("Background YouTube Hero Error:", err);
-        }
-      })();
-    }
-
+    const cachedHero = getCached("yt_endpoint_hero_response");
     if (cachedHero) return cachedHero;
 
-    return { videoId: null, title: "Loading...", live: false, backgroundFetch: true };
+    const liveVideo = await getLiveStream();
+    if (liveVideo && liveVideo.videoId) {
+      setCached("yt_endpoint_hero_response", liveVideo, CACHE_TTL_LIVE);
+      return liveVideo;
+    }
+
+    const videos = await getPlaylistVideos(1);
+    const latest = videos[0];
+
+    const responsePayload = {
+      videoId: latest?.videoId || null,
+      title: latest?.title || "No video",
+      live: false,
+    };
+
+    setCached("yt_endpoint_hero_response", responsePayload, CACHE_TTL_VIDEOS);
+    return responsePayload;
   } catch (err) {
     console.error("YouTube Hero Error:", err);
     return { videoId: null, title: "Service unavailable", live: false };
@@ -145,25 +137,14 @@ export const getYoutubeHeroData = async () => {
 
 export const getYoutubeLatestData = async () => {
   try {
-    const cacheKey = "yt_endpoint_latest_response";
-    const cachedLatest = getCached(cacheKey, true);
-
-    if (isCacheStale(cacheKey) || !cachedLatest) {
-      (async () => {
-        try {
-          const videos = await getPlaylistVideos(6);
-          if (videos.length > 0) {
-            setCached(cacheKey, videos, CACHE_TTL_VIDEOS);
-          }
-        } catch (err) {
-          console.error("Background YouTube Latest Error:", err);
-        }
-      })();
-    }
-
+    const cachedLatest = getCached("yt_endpoint_latest_response");
     if (cachedLatest) return cachedLatest;
 
-    return [];
+    const videos = await getPlaylistVideos(6);
+    if (videos.length > 0) {
+      setCached("yt_endpoint_latest_response", videos, CACHE_TTL_VIDEOS);
+    }
+    return videos || [];
   } catch (err) {
     console.error("YouTube Latest Error:", err);
     return [];

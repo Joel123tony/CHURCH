@@ -6,7 +6,7 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
   const { t } = useLanguage();
 
   const [video, setVideo] = useState(() => {
-    if (initialVideo && !initialVideo.backgroundFetch) {
+    if (initialVideo) {
       return {
         videoId: initialVideo.videoId || "",
         title: initialVideo.title || "",
@@ -16,8 +16,9 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
     return { videoId: "", title: "", live: false };
   });
 
-  const [loading, setLoading] = useState(() => !initialVideo || initialVideo.backgroundFetch);
+  const [loading, setLoading] = useState(() => !initialVideo);
   const [showVideo, setShowVideo] = useState(false);
+  const intervalRef = useRef(null);
   const observerRef = useRef(null);
 
   const iframeCallbackRef = useCallback((node) => {
@@ -47,47 +48,53 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
     }
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
+  const fetchYoutubeVideo = useCallback(async () => {
+    try {
+      const res = await API.get("/youtube");
+      const data = res?.data || {};
 
-    if (initialVideo && !initialVideo.backgroundFetch) {
+      setVideo((prev) => {
+        const newVideoId = data?.videoId || "";
+        const newTitle = data?.title || "";
+        const newLive = Boolean(data?.live);
+        if (prev.videoId === newVideoId && prev.title === newTitle && prev.live === newLive) {
+          return prev;
+        }
+        return { videoId: newVideoId, title: newTitle, live: newLive };
+      });
+    } catch {
+      setVideo((prev) => {
+        if (prev.videoId === "" && prev.title === "") return prev;
+        return { videoId: "", title: "", live: false };
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (initialVideo) {
       setVideo({
         videoId: initialVideo.videoId || "",
         title: initialVideo.title || "",
         live: Boolean(initialVideo.live),
       });
       setLoading(false);
-    } else if (!waitForData || (initialVideo && initialVideo.backgroundFetch)) {
-      const fetchLiveStatus = async () => {
-        try {
-          const res = await API.get("/youtube");
-          if (!mounted) return;
-          const data = res?.data || {};
-          
-          if (data.backgroundFetch) {
-            // If backend is still fetching from Google, wait a bit and try again
-            setTimeout(() => { if (mounted) fetchLiveStatus(); }, 2000);
-            return;
-          }
-
-          setVideo({
-            videoId: data.videoId || "",
-            title: data.title || "",
-            live: Boolean(data.live),
-          });
-          setLoading(false);
-        } catch (err) {
-          if (!mounted) return;
-          setLoading(false);
-        }
-      };
-      fetchLiveStatus();
+    } else {
+      if (!waitForData) {
+        void fetchYoutubeVideo();
+      }
     }
 
-    return () => {
-      mounted = false;
-    };
-  }, [initialVideo, waitForData]);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
+      if (waitForData && !initialVideo) return;
+      void fetchYoutubeVideo();
+    }, 60000);
+
+    return () => clearInterval(intervalRef.current);
+  }, [fetchYoutubeVideo, initialVideo, waitForData]);
 
   return (
     <section id="hero" className="py-16 text-white bg-[#54091b]">
