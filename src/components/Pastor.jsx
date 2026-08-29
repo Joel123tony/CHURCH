@@ -71,6 +71,40 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
     );
   }, [pastors]);
 
+  // Generate historical periods for the timeline
+  const historicalPeriods = useMemo(() => {
+    const periods = [];
+    pastors.forEach(p => {
+      if (p.serviceHistory && p.serviceHistory.length > 0) {
+        p.serviceHistory.forEach(sh => {
+          if (sh.leftYear) {
+            periods.push({
+              _id: `${p._id}-${sh.joinedYear}`,
+              pastorId: p._id,
+              name: p.name,
+              role: sh.role,
+              joinedYear: sh.joinedYear,
+              leftYear: sh.leftYear
+            });
+          }
+        });
+      } else {
+        if (!p.isCurrent && p.joinedYear) {
+           periods.push({
+              _id: p._id,
+              pastorId: p._id,
+              name: p.name,
+              role: p.role,
+              joinedYear: p.joinedYear,
+              leftYear: p.leftYear
+           });
+        }
+      }
+    });
+
+    return periods.sort((a, b) => b.joinedYear - a.joinedYear);
+  }, [pastors]);
+
   const filteredNameSuggestions = useMemo(() => {
     const query = searchName.trim().toLowerCase();
     if (!query) return nameSuggestions.slice(0, 6);
@@ -132,17 +166,42 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
       if (sYear) {
         const queryYear = parseInt(sYear, 10);
         if (!isNaN(queryYear)) {
-          // Safely parse start year
-          let startYear;
-          if (typeof p?.joinedYear === "number") {
-            startYear = p.joinedYear;
-          } else if (typeof p?.joinedYear === "string") {
-            startYear = parseInt(p.joinedYear, 10);
-          } else if (p?.joinedYear != null) {
-            startYear = parseInt(String(p.joinedYear), 10);
+          let yearMatchFound = false;
+
+          if (p.serviceHistory && p.serviceHistory.length > 0) {
+            for (const sh of p.serviceHistory) {
+              const startY = typeof sh.joinedYear === "number" ? sh.joinedYear : parseInt(sh.joinedYear, 10);
+              let endY;
+              if (sh.leftYear == null || sh.leftYear === "") {
+                endY = new Date().getFullYear();
+              } else {
+                endY = typeof sh.leftYear === "number" ? sh.leftYear : parseInt(sh.leftYear, 10);
+              }
+
+              if (!isNaN(startY) && !isNaN(endY)) {
+                if (queryYear >= startY && queryYear <= endY) {
+                  yearMatchFound = true;
+                  break;
+                }
+              } else if (!isNaN(startY)) {
+                if (queryYear >= startY && queryYear <= new Date().getFullYear()) {
+                  yearMatchFound = true;
+                  break;
+                }
+              }
+            }
           } else {
-            startYear = NaN;
-          }
+            // Legacy fallback
+            let startYear;
+            if (typeof p?.joinedYear === "number") {
+              startYear = p.joinedYear;
+            } else if (typeof p?.joinedYear === "string") {
+              startYear = parseInt(p.joinedYear, 10);
+            } else if (p?.joinedYear != null) {
+              startYear = parseInt(String(p.joinedYear), 10);
+            } else {
+              startYear = NaN;
+            }
 
           // Safely parse end year
           let endYear;
@@ -163,13 +222,14 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
             endYear = parseInt(String(leftVal), 10);
           }
 
-          if (!isNaN(startYear) && !isNaN(endYear)) {
-            yearMatch = queryYear >= startYear && queryYear <= endYear;
-          } else if (!isNaN(startYear)) {
-            yearMatch = queryYear >= startYear && queryYear <= new Date().getFullYear();
-          } else {
-            yearMatch = false;
+            if (!isNaN(startYear) && !isNaN(endYear)) {
+              if (queryYear >= startYear && queryYear <= endYear) yearMatchFound = true;
+            } else if (!isNaN(startYear)) {
+              if (queryYear >= startYear && queryYear <= new Date().getFullYear()) yearMatchFound = true;
+            }
           }
+          
+          yearMatch = yearMatchFound;
         } else {
           yearMatch = false;
         }
@@ -397,17 +457,17 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
                 <div className="timeline-container flex-none lg:flex-1 min-h-0 overflow-x-auto overflow-y-hidden lg:overflow-y-auto lg:overflow-x-hidden pb-4 lg:pb-0 lg:pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <div className="relative flex flex-row lg:flex-col gap-6 lg:gap-0 min-w-max lg:min-w-0 pr-6 lg:pr-0">
                     {/* The Timeline Line */}
-                    {pastors.filter(p => !p.isCurrent).length > 0 && (
+                    {historicalPeriods.length > 0 && (
                       <div className="absolute left-0 top-[11px] h-[2px] w-full lg:left-[11px] lg:top-0 lg:h-full lg:w-[2px] bg-[#54091b]/20 -translate-y-px lg:translate-y-0 lg:-translate-x-px pointer-events-none"></div>
                     )}
                     
-                    {pastors.filter(p => !p.isCurrent).length > 0 ? (
-                      pastors.filter(p => !p.isCurrent).map(p => (
-                        <div key={p._id} className="relative flex flex-col lg:flex-row items-start lg:items-center group cursor-pointer w-[130px] lg:w-auto lg:h-[80px] shrink-0" onClick={() => { setSearchYear(String(p.joinedYear)); searchPastors(); }}>
+                    {historicalPeriods.length > 0 ? (
+                      historicalPeriods.map(hp => (
+                        <div key={hp._id} className="relative flex flex-col lg:flex-row items-start lg:items-center group cursor-pointer w-[130px] lg:w-auto lg:h-[80px] shrink-0" onClick={() => { setSearchYear(String(hp.joinedYear)); searchPastors(); }}>
                           <div className="flex items-center justify-center w-6 h-6 rounded-full border-[4px] border-[#d8cbb7] bg-[#54091b] shrink-0 z-10 transition-transform duration-300 group-hover:scale-125 group-hover:bg-[#441018]"></div>
                           <div className="mt-3 lg:mt-0 lg:ml-4 py-2 text-left">
-                            <span className="font-bold text-[#54091b] text-sm block">{p.joinedYear} - {p.leftYear || t("Present")}</span>
-                            <h5 className="font-semibold text-[#1E293B] text-sm mt-1">{p.name}</h5>
+                            <span className="font-bold text-[#54091b] text-sm block">{hp.joinedYear} - {hp.leftYear || t("Present")}</span>
+                            <h5 className="font-semibold text-[#1E293B] text-sm mt-1">{hp.name}</h5>
                           </div>
                         </div>
                       ))

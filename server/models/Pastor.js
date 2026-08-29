@@ -42,6 +42,17 @@ const pastorSchema = new mongoose.Schema(
       default: null,
     },
 
+    serviceHistory: {
+      type: [
+        {
+          role: { type: String, default: "Pastor" },
+          joinedYear: { type: Number, required: true },
+          leftYear: { type: Number, default: null },
+        },
+      ],
+      default: [],
+    },
+
     // ✅ FIXED
     education: {
       type: [String],

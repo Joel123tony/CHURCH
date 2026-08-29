@@ -112,19 +112,17 @@ body {
   from {
     opacity: 0;
     transform: translateY(10px) scale(0.99);
-    filter: blur(2px);
   }
 
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 }
 
 .animate-admin-page-enter {
   animation: adminPageEnter 280ms ease-out both;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
 }
 
 @keyframes eventCardIn {
@@ -148,32 +146,28 @@ body {
   from {
     opacity: 0;
     transform: translateY(14px) scale(0.985);
-    filter: blur(1px);
   }
 
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 }
 
 .animate-admin-card-in {
   animation: adminCardIn 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
 }
 
 @keyframes prayerCardIn {
   from {
     opacity: 0;
     transform: translateY(18px) scale(0.97);
-    filter: blur(1px);
   }
 
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 }
 

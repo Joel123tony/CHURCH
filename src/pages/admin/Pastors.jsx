@@ -25,10 +25,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 const defaultForm = {
   name: "",
-  role: "Pastor",
   bio: "",
-  joinedYear: "",
-  endYear: "",
   education: "",
   church: "Methodist Tamil Church Padikuppam",
   email: "",
@@ -92,6 +89,7 @@ export default function Pastors() {
 
   const [educations, setEducations] = useState([""]);
   const [customEducation, setCustomEducation] = useState("");
+  const [servicePeriods, setServicePeriods] = useState([{ role: "Pastor", joinedYear: "", endYear: "" }]);
 
   const fetchPastors = async () => {
     try {
@@ -260,6 +258,7 @@ export default function Pastors() {
     setUploadStage("idle");
     setEducations([""]);
     setCustomEducation("");
+    setServicePeriods([{ role: "Pastor", joinedYear: "", endYear: "" }]);
   };
 
   const handleSubmit = async (e) => {
@@ -268,27 +267,29 @@ export default function Pastors() {
     try {
       setLoading(true);
 
-      const joinedYear = Number(form.joinedYear);
-      const leftYear = form.endYear ? Number(form.endYear) : null;
-
-      if (!Number.isFinite(joinedYear)) {
-        toast.error("Joined year is required");
-        return;
-      }
-
-      if (form.endYear && !Number.isFinite(leftYear)) {
-        toast.error("End year must be a valid number");
-        return;
+      for (const sp of servicePeriods) {
+        const joinedYear = Number(sp.joinedYear);
+        const leftYear = sp.endYear ? Number(sp.endYear) : null;
+        if (!Number.isFinite(joinedYear)) {
+          toast.error("Joined year is required for all service periods");
+          return;
+        }
+        if (sp.endYear && !Number.isFinite(leftYear)) {
+          toast.error("End year must be a valid number");
+          return;
+        }
       }
 
       const image = await uploadImage();
 
       const payload = {
         name: form.name,
-        role: form.role,
         bio: form.bio,
-        joinedYear,
-        leftYear,
+        serviceHistory: servicePeriods.map(sp => ({
+          role: sp.role || "Pastor",
+          joinedYear: Number(sp.joinedYear),
+          leftYear: sp.endYear ? Number(sp.endYear) : null
+        })),
         education: [
           ...educations.filter((value) => value && value !== "Other"),
           ...(customEducation ? [customEducation] : []),
@@ -326,15 +327,25 @@ export default function Pastors() {
 
     setForm({
       name: p?.name || "",
-      role: p?.role || "Pastor",
       bio: p?.bio || "",
-      joinedYear: p?.joinedYear || "",
-      endYear: p?.leftYear ?? p?.endYear ?? "",
       church: p?.church || "",
       email: p?.email || "",
       phone: p?.number ?? p?.phone ?? "",
-
     });
+
+    if (p?.serviceHistory && p.serviceHistory.length > 0) {
+      setServicePeriods(p.serviceHistory.map(sh => ({
+        role: sh.role || "Pastor",
+        joinedYear: sh.joinedYear || "",
+        endYear: sh.leftYear || ""
+      })));
+    } else {
+      setServicePeriods([{
+        role: p?.role || "Pastor",
+        joinedYear: p?.joinedYear || "",
+        endYear: p?.leftYear ?? p?.endYear ?? ""
+      }]);
+    }
 
     setEducations(nextEducations);
     setCustomEducation(nextCustomEducation);
@@ -465,12 +476,14 @@ export default function Pastors() {
             </button>
           </div>
 
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm w-max"
-          >
-            <FaFileExcel className="text-emerald-600" size={14} /> Download Excel
-          </button>
+          {view === "list" && (
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm w-max ml-auto sm:ml-0"
+            >
+              <FaFileExcel className="text-emerald-600" size={14} /> Download Excel
+            </button>
+          )}
         </div>
 
       <div
@@ -508,23 +521,6 @@ export default function Pastors() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Role</label>
-                  <select
-                    name="role"
-                    value={form.role}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50 appearance-none"
-                  >
-                    <option>Pastor</option>
-                    <option>Senior Pastor</option>
-                    <option>Associate Pastor</option>
-                    <option>Youth Pastor</option>
-                    <option>Worship Pastor</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-
-                <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Email</label>
                   <input
                     name="email"
@@ -548,38 +544,86 @@ export default function Pastors() {
               </div>
             </div>
 
-            {/* SERVICE PERIOD */}
+            {/* SERVICE PERIODS */}
             <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Service Period</h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Joined Year</label>
-                  <div className="relative">
-                    <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
-                    <input
-                      name="joinedYear"
-                      placeholder="e.g. 2018"
-                      value={form.joinedYear}
-                      onChange={handleChange}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
-                      required
-                    />
+              <div className="flex items-center justify-between mb-3">
+                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Service Periods</h3>
+                 <button
+                    type="button"
+                    onClick={() => setServicePeriods([...servicePeriods, { role: "Pastor", joinedYear: "", endYear: "" }])}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#531B24] bg-[#531B24]/10 rounded hover:bg-[#531B24]/20 transition-colors w-max"
+                  >
+                    <FaPlus size={10} /> Add Service Period
+                  </button>
+              </div>
+              <div className="space-y-4">
+                {servicePeriods.map((sp, idx) => (
+                  <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-lg relative">
+                    {servicePeriods.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setServicePeriods(servicePeriods.filter((_, i) => i !== idx))}
+                        className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <FaTimes size={12} />
+                      </button>
+                    )}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Role</label>
+                        <select
+                          value={sp.role}
+                          onChange={(e) => {
+                            const updated = [...servicePeriods];
+                            updated[idx].role = e.target.value;
+                            setServicePeriods(updated);
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-white appearance-none"
+                        >
+                          <option>Pastor</option>
+                          <option>Senior Pastor</option>
+                          <option>Associate Pastor</option>
+                          <option>Youth Pastor</option>
+                          <option>Worship Pastor</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Joined Year</label>
+                        <div className="relative">
+                          <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
+                          <input
+                            placeholder="e.g. 2018"
+                            value={sp.joinedYear}
+                            onChange={(e) => {
+                              const updated = [...servicePeriods];
+                              updated[idx].joinedYear = e.target.value;
+                              setServicePeriods(updated);
+                            }}
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-white"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">End Year</label>
+                        <div className="relative">
+                          <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
+                          <input
+                            placeholder="Leave empty if current"
+                            value={sp.endYear}
+                            onChange={(e) => {
+                              const updated = [...servicePeriods];
+                              updated[idx].endYear = e.target.value;
+                              setServicePeriods(updated);
+                            }}
+                            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">End Year (Leave empty if current)</label>
-                  <div className="relative">
-                    <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none" />
-                    <input
-                      name="endYear"
-                      placeholder="e.g. 2022"
-                      value={form.endYear}
-                      onChange={handleChange}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
-                    />
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -748,7 +792,7 @@ export default function Pastors() {
         loading ? (
           <p className="text-center text-slate-500">Loading...</p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4 px-2 sm:px-0">
             {filteredPastors.map((p, index) => (
               <div
                 key={p?._id}
@@ -757,7 +801,7 @@ export default function Pastors() {
                   animationDelay: `${Math.min(index, 10) * 50}ms`,
                 }}
               >
-                <div className="relative h-48 w-full bg-slate-100 shrink-0">
+                <div className="relative h-32 sm:h-48 w-full bg-slate-100 shrink-0">
                   <img
                     src={p?.image?.url || getFallbackAvatar()}
                     alt={p?.name}
@@ -766,57 +810,57 @@ export default function Pastors() {
                   />
 
                   {p?.isCurrent && (
-                    <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                      <FaStar size={10} />
-                      Current
+                    <span className="absolute left-1.5 top-1.5 sm:left-3 sm:top-3 inline-flex items-center gap-1 sm:gap-1.5 rounded-full bg-emerald-500/90 backdrop-blur-sm px-1.5 py-0.5 sm:px-2.5 sm:py-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                      <FaStar className="size-2 sm:w-[10px] sm:h-[10px]" />
+                      <span className="hidden sm:inline">Current</span>
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-col flex-1 p-4">
-                  <div className="mb-3">
-                    <h2 className="text-base font-bold text-slate-800 line-clamp-1">{p?.name}</h2>
-                    <p className="text-xs font-semibold text-[#531B24]">{p?.role}</p>
+                <div className="flex flex-col flex-1 p-3 sm:p-4">
+                  <div className="mb-2 sm:mb-3">
+                    <h2 className="text-xs sm:text-base leading-tight font-bold text-slate-800 line-clamp-1">{p?.name}</h2>
+                    <p className="text-[10px] sm:text-xs font-semibold text-[#531B24] line-clamp-1">{p?.role}</p>
                   </div>
 
-                  <div className="space-y-1.5 mb-4 flex-1">
-                    <p className="text-[11px] text-slate-500 flex items-center gap-2">
-                      <FaCalendarAlt className="text-slate-400 shrink-0" />
-                      <span>{p?.joinedYear} - {p?.leftYear ?? p?.endYear ?? "Present"}</span>
+                  <div className="space-y-1 sm:space-y-1.5 mb-3 sm:mb-4 flex-1">
+                    <p className="text-[10px] sm:text-[11px] text-slate-500 flex items-center gap-1.5 sm:gap-2">
+                      <FaCalendarAlt className="text-slate-400 shrink-0 size-3" />
+                      <span className="truncate">{p?.joinedYear} - {p?.leftYear ?? p?.endYear ?? "Present"}</span>
                     </p>
-                    <p className="text-[11px] text-slate-500 line-clamp-2">
+                    <p className="text-[11px] sm:text-[11px] text-slate-500 line-clamp-2">
                       {p?.bio || "No biography available"}
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-100">
+                  <div className="flex flex-wrap gap-1.5 pt-2.5 sm:pt-3 border-t border-slate-100">
                     <button
                       onClick={() => setSelectedPastor(p)}
-                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded text-[11px] font-semibold transition-colors"
+                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded transition-colors"
                       title="View"
                     >
-                      <FaEye size={12} />
+                      <FaEye className="size-3 sm:w-[12px] sm:h-[12px]" />
                     </button>
                     <button
                       onClick={() => handleEdit(p)}
-                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-slate-100 text-amber-600 border border-slate-200 rounded text-[11px] font-semibold transition-colors"
+                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-slate-100 text-amber-600 border border-slate-200 rounded transition-colors"
                       title="Edit"
                     >
-                      <FaEdit size={12} />
+                      <FaEdit className="size-3 sm:w-[12px] sm:h-[12px]" />
                     </button>
                     <button
                       onClick={() => handleDelete(p._id)}
-                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-red-50 text-red-600 border border-slate-200 rounded text-[11px] font-semibold transition-colors"
+                      className="flex-1 flex justify-center py-1.5 bg-slate-50 hover:bg-red-50 text-red-600 border border-slate-200 rounded transition-colors"
                       title="Delete"
                     >
-                      <FaTrashAlt size={12} />
+                      <FaTrashAlt className="size-3 sm:w-[12px] sm:h-[12px]" />
                     </button>
                   </div>
 
                   {!p?.isCurrent && (
                     <button
                       onClick={() => setCurrentPastor(p._id)}
-                      className="w-full mt-1.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[11px] font-bold transition-colors flex items-center justify-center gap-1"
+                      className="w-full mt-1.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[10px] sm:text-[11px] font-bold transition-colors flex items-center justify-center gap-1"
                     >
                       <FaStar size={10} />
                       Set as Current

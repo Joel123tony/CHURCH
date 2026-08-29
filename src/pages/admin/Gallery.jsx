@@ -22,6 +22,7 @@ export default function Gallery() {
   const [activeTab, setActiveTab] = useState("add"); // "add" | "list"
 
   const [search, setSearch] = useState("");
+  const [filterMode, setFilterMode] = useState("all");
   const [editItem, setEditItem] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
@@ -172,14 +173,18 @@ export default function Gallery() {
     }
   };
 
-  /* SEARCH */
-  const filteredMedia = useMemo(
-    () =>
-      media.filter((item) =>
-        item.title?.toLowerCase().includes(search.toLowerCase())
-      ),
-    [media, search]
-  );
+  /* SEARCH & FILTER */
+  const filteredMedia = useMemo(() => {
+    let result = media.filter((item) =>
+      item.title?.toLowerCase().includes(search.toLowerCase())
+    );
+    if (filterMode === "photos") {
+      result = result.filter((m) => m.mediaType !== "video");
+    } else if (filterMode === "videos") {
+      result = result.filter((m) => m.mediaType === "video");
+    }
+    return result;
+  }, [media, search, filterMode]);
 
   const filteredIds = useMemo(
     () => filteredMedia.map((item) => item._id),
@@ -244,6 +249,21 @@ export default function Gallery() {
 
     return { pinnedMedia: pinned, regularMedia: regular };
   }, [filteredMedia]);
+
+  const groupedRegularMedia = useMemo(() => {
+    const groups = {};
+    regularMedia.forEach((item) => {
+      const value = item.eventDate || item.createdAt;
+      const timestamp = value ? new Date(value).getTime() : 0;
+      const dateObj = new Date(Number.isFinite(timestamp) ? timestamp : 0);
+      const dateStr = dateObj.toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' });
+      if (!groups[dateStr]) {
+        groups[dateStr] = { dateStr, timestamp, items: [] };
+      }
+      groups[dateStr].items.push(item);
+    });
+    return Object.values(groups).sort((a, b) => b.timestamp - a.timestamp);
+  }, [regularMedia]);
 
   const galleryCount = useMemo(
     () => media.filter((item) => item.clientPriority !== null).length,
@@ -323,15 +343,33 @@ export default function Gallery() {
               <>
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                   {/* SEARCH & FILTERS */}
-                  <div className="relative mb-5 max-w-sm">
-                    <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
-                    <input
-                      type="text"
-                      placeholder="Search gallery by title..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
-                    />
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5">
+                    <div className="relative w-full sm:max-w-sm">
+                      <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                      <input
+                        type="text"
+                        placeholder="Search gallery by title..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-[#531B24] focus:ring-1 focus:ring-[#531B24] transition-all bg-slate-50"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                      {["all", "photos", "videos"].map(mode => (
+                        <button
+                          key={mode}
+                          onClick={() => setFilterMode(mode)}
+                          className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors whitespace-nowrap border shadow-sm ${
+                            filterMode === mode 
+                              ? "bg-[#531B24] border-[#531B24] text-white" 
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* BULK ACTIONS */}
@@ -396,7 +434,7 @@ export default function Gallery() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-[6px] sm:gap-[8px]">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-2">
                             {pinnedMedia.map((item, index) => (
                               <div
                                 key={item._id}
@@ -422,9 +460,9 @@ export default function Gallery() {
                         </section>
                       )}
 
-                      {regularMedia.length > 0 && (
+                      {groupedRegularMedia.length > 0 && (
                         <section className={`${pinnedMedia.length > 0 ? "border-t border-slate-100 pt-8" : ""}`}>
-                          <div className="flex items-center justify-between gap-3 mb-4">
+                          <div className="flex items-center justify-between gap-3 mb-6">
                             <h2 className="text-lg font-bold text-slate-800">
                               Other Media
                             </h2>
@@ -433,22 +471,31 @@ export default function Gallery() {
                             </p>
                           </div>
 
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-[6px] sm:gap-[8px]">
-                            {regularMedia.map((item, index) => (
-                              <div
-                                key={item._id}
-                                className="animate-admin-card-in relative flex flex-col group"
-                                style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}
-                              >
-                                <MediaCard
-                                  item={item}
-                                  onDelete={deleteMedia}
-                                  onEdit={openEdit}
-                                  selected={selectedSet.has(item._id)}
-                                  onSelectToggle={toggleSelection}
-                                  isPinned={false}
-                                  onTogglePin={toggleGallery}
-                                />
+                          <div className="space-y-8">
+                            {groupedRegularMedia.map((group) => (
+                              <div key={group.dateStr}>
+                                <h3 className="text-sm font-bold text-slate-700 mb-3 tracking-tight">
+                                  {group.dateStr}
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-2">
+                                  {group.items.map((item, index) => (
+                                    <div
+                                      key={item._id}
+                                      className="animate-admin-card-in relative flex flex-col group"
+                                      style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}
+                                    >
+                                      <MediaCard
+                                        item={item}
+                                        onDelete={deleteMedia}
+                                        onEdit={openEdit}
+                                        selected={selectedSet.has(item._id)}
+                                        onSelectToggle={toggleSelection}
+                                        isPinned={false}
+                                        onTogglePin={toggleGallery}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             ))}
                           </div>

@@ -172,17 +172,24 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
       baseName = baseName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
       if (!baseName) baseName = "Media";
 
-      let downloadUrl = media.url;
-      const originalFilename = media.title ? `${baseName}.${media.mediaType === 'video' ? 'mp4' : 'jpg'}` : "download";
+      let downloadUrl = media.originalUrl || media.url;
+
+      if (downloadUrl.includes("res.cloudinary.com") && downloadUrl.includes("/upload/")) {
+        const parts = downloadUrl.split("/upload/");
+        const segments = parts[1].split("/");
+        // Remove transformation block if present (starts with letters and contains underscore)
+        if (segments[0].match(/^[a-z]+_/)) {
+          segments.shift();
+        }
+        downloadUrl = `${parts[0]}/upload/fl_attachment:${baseName}/${segments.join("/")}`;
+      }
 
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = originalFilename;
-      link.target = "_blank"; // safely open in new tab if browser refuses to download
+      link.download = baseName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
     } catch (err) {
       console.error("Download error:", err);
       setToastMessage(t("Unable to download the media. Please try again."));
@@ -267,9 +274,19 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
     };
   }, [openModal, selectedMedia]);
 
+  const [filterMode, setFilterMode] = useState("all");
+
   const filteredMedia = useMemo(() => {
     const query = search.toLowerCase().trim();
-    const sorted = [...allMedia].sort((a, b) => getMediaDate(b) - getMediaDate(a));
+    let sorted = [...allMedia].sort((a, b) => getMediaDate(b) - getMediaDate(a));
+
+    if (filterMode === "photos") {
+      sorted = sorted.filter(m => m.mediaType !== "video");
+    } else if (filterMode === "videos") {
+      sorted = sorted.filter(m => m.mediaType === "video");
+    } else if (filterMode === "pinned") {
+      sorted = sorted.filter(m => m.clientPriority !== null && m.clientPriority !== undefined);
+    }
 
     if (!query) return sorted;
 
@@ -278,7 +295,21 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
         .filter(Boolean)
         .some((field) => field.toLowerCase().includes(query))
     );
-  }, [allMedia, search]);
+  }, [allMedia, search, filterMode]);
+
+  const groupedMedia = useMemo(() => {
+    const groups = {};
+    filteredMedia.forEach((item) => {
+      const timestamp = getMediaDate(item);
+      const dateObj = new Date(timestamp);
+      const dateStr = dateObj.toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' });
+      if (!groups[dateStr]) {
+        groups[dateStr] = { dateStr, timestamp, items: [] };
+      }
+      groups[dateStr].items.push(item);
+    });
+    return Object.values(groups).sort((a, b) => b.timestamp - a.timestamp);
+  }, [filteredMedia]);
 
   const closeModal = () => {
     setSearch("");
@@ -318,7 +349,7 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedMedia, handleNext, handlePrev]);
 
-  const modalGridClasses = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] sm:gap-[8px]";
+  const modalGridClasses = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-2";
 
   return (
     <>
@@ -367,30 +398,56 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
       </section>
 
       {openModal && (
-        <div className="fixed inset-0 z-50 bg-[#F4EFE7] flex flex-col">
-          <div className="border-b border-[#d9cfbf] bg-[#F4EFE7] px-4 py-3 shadow-sm sm:px-6 flex items-center justify-between shrink-0">
-            <h2 className="text-xl font-bold text-[#54091b] hidden sm:block">
-              {t("All Media")}
-            </h2>
-            <div className="flex flex-1 sm:max-w-md items-center gap-2 mx-auto sm:mx-4">
-              <input
-                type="text"
-                placeholder={t("Search gallery...")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-10 w-full rounded-full border border-[#d9cfbf] bg-white px-4 text-sm text-[#54091b] outline-none transition focus:ring-2 focus:ring-[#54091b]/20"
-              />
+        <div className="fixed inset-0 z-50 bg-[#F4EFE7] flex flex-col overflow-y-auto">
+          <div className="bg-[#F4EFE7] px-4 py-6 sm:px-8 flex flex-col gap-6 shrink-0">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-bold text-[#54091b] tracking-tight">
+                  {t("All Media")}
+                </h1>
+                <p className="text-[#54091b]/70 mt-2 text-base">
+                  {t("Browse photos and videos from our church community")}
+                </p>
+              </div>
+              <button
+                onClick={closeModal}
+                aria-label="Close gallery"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-[#54091b]/5 text-[#54091b] transition border border-[#d9cfbf]"
+              >
+                <FaTimes size={18} />
+              </button>
             </div>
-            <button
-              onClick={closeModal}
-              aria-label="Close gallery"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-[#54091b]/5 text-[#54091b] transition"
-            >
-              <FaTimes size={18} />
-            </button>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                {["all", "photos", "videos", "pinned"].map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => setFilterMode(mode)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                      filterMode === mode 
+                        ? "bg-[#54091b] text-white" 
+                        : "bg-white text-[#54091b] border border-[#d9cfbf] hover:bg-[#54091b]/5"
+                    }`}
+                  >
+                    {t(mode.charAt(0).toUpperCase() + mode.slice(1))}
+                  </button>
+                ))}
+              </div>
+
+              <div className="w-full sm:max-w-xs relative shrink-0">
+                <input
+                  type="text"
+                  placeholder={t("Search gallery...")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-10 w-full rounded-full border border-[#d9cfbf] bg-white px-4 text-sm text-[#54091b] outline-none transition focus:ring-2 focus:ring-[#54091b]/20"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-2 py-4 sm:p-6 bg-[#F4EFE7]">
+          <div className="flex-1 px-4 sm:px-8 pb-16 bg-[#F4EFE7]">
             <div className="mx-auto max-w-[1600px]">
               {loadingAll ? (
                 <div className="mt-12 text-center text-[#54091b]/60 flex flex-col items-center gap-3">
@@ -398,16 +455,26 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
                   <span>{t("Loading all media...")}</span>
                 </div>
               ) : filteredMedia.length === 0 ? (
-                <div className="mt-12 text-center text-[#54091b]/60">{t("No media found")}</div>
+                <div className="mt-12 text-center text-[#54091b]/60 text-lg">{t("No media found")}</div>
               ) : (
-                <div className={modalGridClasses}>
-                  {filteredMedia.map((item) => (
-                    <CompactTile
-                      key={item._id}
-                      item={item}
-                      onClick={() => setSelectedMedia(item)}
-                      t={t}
-                    />
+                <div className="space-y-8">
+                  {groupedMedia.map((group) => (
+                    <section key={group.dateStr}>
+                      <h2 className="text-lg sm:text-xl font-bold text-[#54091b] mb-4 tracking-tight">
+                        {group.dateStr}
+                      </h2>
+                      <div className={modalGridClasses}>
+                        {group.items.map((item) => (
+                          <CompactTile
+                            key={item._id}
+                            item={item}
+                            onClick={() => setSelectedMedia(item)}
+                            t={t}
+                            aspectClass="aspect-square"
+                          />
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
               )}

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Smartphone } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || localStorage.getItem('pwaInstalled')) {
@@ -80,32 +83,35 @@ export default function PWAInstallPrompt() {
   };
 
   // Only render if 60s has passed, cooldown has expired, AND we have a valid install prompt
-  if (!showPrompt || !deferredPrompt) return null;
+  if (!showPrompt || !deferredPrompt || isAdminRoute) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-[#F4EFE7] border border-[#54091b]/20 shadow-lg rounded-xl p-4 z-[99999] flex flex-col gap-2">
+    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-[340px] bg-[#F4EFE7] border border-[#54091b]/20 shadow-2xl rounded-2xl p-5 z-[99999] flex flex-col">
       <button 
         onClick={handleClose}
-        className="absolute top-2 right-2 text-[#54091b]/60 hover:text-[#54091b] p-1 transition-colors"
+        className="absolute top-3 right-3 text-[#54091b]/50 hover:text-[#54091b] p-1.5 rounded-full hover:bg-[#54091b]/5 transition-all"
         aria-label="Close"
       >
         <X size={18} />
       </button>
       
-      <div className="flex items-center gap-3 mb-1">
-        <span className="text-2xl" role="img" aria-label="mobile">📱</span>
-        <h3 className="font-semibold text-[#54091b] pr-4">App Available</h3>
+      <div className="flex items-start gap-4 mb-4 mt-1">
+        <div className="w-12 h-12 bg-white text-[#54091b] rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-[#54091b]/10">
+          <Smartphone size={24} strokeWidth={2.5} />
+        </div>
+        <div className="pr-5">
+          <h3 className="font-bold text-[#54091b] text-base leading-tight mb-1">Install App</h3>
+          <p className="text-[13px] text-[#54091b]/70 leading-snug">
+            Get a faster, more seamless experience on your device.
+          </p>
+        </div>
       </div>
-      
-      <p className="text-sm text-[#54091b]/80 mb-2 leading-tight">
-        Install our app for a faster, easier experience.
-      </p>
       
       <button 
         onClick={handleInstallClick}
-        className="w-full py-2 bg-[#54091b] text-white rounded-lg font-medium hover:bg-[#3a0612] transition-colors shadow-sm"
+        className="w-full py-2.5 bg-[#54091b] text-white rounded-xl font-bold hover:bg-[#3a0612] transition-colors shadow-md hover:shadow-lg active:scale-[0.98]"
       >
-        Install App
+        Install Now
       </button>
     </div>
   );

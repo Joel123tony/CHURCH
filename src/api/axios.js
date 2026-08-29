@@ -35,11 +35,22 @@ API.interceptors.response.use(
         console.error("Unable to connect to the server. Please ensure the backend is running.");
         networkErrorLogged = true;
       }
-      
-      // Returning a handled error structure stops infinite loops from tools like SWR
-      // and provides a clean message to the UI
       return Promise.reject(new Error("Unable to connect to the server. Please ensure the backend is running."));
     }
+
+    // Handle 401 Unauthorized (invalid or expired token)
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      
+      // Prevent redirect loop if already on login page
+      if (window.location.pathname !== "/admin/login") {
+        window.location.href = "/admin/login";
+      }
+      
+      return Promise.reject(new Error("Session expired. Please log in again."));
+    }
+
     return Promise.reject(error);
   }
 );

@@ -117,10 +117,7 @@ const normalizeBody = (req) => {
   const normalized = {};
 
   normalized.name = toText(body.name);
-  normalized.role = toText(body.role, "Pastor") || "Pastor";
   normalized.bio = toText(body.bio, "");
-  normalized.joinedYear = toSafeNumber(body.joinedYear);
-  normalized.leftYear = toSafeNumber(body.leftYear ?? body.endYear, null);
   normalized.education = normalizeEducation(body.education);
   normalized.church =
     toText(body.church, "Methodist Tamil Church Padikuppam") ||
@@ -128,10 +125,57 @@ const normalizeBody = (req) => {
   normalized.email = toText(body.email, "");
   normalized.number = toText(body.number ?? body.phone, "");
   normalized.active = toSafeBoolean(body.active ?? body.isActive, true);
-  normalized.isCurrent = toSafeBoolean(body.isCurrent, false);
   normalized.image = normalizeImage(body.image);
 
+  let serviceHistory = Array.isArray(body.serviceHistory) 
+    ? body.serviceHistory.map(sh => ({
+        role: toText(sh.role, "Pastor") || "Pastor",
+        joinedYear: toSafeNumber(sh.joinedYear),
+        leftYear: toSafeNumber(sh.leftYear ?? sh.endYear, null)
+      }))
+    : [];
+
+  let role = toText(body.role, "Pastor") || "Pastor";
+  let joinedYear = toSafeNumber(body.joinedYear);
+  let leftYear = toSafeNumber(body.leftYear ?? body.endYear, null);
+  let isCurrent = toSafeBoolean(body.isCurrent, false);
+
+  if (serviceHistory.length > 0) {
+       const sortedHistory = [...serviceHistory].sort((a, b) => (b.joinedYear || 0) - (a.joinedYear || 0));
+       const latest = sortedHistory[0];
+       role = latest.role;
+       joinedYear = latest.joinedYear;
+       leftYear = latest.leftYear;
+       isCurrent = serviceHistory.some(sh => !sh.leftYear);
+  } else if (joinedYear !== undefined && joinedYear !== null) {
+       serviceHistory = [{ role, joinedYear, leftYear }];
+       isCurrent = !leftYear;
+  }
+
+  normalized.serviceHistory = serviceHistory;
+  normalized.role = role;
+  normalized.joinedYear = joinedYear;
+  normalized.leftYear = leftYear;
+  normalized.isCurrent = isCurrent;
+
   return normalized;
+};
+
+const formatPastors = (pastors) => {
+  return pastors.map(p => {
+    if (!p.serviceHistory || p.serviceHistory.length === 0) {
+      if (p.joinedYear !== undefined && p.joinedYear !== null) {
+         p.serviceHistory = [{
+           role: p.role || "Pastor",
+           joinedYear: p.joinedYear,
+           leftYear: p.leftYear || null
+         }];
+      } else {
+         p.serviceHistory = [];
+      }
+    }
+    return p;
+  });
 };
 
 const safeErrorResponse = (res, err, fallbackMessage) => {
@@ -239,6 +283,7 @@ export const createPastor = async (req, res) => {
         url: image?.url || "",
         public_id: image?.public_id || "",
       },
+      serviceHistory: body.serviceHistory,
       joinedYear: body.joinedYear,
       leftYear: body.leftYear,
       education: Array.isArray(body.education) ? body.education : [],
@@ -246,7 +291,7 @@ export const createPastor = async (req, res) => {
       email: body.email,
       number: body.number,
       active: body.active ?? true,
-      isCurrent: body.isCurrent ?? false,
+      isCurrent: body.isCurrent,
     };
 
     console.log("[PASTOR] CREATE PAYLOAD", pastorPayload);
@@ -276,13 +321,13 @@ export const createPastor = async (req, res) => {
 export const getAllPastors = async (req, res) => {
   try {
     const pastors = await Pastor.find()
-      .select('name role bio image joinedYear leftYear education church email number active isCurrent createdAt')
+      .select('name role bio image joinedYear leftYear serviceHistory education church email number active isCurrent createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
     return res.json({
       success: true,
-      pastors,
+      pastors: formatPastors(pastors),
     });
   } catch (err) {
     console.error("GET ALL PASTORS ERROR:", err);
@@ -307,15 +352,17 @@ export const getPublicPastors = async (req, res) => {
     const pastors = await Pastor.find({
       $or: [{ active: true }, { active: { $exists: false } }],
     })
-    .select('name role bio image joinedYear leftYear education church email number isCurrent')
+    .select('name role bio image joinedYear leftYear serviceHistory education church email number isCurrent')
     .sort({ joinedYear: -1 })
     .lean();
+    
+    const formattedPastors = formatPastors(pastors);
 
-    setCached(CACHE_KEY, pastors, 60);
+    setCached(CACHE_KEY, formattedPastors, 60);
 
     return res.json({
       success: true,
-      pastors,
+      pastors: formattedPastors,
     });
   } catch (err) {
     console.error("PUBLIC PASTORS ERROR:", err);
@@ -336,11 +383,11 @@ export const searchPastors = async (req, res) => {
 
     const pastors = await Pastor.find({
       name: { $regex: name, $options: "i" },
-    });
+    }).lean();
 
     return res.json({
       success: true,
-      pastors,
+      pastors: formatPastors(pastors),
     });
   } catch (err) {
     console.error("SEARCH ERROR:", err);
@@ -387,6 +434,7 @@ export const updatePastor = async (req, res) => {
       ...(body.name ? { name: body.name } : {}),
       ...(body.role ? { role: body.role } : {}),
       ...(body.bio !== undefined ? { bio: body.bio } : {}),
+      ...(body.serviceHistory !== undefined ? { serviceHistory: body.serviceHistory } : {}),
       ...(body.joinedYear !== undefined ? { joinedYear: body.joinedYear } : {}),
       ...(body.leftYear !== undefined ? { leftYear: body.leftYear } : {}),
       ...(Array.isArray(body.education) ? { education: body.education } : {}),

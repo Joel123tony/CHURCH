@@ -73,41 +73,36 @@ export default function ClientGallery() {
   const [toastMessage, setToastMessage] = useState("");
   const [touchStartX, setTouchStartX] = useState(null);
 
-  const handleDownload = async (media) => {
-    if (downloading || !media?.url) return;
+  const handleDownload = (media) => {
+    if (downloading || (!media?.originalUrl && !media?.url)) return;
 
-    setDownloading(true);
-    setToastMessage("");
     try {
       let baseName = media.title ? media.title.trim() : "Media";
       baseName = baseName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
       if (!baseName) baseName = "Media";
 
-      const urlParts = media.url.split('?')[0].split('/');
-      const filenameFromUrl = urlParts[urlParts.length - 1];
-      const urlExt = filenameFromUrl.split('.').pop();
-      let extension = urlExt && urlExt.length <= 4 ? urlExt : (media.mediaType === "video" ? "mp4" : "jpg");
+      let downloadUrl = media.originalUrl || media.url;
 
-      const filename = `${baseName}.${extension}`;
+      if (downloadUrl.includes("res.cloudinary.com") && downloadUrl.includes("/upload/")) {
+        const parts = downloadUrl.split("/upload/");
+        const segments = parts[1].split("/");
+        // Remove transformation block if present (starts with letters and contains underscore)
+        if (segments[0].match(/^[a-z]+_/)) {
+          segments.shift();
+        }
+        downloadUrl = `${parts[0]}/upload/fl_attachment:${baseName}/${segments.join("/")}`;
+      }
 
-      const response = await fetch(media.url);
-      if (!response.ok) throw new Error("Network response was not ok");
-      const blob = await response.blob();
-      
-      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename;
+      link.href = downloadUrl;
+      link.download = baseName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error("Download error:", err);
       setToastMessage(t("Unable to download the media. Please try again."));
       setTimeout(() => setToastMessage(""), 4000);
-    } finally {
-      setDownloading(false);
     }
   };
 
@@ -161,9 +156,19 @@ export default function ClientGallery() {
     };
   }, [selectedMedia]);
 
+  const [filterMode, setFilterMode] = useState("all"); // "all", "photos", "videos", "pinned"
+
   const filteredMedia = useMemo(() => {
     const query = search.toLowerCase().trim();
-    const sorted = [...allMedia].sort((a, b) => getMediaDate(b) - getMediaDate(a));
+    let sorted = [...allMedia].sort((a, b) => getMediaDate(b) - getMediaDate(a));
+
+    if (filterMode === "photos") {
+      sorted = sorted.filter(m => m.mediaType !== "video");
+    } else if (filterMode === "videos") {
+      sorted = sorted.filter(m => m.mediaType === "video");
+    } else if (filterMode === "pinned") {
+      sorted = sorted.filter(m => m.clientPriority !== null && m.clientPriority !== undefined);
+    }
 
     if (!query) return sorted;
 
@@ -172,7 +177,21 @@ export default function ClientGallery() {
         .filter(Boolean)
         .some((field) => field.toLowerCase().includes(query))
     );
-  }, [allMedia, search]);
+  }, [allMedia, search, filterMode]);
+
+  const groupedMedia = useMemo(() => {
+    const groups = {};
+    filteredMedia.forEach((item) => {
+      const timestamp = getMediaDate(item);
+      const dateObj = new Date(timestamp);
+      const dateStr = dateObj.toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' });
+      if (!groups[dateStr]) {
+        groups[dateStr] = { dateStr, timestamp, items: [] };
+      }
+      groups[dateStr].items.push(item);
+    });
+    return Object.values(groups).sort((a, b) => b.timestamp - a.timestamp);
+  }, [filteredMedia]);
 
   const currentIndex = selectedMedia ? filteredMedia.findIndex((m) => m._id === selectedMedia._id) : -1;
   const hasNext = currentIndex !== -1 && currentIndex < filteredMedia.length - 1;
@@ -206,43 +225,76 @@ export default function ClientGallery() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedMedia, handleNext, handlePrev]);
 
-  const gridClasses = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[6px] sm:gap-[8px]";
+  const gridClasses = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 sm:gap-2";
 
   return (
     <div className="min-h-screen bg-[#F4EFE7] pt-24 pb-16">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold text-[#54091b]">
-            {t("Gallery")}
-          </h1>
-          <div className="w-full sm:max-w-md">
-            <input
-              type="text"
-              placeholder={t("Search gallery...")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-10 w-full rounded-full border border-[#d9cfbf] bg-white px-4 text-sm text-[#54091b] outline-none transition focus:ring-2 focus:ring-[#54091b]/20"
-            />
+        <div className="mb-8 flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#54091b] tracking-tight">
+              {t("All Media")}
+            </h1>
+            <p className="text-[#54091b]/70 mt-2 text-base">
+              {t("Browse photos and videos from our church community")}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+              {["all", "photos", "videos", "pinned"].map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setFilterMode(mode)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                    filterMode === mode 
+                      ? "bg-[#54091b] text-white" 
+                      : "bg-white text-[#54091b] border border-[#d9cfbf] hover:bg-[#54091b]/5"
+                  }`}
+                >
+                  {t(mode.charAt(0).toUpperCase() + mode.slice(1))}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-full sm:max-w-xs relative shrink-0">
+              <input
+                type="text"
+                placeholder={t("Search gallery...")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-10 w-full rounded-full border border-[#d9cfbf] bg-white px-4 text-sm text-[#54091b] outline-none transition focus:ring-2 focus:ring-[#54091b]/20"
+              />
+            </div>
           </div>
         </div>
 
         {loading ? (
           <div className={gridClasses}>
             {[...Array(30)].map((_, i) => (
-              <div key={i} className="aspect-square w-full rounded-[10px] sm:rounded-[12px] animate-pulse bg-[#5c1223]" />
+              <div key={i} className="aspect-square w-full rounded-lg animate-pulse bg-[#5c1223]" />
             ))}
           </div>
         ) : filteredMedia.length === 0 ? (
           <div className="mt-12 text-center text-[#54091b]/60 py-16 text-lg">{t("No media found")}</div>
         ) : (
-          <div className={gridClasses}>
-            {filteredMedia.map((item) => (
-              <CompactTile
-                key={item._id}
-                item={item}
-                onClick={() => setSelectedMedia(item)}
-                t={t}
-              />
+          <div className="space-y-8">
+            {groupedMedia.map((group) => (
+              <section key={group.dateStr}>
+                <h2 className="text-lg sm:text-xl font-bold text-[#54091b] mb-4 tracking-tight">
+                  {group.dateStr}
+                </h2>
+                <div className={gridClasses}>
+                  {group.items.map((item) => (
+                    <CompactTile
+                      key={item._id}
+                      item={item}
+                      onClick={() => setSelectedMedia(item)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}

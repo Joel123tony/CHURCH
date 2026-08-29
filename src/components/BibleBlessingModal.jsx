@@ -202,7 +202,7 @@ export default function BibleBlessingModal() {
             </p>
             <div className="flex justify-center w-full">
               <div className="inline-flex items-center justify-center bg-[#5D1324]/5 border border-[#5D1324]/10 rounded-full px-6 py-2">
-                <p className="text-[#5D1324] font-semibold text-sm sm:text-base m-0 text-center">
+                <p className="text-[#5D1324] font-semibold text-sm sm:text-base m-0 text-center leading-none">
                   {currentVerse.book} {currentVerse.chapter}:{currentVerse.verse}
                 </p>
               </div>
@@ -261,8 +261,8 @@ export default function BibleBlessingModal() {
 
           {/* Reference Badge */}
           <div className="mb-auto mt-8 flex justify-center w-full">
-            <div className="inline-block bg-[#5D1324]/5 border-2 border-[#5D1324]/10 rounded-full px-12 py-5">
-              <p className="text-[#5D1324] font-bold text-3xl text-center m-0">
+            <div className="inline-flex items-center justify-center bg-[#5D1324]/5 border-2 border-[#5D1324]/10 rounded-full px-12 py-5">
+              <p className="text-[#5D1324] font-bold text-3xl text-center m-0 leading-none">
                 {currentVerse.book} {currentVerse.chapter}:{currentVerse.verse}
               </p>
             </div>
