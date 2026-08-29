@@ -22,17 +22,15 @@ import DonationDetailsModal from "./DonationDetailsModal";
 import { formatCurrency } from "../../utils/formatCurrency";
 
 const StatCard = ({ title, value, icon: Icon, colorClass, isMoney = false }) => (
-  <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm transition-all hover:shadow-md">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <h3 className="mt-2 text-2xl font-bold text-[#531B24]">
-          {isMoney ? formatCurrency(value) : value}
-        </h3>
-      </div>
-      <div className={`flex h-12 w-12 items-center justify-center rounded-full ${colorClass}`}>
-        <Icon className="h-6 w-6" />
-      </div>
+  <div className="rounded-2xl border border-slate-100 bg-white p-3 sm:p-5 shadow-sm transition-all hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+    <div>
+      <p className="text-[11px] sm:text-sm font-medium text-slate-500 line-clamp-1">{title}</p>
+      <h3 className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-[#531B24]">
+        {isMoney ? formatCurrency(value) : value}
+      </h3>
+    </div>
+    <div className={`flex h-8 w-8 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full self-start sm:self-auto ${colorClass}`}>
+      <Icon className="h-4 w-4 sm:h-6 sm:w-6" />
     </div>
   </div>
 );
@@ -255,7 +253,7 @@ export default function Donations() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard 
           title="Total Raised" 
           value={stats.totalDonations} 
@@ -301,11 +299,11 @@ export default function Donations() {
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         
         {/* Advanced Filters */}
-        <div className="border-b border-slate-200 p-4 bg-slate-50/50 space-y-3">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="border-b border-slate-200 p-3 sm:p-4 bg-slate-50/50 space-y-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             
             {/* Search */}
-            <div className="relative">
+            <div className="relative col-span-2 md:col-span-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
@@ -318,11 +316,11 @@ export default function Donations() {
             
             {/* Status Filter */}
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Filter className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-8 text-sm outline-none transition-all focus:border-[#531B24]"
+                className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-2 pl-8 pr-6 text-xs sm:text-sm outline-none transition-all focus:border-[#531B24]"
               >
                 <option value="all">All Statuses</option>
                 <option value="successful">Successful</option>
@@ -335,18 +333,18 @@ export default function Donations() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white py-2 px-4 text-sm outline-none transition-all focus:border-[#531B24]"
+              className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs sm:text-sm outline-none transition-all focus:border-[#531B24]"
             >
-              <option value="date_desc">Latest First</option>
-              <option value="date_asc">Oldest First</option>
-              <option value="amount_desc">Highest Amount</option>
-              <option value="amount_asc">Lowest Amount</option>
+              <option value="date_desc">Latest</option>
+              <option value="date_asc">Oldest</option>
+              <option value="amount_desc">Highest (₹)</option>
+              <option value="amount_asc">Lowest (₹)</option>
             </select>
 
             {/* Clear Filters */}
             <button
               onClick={clearFilters}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 w-full"
+              className="inline-flex col-span-2 md:col-span-3 lg:col-span-1 items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 w-full"
             >
               <X className="h-4 w-4" />
               Clear Filters
@@ -449,24 +447,31 @@ export default function Donations() {
             </div>
 
             {/* Mobile Card View (Hidden on tablet/desktop) */}
-            <div className="md:hidden divide-y divide-slate-200">
+            <div className="md:hidden p-3 sm:p-4 space-y-3 bg-slate-50/30">
               {paginatedDonations.map((donation) => (
                 <div 
                   key={donation._id} 
-                  className="p-4 bg-white active:bg-slate-50"
-                  onClick={() => setSelectedDonation(donation)}
+                  className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col gap-3"
                 >
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium text-slate-800 text-base">{donation.name || "Anonymous"}</p>
-                      <p className="text-xs text-slate-500">{new Date(donation.transactionDate).toLocaleDateString()}</p>
+                      <p className="font-bold text-slate-800 leading-tight mb-1.5">{donation.name || "Anonymous"}</p>
+                      <StatusBadge status={donation.paymentStatus} />
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-slate-800 text-base">{formatCurrency(donation.amount)}</p>
-                      <div className="mt-1">
-                        <StatusBadge status={donation.paymentStatus} />
-                      </div>
+                    <p className="font-bold text-[#531B24] text-lg">{formatCurrency(donation.amount)}</p>
+                  </div>
+                  
+                  <div className="flex justify-between items-end border-t border-slate-100 pt-3 mt-1">
+                    <div className="text-xs text-slate-500 font-medium">
+                      <p>{new Date(donation.transactionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                      <p className="mt-0.5">{new Date(donation.transactionDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                     </div>
+                    <button
+                      onClick={() => setSelectedDonation(donation)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 active:bg-slate-200"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> View
+                    </button>
                   </div>
                 </div>
               ))}
