@@ -6,6 +6,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FaviconManager from "./components/FaviconManager";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import WakeBackend from "./components/WakeBackend";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -60,6 +61,7 @@ export default function App() {
           <BrowserRouter>
           <FaviconManager />
           <PWAInstallPrompt />
+          <WakeBackend />
 
           <Suspense fallback={<PageLoader />}>
             <Routes>
