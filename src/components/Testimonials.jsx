@@ -79,7 +79,7 @@ const Testimonials = memo(function Testimonials() {
 
         {/* ── Heading ── */}
         <FadeUp>
-          <div className="mb-6 lg:mb-8">
+          <div className="mb-5 lg:mb-8">
             <h2 className="text-3xl font-bold text-[#54091b]">
               {t("Pastor's Message")}
             </h2>
@@ -87,11 +87,11 @@ const Testimonials = memo(function Testimonials() {
         </FadeUp>
 
         {/* ── Content area ── */}
-        <div className="pb-16 lg:pb-24">
+        <div>
 
           {/* Loading skeleton */}
           {loading && (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 sm:after:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 sm:after:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {[1, 2, 3, 4].map((n) => (
                 <div
                   key={n}
@@ -104,7 +104,7 @@ const Testimonials = memo(function Testimonials() {
           {/* Cards */}
           {!loading && items.length > 0 && (
             <StaggerContainer
-              className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 sm:after:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 sm:after:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {items.map((item, i) => (
                 <StaggerItem 

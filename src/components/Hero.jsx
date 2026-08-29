@@ -6,18 +6,18 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
   const { t } = useLanguage();
 
   const [video, setVideo] = useState(() => {
-    if (initialVideo) {
+    if (initialVideo && !initialVideo.backgroundFetch) {
       return {
         videoId: initialVideo.videoId || "",
         title: initialVideo.title || "",
+        live: Boolean(initialVideo.live),
       };
     }
-    return { videoId: "", title: "" };
+    return { videoId: "", title: "", live: false };
   });
 
-  const [loading, setLoading] = useState(() => !initialVideo);
+  const [loading, setLoading] = useState(() => !initialVideo || initialVideo.backgroundFetch);
   const [showVideo, setShowVideo] = useState(false);
-  const intervalRef = useRef(null);
   const observerRef = useRef(null);
 
   const iframeCallbackRef = useCallback((node) => {
@@ -47,42 +47,47 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
     }
   }, []);
 
-  const fetchYoutubeVideo = useCallback(async () => {
-    try {
-      const res = await API.get("/youtube");
-      const data = res?.data || {};
-
-      setVideo((prev) => {
-        const newVideoId = data?.videoId || "";
-        const newTitle = data?.title || "";
-        if (prev.videoId === newVideoId && prev.title === newTitle) {
-          return prev;
-        }
-        return { videoId: newVideoId, title: newTitle };
-      });
-    } catch {
-      setVideo((prev) => {
-        if (prev.videoId === "" && prev.title === "") return prev;
-        return { videoId: "", title: "" };
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (initialVideo) {
+    let mounted = true;
+
+    if (initialVideo && !initialVideo.backgroundFetch) {
       setVideo({
         videoId: initialVideo.videoId || "",
         title: initialVideo.title || "",
+        live: Boolean(initialVideo.live),
       });
       setLoading(false);
-    } else {
-      if (!waitForData) {
-        void fetchYoutubeVideo();
-      }
+    } else if (!waitForData || (initialVideo && initialVideo.backgroundFetch)) {
+      const fetchLiveStatus = async () => {
+        try {
+          const res = await API.get("/youtube");
+          if (!mounted) return;
+          const data = res?.data || {};
+          
+          if (data.backgroundFetch) {
+            // If backend is still fetching from Google, wait a bit and try again
+            setTimeout(() => { if (mounted) fetchLiveStatus(); }, 2000);
+            return;
+          }
+
+          setVideo({
+            videoId: data.videoId || "",
+            title: data.title || "",
+            live: Boolean(data.live),
+          });
+          setLoading(false);
+        } catch (err) {
+          if (!mounted) return;
+          setLoading(false);
+        }
+      };
+      fetchLiveStatus();
     }
-  }, [fetchYoutubeVideo, initialVideo, waitForData]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [initialVideo, waitForData]);
 
   return (
     <section id="hero" className="py-16 text-white bg-[#54091b]">
@@ -105,7 +110,7 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
               </div>
             ) : !video.videoId ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white">
-                <p className="font-semibold text-gray-500">{t("No Video Available")}</p>
+                <p className="font-semibold text-gray-500">{t("Offline")}</p>
               </div>
             ) : !showVideo ? (
               <div 
@@ -123,6 +128,15 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
                 <div className="relative z-10 flex items-center justify-center w-16 h-12 bg-red-600 rounded-xl shadow-xl transition-transform duration-300 group-hover:scale-110">
                   <svg className="w-8 h-8 text-white fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                 </div>
+                {video.live && (
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-red-600/90 px-3 py-1 backdrop-blur-sm">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                    </span>
+                    <span className="text-xs font-bold tracking-wider text-white">LIVE</span>
+                  </div>
+                )}
               </div>
             ) : (
               <iframe
@@ -137,8 +151,22 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
           </div>
 
           <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <span className="font-bold text-primary text-center sm:text-left break-words">
-              {video.videoId ? `🔴 ${t("Latest Sermon")}` : t("No Video")}
+            <span className="font-bold text-primary text-center sm:text-left break-words flex items-center justify-center sm:justify-start gap-2">
+              {loading ? (
+                t("Checking Live Status...")
+              ) : video.live ? (
+                <>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                  <span className="text-red-600">🔴 {t("LIVE NOW")}</span>
+                </>
+              ) : video.videoId ? (
+                `▶ ${t("Latest Sermon")}`
+              ) : (
+                t("Offline")
+              )}
             </span>
 
             <a
