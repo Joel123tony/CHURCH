@@ -17,7 +17,6 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
   });
 
   const [loading, setLoading] = useState(() => !initialVideo);
-  const [showVideo, setShowVideo] = useState(false);
   const intervalRef = useRef(null);
   const observerRef = useRef(null);
 
@@ -119,24 +118,17 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
               <div className="absolute inset-0 flex items-center justify-center bg-white">
                 <p className="font-semibold text-gray-500">{t("Offline")}</p>
               </div>
-            ) : !showVideo ? (
-              <div 
-                className="absolute inset-0 cursor-pointer flex items-center justify-center group"
-                onClick={() => setShowVideo(true)}
-              >
-                <img
-                  src={`https://i.ytimg.com/vi/${video.videoId}/maxresdefault.jpg`}
-                  alt={video.title}
-                  loading="lazy"
-                  onError={(e) => { e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`; }}
-                  className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            ) : (
+              <>
+                <iframe
+                  ref={iframeCallbackRef}
+                  className="absolute left-0 top-0 h-full w-full"
+                  src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : ''}`}
+                  title={video.title || "YouTube Video"}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition duration-300"></div>
-                <div className="relative z-10 flex items-center justify-center w-16 h-12 bg-red-600 rounded-xl shadow-xl transition-transform duration-300 group-hover:scale-110">
-                  <svg className="w-8 h-8 text-white fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                </div>
                 {video.live && (
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-red-600/90 px-3 py-1 backdrop-blur-sm">
+                  <div className="pointer-events-none absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-red-600/90 px-3 py-1 backdrop-blur-sm shadow-md">
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
@@ -144,16 +136,7 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
                     <span className="text-xs font-bold tracking-wider text-white">LIVE</span>
                   </div>
                 )}
-              </div>
-            ) : (
-              <iframe
-                ref={iframeCallbackRef}
-                className="absolute left-0 top-0 h-full w-full"
-                src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : ''}`}
-                title={video.title || "YouTube Video"}
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-              />
+              </>
             )}
           </div>
 
