@@ -15,6 +15,20 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(() => !initialPastors);
   const [activeTab, setActiveTab] = useState("search");
+  const [hasFetchedFull, setHasFetchedFull] = useState(false);
+
+  const loadFullHistory = async () => {
+    if (hasFetchedFull) return;
+    try {
+      const res = await API.get("/pastors");
+      if (res.data?.pastors) {
+        setPastors(res.data.pastors);
+        setHasFetchedFull(true);
+      }
+    } catch (err) {
+      console.error("Background pastor fetch error:", err);
+    }
+  };
 
   const getImage = (pastor) => pastor?.image?.url || getFallbackAvatar();
 
@@ -24,14 +38,6 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
     if (initialPastors && initialPastors.length > 0) {
       setPastors(initialPastors);
       setLoading(false);
-      
-      // Fetch full history in background for timeline/search
-      API.get("/pastors").then(res => {
-        if (isMounted && res.data?.pastors) {
-           setPastors(res.data.pastors);
-        }
-      }).catch(err => console.error("Background pastor fetch error:", err));
-      
       return () => { isMounted = false; };
     }
 
@@ -314,7 +320,7 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
                   {t("Search")}
                 </button>
                 <button
-                  onClick={() => setActiveTab("timeline")}
+                  onClick={() => { setActiveTab("timeline"); loadFullHistory(); }}
                   className={`flex-1 rounded-full py-2 text-sm font-bold transition-all ${
                     activeTab === "timeline"
                       ? "bg-[#54091b] text-white shadow"
@@ -332,6 +338,7 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
                     type="text"
                     placeholder={t("Search By Name")}
                     value={searchName}
+                    onFocus={loadFullHistory}
                     onChange={(e) => setSearchName(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") searchPastors();
@@ -368,6 +375,7 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
                     inputMode="numeric"
                     placeholder={t("Select or enter a year")}
                     value={searchYear}
+                    onFocus={loadFullHistory}
                     onChange={(e) =>
                       setSearchYear(e.target.value.replace(/\D/g, "").slice(0, 4))
                     }

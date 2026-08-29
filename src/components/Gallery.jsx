@@ -54,7 +54,7 @@ function PremiumPinnedCard({ item, onClick, t, className = "" }) {
         )}
 
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#3a0613] animate-pulse"></div>
+          <div className="absolute inset-0 flex items-center justify-center bg-[#3a0613]"></div>
         )}
 
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ring-1 ring-inset ring-[#d4af37]/30 rounded-[14px] sm:rounded-[16px]"></div>
@@ -129,7 +129,7 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
       )}
 
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#5d1324] animate-pulse"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-[#5d1324]"></div>
       )}
 
       {isVideo && (
@@ -209,14 +209,14 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
       setLoading(false);
       return;
     }
-    
+
     if (waitForData) return;
 
     fetchGallery();
   }, [initialGallery, waitForData]);
 
   const [loadingAll, setLoadingAll] = useState(false);
-  
+
   const handleOpenModal = async () => {
     setOpenModal(true);
     if (allMedia.length === 0) {
@@ -323,7 +323,7 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
   return (
     <>
       <section id="gallery" className="py-16 bg-[#F4EFE7]">
-        <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
+        <div className="mx-auto max-w-[1600px] px-5 sm:px-6 lg:px-8">
           <FadeUp>
             <div className="mb-6 flex items-center justify-between gap-4">
               <h2 className="text-3xl font-bold text-[#54091b]">
@@ -340,9 +340,9 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
           </FadeUp>
 
           {loading ? (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 px-4 -mx-4 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex flex-col bg-[#5d1324] rounded-[20px] p-[8px] w-[260px] sm:w-[250px] shrink-0 snap-start md:w-full border border-[#d4af37]/10 animate-pulse">
+                <div key={i} className="flex flex-col bg-[#5d1324] rounded-[20px] p-[8px] w-[260px] sm:w-[250px] shrink-0 snap-start md:w-full border border-[#d4af37]/10">
                   <div className="w-full aspect-video bg-[#3a0613] rounded-[14px] mb-3"></div>
                   <div className="h-3 bg-[#3a0613] rounded w-1/4 mb-2 ml-1"></div>
                   <div className="h-4 bg-[#3a0613] rounded w-3/4 mb-1.5 ml-1"></div>
@@ -351,7 +351,7 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
               ))}
             </div>
           ) : (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 px-4 -mx-4 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {featuredMedia.map((item) => (
                 <PremiumPinnedCard
                   key={item._id}
@@ -463,13 +463,13 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
 
           <div className="relative w-full max-w-7xl px-4 sm:px-16" onClick={(e) => e.stopPropagation()}>
             {selectedMedia.mediaType === "video" ? (
-                <video
-                  key={selectedMedia._id}
-                  src={selectedMedia.url}
-                  controls
-                  autoPlay
-                  className="max-h-[85vh] w-full rounded-md object-contain"
-                />
+              <video
+                key={selectedMedia._id}
+                src={selectedMedia.url}
+                controls
+                autoPlay
+                className="max-h-[85vh] w-full rounded-md object-contain"
+              />
             ) : (
               <img
                 key={selectedMedia._id}

@@ -17,4 +17,6 @@ const ContentBlockSchema = new mongoose.Schema({
   }
 });
 
+ContentBlockSchema.index({ key: 1 });
+
 export default mongoose.model("ContentBlock", ContentBlockSchema);

@@ -89,7 +89,7 @@ const YoutubeSection = memo(function YoutubeSection({ initialVideos, waitForData
         ) : videos.length === 0 ? (
           <div className="text-center text-[#F4EFE7]/70">{t("youtube.noVideos")}</div>
         ) : (
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 px-4 -mx-4 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {videos.map((video, index) => {
               const isLive = video.snippet?.liveBroadcastContent === 'live';
               return (

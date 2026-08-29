@@ -17,7 +17,7 @@ function getInitials(name = "") {
 function MessageCard({ item, index, t }) {
   return (
     <article
-      className={`group relative flex flex-col overflow-hidden rounded-[24px] bg-white border border-[#d8cbb7] p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]`}
+      className={`group relative flex flex-col h-full overflow-hidden rounded-[24px] bg-white border border-[#d8cbb7] p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]`}
     >
       {/* Decorative top border highlight on hover */}
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#ee0039] to-[#54091b] opacity-40 transition-opacity duration-300 group-hover:opacity-100" />
@@ -70,14 +70,6 @@ const Testimonials = memo(function Testimonials() {
 
   const isEmpty = !loading && items.length === 0;
 
-  // Grid columns based on card count — matches site's grid patterns
-  const gridCols =
-    items.length === 1
-      ? "lg:grid-cols-1 max-w-xl mx-auto"
-      : items.length === 2
-        ? "lg:grid-cols-2 max-w-3xl mx-auto"
-        : "lg:grid-cols-3";
-
   return (
     <section
       id="pastor-message"
@@ -99,11 +91,11 @@ const Testimonials = memo(function Testimonials() {
 
           {/* Loading skeleton */}
           {loading && (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((n) => (
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 sm:after:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {[1, 2, 3, 4].map((n) => (
                 <div
                   key={n}
-                  className="h-52 animate-pulse rounded-3xl shadow-sm bg-[#e5ddd3]"
+                  className="h-52 shrink-0 w-[85vw] max-w-[340px] sm:w-auto snap-start animate-pulse rounded-3xl shadow-sm bg-[#e5ddd3]"
                 />
               ))}
             </div>
@@ -112,10 +104,14 @@ const Testimonials = memo(function Testimonials() {
           {/* Cards */}
           {!loading && items.length > 0 && (
             <StaggerContainer
-              className={`grid gap-6 sm:grid-cols-2 ${gridCols}`}
+              className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 sm:after:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {items.map((item, i) => (
-                <StaggerItem key={item.id || i} animation="fade-up">
+                <StaggerItem 
+                  key={item.id || i} 
+                  animation="fade-up"
+                  className="shrink-0 w-[85vw] max-w-[340px] sm:w-auto snap-start h-auto"
+                >
                   <MessageCard
                     item={item}
                     index={i}

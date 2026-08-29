@@ -84,24 +84,26 @@ export default function Dashboard() {
       </div>
 
       {stats?.counts && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
           {cards.map((card, index) => {
             const Icon = card.icon;
 
             return (
               <div
                 key={card.label}
-                className="group animate-admin-card-in rounded-3xl border border-slate-100 bg-white p-4 shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-[6px] hover:scale-[1.02] hover:shadow-2xl"
+                className="group animate-admin-card-in flex flex-col justify-between aspect-square sm:aspect-auto rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-lg transition-all duration-300 ease-in-out hover:-translate-y-[6px] hover:scale-[1.02] hover:shadow-2xl"
                 style={{ animationDelay: `${index * 70}ms` }}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-500 leading-tight">{card.label}</p>
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 ease-in-out group-hover:rotate-6 group-hover:scale-110 ${card.iconWrap}`}>
-                    <Icon />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3">
+                  <p className="order-2 sm:order-1 text-xs sm:text-sm font-medium text-slate-500 leading-tight line-clamp-2">
+                    {card.label}
+                  </p>
+                  <div className={`order-1 sm:order-2 flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl transition-transform duration-300 ease-in-out group-hover:rotate-6 group-hover:scale-110 ${card.iconWrap}`}>
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
 
-                <p className="mt-4 text-3xl font-bold text-slate-900">
+                <p className="mt-1 sm:mt-4 text-2xl sm:text-3xl font-bold text-slate-900">
                   {card.value ?? 0}
                 </p>
               </div>

@@ -149,7 +149,7 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Hero waitForData={false} />
+            <Hero initialVideo={homeData?.youtubeHero} waitForData={true} />
           </div>
         );
       case "history":
@@ -191,7 +191,7 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <YoutubeSection waitForData={false} />
+            <YoutubeSection initialVideos={homeData?.youtubeLatest} waitForData={true} />
           </div>
         );
       default:

@@ -8,7 +8,7 @@ export default function LivePlayer() {
   useEffect(() => {
     let mounted = true;
 
-    API.get("/youtube/live")
+    API.get("/youtube")
       .then((res) => {
         if (!mounted) return;
         setLive(Boolean(res.data?.live));

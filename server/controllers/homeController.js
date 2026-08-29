@@ -3,6 +3,7 @@ import Event from "../models/Event.js";
 import Gallery from "../models/Gallery.js";
 import Pastor from "../models/Pastor.js";
 import { getCached, setCached, isCacheStale } from "../utils/cache.js";
+import { getYoutubeHeroData, getYoutubeLatestData } from "../routes/youtubeRoutes.js";
 
 const cmsKeys = [
   "section-order",
@@ -139,12 +140,16 @@ const refreshHomePageData = async () => {
     cmsBlocks,
     events,
     gallery,
-    pastors
+    pastors,
+    youtubeHero,
+    youtubeLatest
   ] = await Promise.all([
     getCmsBlocks(),
     getEventsData(),
     getGalleryClientData(),
-    getPastorsData()
+    getPastorsData(),
+    getYoutubeHeroData(),
+    getYoutubeLatestData()
   ]);
 
   const sectionOrderData = cmsBlocks["section-order"]?.data || cmsBlocks["section-order"] || [];
@@ -165,6 +170,8 @@ const refreshHomePageData = async () => {
     events: events || { featuredEvent: null, upcomingEvents: [] },
     gallery: Array.isArray(gallery) ? gallery : [],
     pastors: Array.isArray(pastors) ? pastors : [],
+    youtubeHero: youtubeHero || { videoId: null, title: "Loading...", live: false },
+    youtubeLatest: Array.isArray(youtubeLatest) ? youtubeLatest : [],
   };
 
   setCached("home_page_aggregate", payload, 60);

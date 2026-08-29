@@ -62,6 +62,8 @@ const parseMaybeJson = (value) => {
 };
 
 const normalizeImage = (value) => {
+  if (value === null || value === "null") return null;
+
   const parsed = parseMaybeJson(value);
 
   if (!parsed) return undefined;
@@ -167,6 +169,14 @@ const buildImageFromRequest = async ({ req, existingPastor, body }) => {
       url: upload?.url || upload?.optimized_url || "",
       public_id: upload?.public_id || "",
     };
+  }
+
+  // Explicit deletion of image
+  if (body?.image === null) {
+    if (existingPastor?.image?.public_id) {
+      await deleteFromCloudinary(existingPastor.image.public_id);
+    }
+    return EMPTY_IMAGE;
   }
 
   if (body?.image && typeof body.image === "object") {

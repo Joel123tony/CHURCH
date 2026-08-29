@@ -16,6 +16,7 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
   });
 
   const [loading, setLoading] = useState(() => !initialVideo);
+  const [showVideo, setShowVideo] = useState(false);
   const intervalRef = useRef(null);
   const observerRef = useRef(null);
 
@@ -81,15 +82,6 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
         void fetchYoutubeVideo();
       }
     }
-
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    intervalRef.current = setInterval(() => {
-      if (waitForData && !initialVideo) return;
-      void fetchYoutubeVideo();
-    }, 60000);
-
-    return () => clearInterval(intervalRef.current);
   }, [fetchYoutubeVideo, initialVideo, waitForData]);
 
   return (
@@ -114,6 +106,23 @@ const Hero = memo(function Hero({ initialVideo, waitForData }) {
             ) : !video.videoId ? (
               <div className="absolute inset-0 flex items-center justify-center bg-white">
                 <p className="font-semibold text-gray-500">{t("No Video Available")}</p>
+              </div>
+            ) : !showVideo ? (
+              <div 
+                className="absolute inset-0 cursor-pointer flex items-center justify-center group"
+                onClick={() => setShowVideo(true)}
+              >
+                <img
+                  src={`https://i.ytimg.com/vi/${video.videoId}/maxresdefault.jpg`}
+                  alt={video.title}
+                  loading="lazy"
+                  onError={(e) => { e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`; }}
+                  className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition duration-300"></div>
+                <div className="relative z-10 flex items-center justify-center w-16 h-12 bg-red-600 rounded-xl shadow-xl transition-transform duration-300 group-hover:scale-110">
+                  <svg className="w-8 h-8 text-white fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                </div>
               </div>
             ) : (
               <iframe

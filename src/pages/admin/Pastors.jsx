@@ -88,6 +88,7 @@ export default function Pastors() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStats, setUploadStats] = useState(null);
   const [uploadMeta, setUploadMeta] = useState(null);
+  const [existingImage, setExistingImage] = useState(null);
 
   const [educations, setEducations] = useState([""]);
   const [customEducation, setCustomEducation] = useState("");
@@ -230,6 +231,10 @@ export default function Pastors() {
     if (!file) return null;
     
     if (typeof file === "string") {
+      // Preserve public_id if the image hasn't changed
+      if (existingImage && existingImage.url === file) {
+        return { url: existingImage.url, public_id: existingImage.public_id };
+      }
       return { url: file, public_id: "" };
     }
 
@@ -251,6 +256,7 @@ export default function Pastors() {
     setPreview(null);
     setUploadStats(null);
     setUploadMeta(null);
+    setExistingImage(null);
     setUploadStage("idle");
     setEducations([""]);
     setCustomEducation("");
@@ -333,6 +339,7 @@ export default function Pastors() {
     setEducations(nextEducations);
     setCustomEducation(nextCustomEducation);
     setFile(p?.image?.url || null);
+    setExistingImage(p?.image || null);
     setUploadStats(null);
     setUploadMeta(null);
     setUploadStage("idle");
@@ -389,6 +396,7 @@ export default function Pastors() {
     setPreview(null);
     setUploadStats(null);
     setUploadMeta(null);
+    setExistingImage(null);
     setUploadStage("idle");
   };
 

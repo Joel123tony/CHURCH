@@ -93,6 +93,8 @@ const toEducationArray = () =>
 
 const toImageObject = () =>
   z.preprocess((value) => {
+    if (value === null || value === "null") return null;
+
     const normalized = emptyToUndefined(value);
     if (normalized === undefined) return undefined;
 
@@ -133,7 +135,7 @@ const toImageObject = () =>
     }
 
     return undefined;
-  }, z.object({ url: z.string().default(""), public_id: z.string().default("") }).optional());
+  }, z.object({ url: z.string().default(""), public_id: z.string().default("") }).nullable().optional());
 
 const pastorBodySchema = z.object({
   name: toTrimmedString(),
