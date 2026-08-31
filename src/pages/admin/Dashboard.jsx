@@ -54,7 +54,7 @@ export default function Dashboard() {
       iconWrap: "bg-rose-100 text-rose-700",
     },
     {
-      label: "Pastor Messages",
+      label: "Announcements",
       value: stats?.counts?.pastorMessages,
       icon: FaCommentDots,
       iconWrap: "bg-purple-100 text-purple-700",

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FiX, FiCheckCircle, FiAlertCircle, FiHeart, FiLoader } from "react-icons/fi";
 import API from "../api/axios";
 import { formatCurrency } from "../utils/formatCurrency";
+import { useLanguage } from "../context/LanguageContext";
 
 // Helper to load Razorpay script
 const loadRazorpayScript = () => {
@@ -19,6 +20,7 @@ const loadRazorpayScript = () => {
 };
 
 export default function DonationModal({ isOpen, onClose }) {
+  const { t } = useLanguage();
   const presetAmounts = [100, 250, 500, 1000, 2500, 5000];
   
   const [amount, setAmount] = useState(500);
@@ -83,7 +85,7 @@ export default function DonationModal({ isOpen, onClose }) {
   const handleDonate = async (e) => {
     e.preventDefault();
     if (amount < 10) {
-      setError(`Minimum donation amount is ${formatCurrency(10)}`);
+      setError(`${t("Minimum donation amount is")} ${formatCurrency(10)}`);
       return;
     }
 
@@ -95,7 +97,7 @@ export default function DonationModal({ isOpen, onClose }) {
       if (!window.Razorpay) {
         const res = await loadRazorpayScript();
         if (!res) {
-          setError("Razorpay SDK failed to load. Are you offline?");
+          setError(t("Razorpay SDK failed to load. Are you offline?"));
           setLoading(false);
           return;
         }
@@ -116,8 +118,8 @@ export default function DonationModal({ isOpen, onClose }) {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_mockkey", // Falls back to a mock test key if env not set
         amount: order.amount,
         currency: order.currency || "INR",
-        name: "Methodist Tamil Church",
-        description: "Donation to Support Our Ministry",
+        name: t("Methodist Tamil Church"),
+        description: t("Donation to Support Our Ministry"),
         image: window.location.origin + "/mtc-logo.png",
         order_id: order.id,
         handler: async function (response) {
@@ -167,9 +169,9 @@ export default function DonationModal({ isOpen, onClose }) {
       if (err.response) {
         console.error("Status:", err.response.status);
         console.error("Data:", err.response.data);
-        setError(err.response.data?.error || err.response.data?.message || "Failed to initiate payment. Please try again.");
+        setError(err.response.data?.error || err.response.data?.message || t("Failed to initiate payment. Please try again."));
       } else {
-        setError(err.message || "Failed to initiate payment. Please try again.");
+        setError(err.message || t("Failed to initiate payment. Please try again."));
       }
     } finally {
       setLoading(false);
@@ -191,7 +193,7 @@ export default function DonationModal({ isOpen, onClose }) {
         <div className="bg-[#531B24] px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 text-[#F4EFE7]">
             <FiHeart size={20} className="text-[#EFBF04]" />
-            <h2 className="text-xl font-bold tracking-wide">Support Our Ministry</h2>
+            <h2 className="text-xl font-bold tracking-wide">{t("Support Our Ministry")}</h2>
           </div>
           {status !== "success" && (
             <button
@@ -214,7 +216,7 @@ export default function DonationModal({ isOpen, onClose }) {
               {/* Amounts */}
               <div>
                 <label className="mb-3 block text-sm font-bold text-[#531B24] uppercase tracking-wider">
-                  Select Amount
+                  {t("Select Amount")}
                 </label>
                 <div className="grid grid-cols-3 gap-3 sm:gap-4">
                   {presetAmounts.map((preset) => (
@@ -238,7 +240,7 @@ export default function DonationModal({ isOpen, onClose }) {
                   <input
                     type="number"
                     min="10"
-                    placeholder="Custom Amount"
+                    placeholder={t("Custom Amount")}
                     value={customAmount}
                     onChange={handleCustomAmountChange}
                     className={`w-full rounded-xl border-2 bg-white py-3 pl-8 pr-4 font-medium text-slate-800 outline-none transition-all ${
@@ -253,12 +255,12 @@ export default function DonationModal({ isOpen, onClose }) {
               {/* Personal Details */}
               <div className="space-y-4">
                 <label className="block text-sm font-bold text-[#531B24] uppercase tracking-wider">
-                  Your Details (Optional)
+                  {t("Your Details (Optional)")}
                 </label>
                 
                 <input
                   type="text"
-                  placeholder="Full Name"
+                  placeholder={t("Full Name")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full rounded-xl border-2 border-slate-200 bg-white py-2.5 px-4 text-sm font-medium text-slate-800 outline-none transition-all focus:border-[#531B24]"
@@ -267,14 +269,14 @@ export default function DonationModal({ isOpen, onClose }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="email"
-                    placeholder="Email Address"
+                    placeholder={t("Email Address")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full rounded-xl border-2 border-slate-200 bg-white py-2.5 px-4 text-sm font-medium text-slate-800 outline-none transition-all focus:border-[#531B24]"
                   />
                   <input
                     type="tel"
-                    placeholder="Phone Number"
+                    placeholder={t("Phone Number")}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full rounded-xl border-2 border-slate-200 bg-white py-2.5 px-4 text-sm font-medium text-slate-800 outline-none transition-all focus:border-[#531B24]"
@@ -299,10 +301,10 @@ export default function DonationModal({ isOpen, onClose }) {
                 {loading ? (
                   <>
                     <FiLoader className="animate-spin" size={18} />
-                    Processing...
+                    {t("Processing...")}
                   </>
                 ) : (
-                  <>Donate Securely {formatCurrency(amount)}</>
+                  <>{t("Donate Securely")} {formatCurrency(amount)}</>
                 )}
               </button>
             </form>
@@ -314,11 +316,11 @@ export default function DonationModal({ isOpen, onClose }) {
               <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600">
                 <FiCheckCircle size={40} />
               </div>
-              <h3 className="mb-2 text-2xl font-bold text-slate-800">Thank You! ❤️</h3>
-              <p className="mb-6 text-slate-600">Your donation of <strong className="text-slate-800">{formatCurrency(transactionData?.amount)}</strong> has been received successfully.</p>
+              <h3 className="mb-2 text-2xl font-bold text-slate-800">{t("Thank You! ❤️")}</h3>
+              <p className="mb-6 text-slate-600">{t("Your donation of")} <strong className="text-slate-800">{formatCurrency(transactionData?.amount)}</strong> {t("has been received successfully.")}</p>
               
               <div className="bg-white rounded-xl p-4 mb-8 border border-slate-100 text-sm">
-                <p className="text-slate-500 mb-1">Transaction ID</p>
+                <p className="text-slate-500 mb-1">{t("Transaction ID")}</p>
                 <p className="font-mono font-bold text-slate-800">{transactionData?.id}</p>
               </div>
 
@@ -326,7 +328,7 @@ export default function DonationModal({ isOpen, onClose }) {
                 onClick={onClose}
                 className="w-full rounded-xl bg-[#531B24] py-3.5 font-bold text-white transition hover:bg-[#3f141b]"
               >
-                Return to Website
+                {t("Return to Website")}
               </button>
             </div>
           )}
@@ -337,21 +339,21 @@ export default function DonationModal({ isOpen, onClose }) {
               <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-red-100 text-red-600">
                 <FiAlertCircle size={40} />
               </div>
-              <h3 className="mb-2 text-2xl font-bold text-slate-800">Payment Failed</h3>
-              <p className="mb-8 text-slate-600">We could not process your donation at this time. Please try again or use a different payment method.</p>
+              <h3 className="mb-2 text-2xl font-bold text-slate-800">{t("Payment Failed")}</h3>
+              <p className="mb-8 text-slate-600">{t("We could not process your donation at this time. Please try again or use a different payment method.")}</p>
               
               <div className="flex gap-4">
                 <button
                   onClick={onClose}
                   className="w-1/2 rounded-xl border-2 border-slate-200 bg-white py-3.5 font-bold text-slate-600 transition hover:bg-slate-50"
                 >
-                  Cancel
+                  {t("Cancel")}
                 </button>
                 <button
                   onClick={() => setStatus("idle")}
                   className="w-1/2 rounded-xl bg-[#531B24] py-3.5 font-bold text-white transition hover:bg-[#3f141b]"
                 >
-                  Retry Payment
+                  {t("Retry Payment")}
                 </button>
               </div>
             </div>

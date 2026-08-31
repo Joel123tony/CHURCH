@@ -17,7 +17,7 @@ html {
   scroll-padding-top: var(--navbar-height);
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 section {
@@ -29,13 +29,13 @@ body {
   background: #F4EFE7;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 #root {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .admin-scrollbar {

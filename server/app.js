@@ -58,6 +58,16 @@ app.use("/api/youtube", youtubeRoutes);
 app.use("/api/content", contentRoutes);
 
 /* =========================
+   BACKGROUND JOBS
+========================= */
+import { cleanupExpiredAnnouncements } from "./utils/announcementCron.js";
+
+// Run immediately on startup
+cleanupExpiredAnnouncements();
+// Run every hour
+setInterval(cleanupExpiredAnnouncements, 60 * 60 * 1000);
+
+/* =========================
    EXPORT
 ========================= */
 export default app;

@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
 import {
   FaCamera,
   FaCalendarAlt,
@@ -21,6 +20,8 @@ import API from "../../api/axios";
 import { toast } from "react-toastify";
 import { useConfirm } from "../../context/ConfirmContext";
 import { getFallbackAvatar, handleImageError } from "../../utils/avatarFallback";
+import Cropper from "react-easy-crop";
+import { getCroppedImgFile } from "../../utils/cropImage";
 import "react-toastify/dist/ReactToastify.css";
 
 const defaultForm = {
@@ -90,6 +91,13 @@ export default function Pastors() {
   const [educations, setEducations] = useState([""]);
   const [customEducation, setCustomEducation] = useState("");
   const [servicePeriods, setServicePeriods] = useState([{ role: "Pastor", joinedYear: "", endYear: "" }]);
+
+  // Crop states
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
   const fetchPastors = async () => {
     try {
@@ -215,15 +223,34 @@ export default function Pastors() {
     }
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
-    onDrop: handleImageDrop,
-    multiple: false,
-    accept: {
-      "image/*": [],
-    },
-    noClick: true,
-    noKeyboard: true,
-  });
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleImageDrop(Array.from(e.dataTransfer.files));
+    }
+  };
+
+  const handleFileInput = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleImageDrop(Array.from(e.target.files));
+    }
+  };
 
   const uploadImage = async () => {
     if (!file) return null;
@@ -238,6 +265,7 @@ export default function Pastors() {
 
     const data = new FormData();
     data.append("file", file);
+    data.append("folder", "mtc-padikuppam/pastors/profile-images");
 
     const res = await API.post("/upload/image", data);
 
@@ -259,6 +287,8 @@ export default function Pastors() {
     setEducations([""]);
     setCustomEducation("");
     setServicePeriods([{ role: "Pastor", joinedYear: "", endYear: "" }]);
+    setShowImagePreview(false);
+    setIsCropping(false);
   };
 
   const handleSubmit = async (e) => {
@@ -285,6 +315,8 @@ export default function Pastors() {
       const payload = {
         name: form.name,
         bio: form.bio,
+        joinedYear: Number(servicePeriods[0]?.joinedYear),
+        leftYear: servicePeriods[0]?.endYear ? Number(servicePeriods[0]?.endYear) : null,
         serviceHistory: servicePeriods.map(sp => ({
           role: sp.role || "Pastor",
           joinedYear: Number(sp.joinedYear),
@@ -313,7 +345,16 @@ export default function Pastors() {
       setView("list");
     } catch (err) {
       console.error("Pastor submit error:", err);
-      toast.error(err?.response?.data?.message || err?.message || "Operation failed");
+      
+      let errorMsg = err?.response?.data?.message || err?.message || "Operation failed";
+      
+      // If there are detailed validation errors from Zod, append them
+      if (err?.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+        const details = err.response.data.errors.map(e => e.message).join(", ");
+        errorMsg = `${errorMsg}: ${details}`;
+      }
+      
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -697,15 +738,18 @@ export default function Pastors() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Dropzone */}
-                <div
-                  {...getRootProps()}
-                  className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+                {/* Native Upload Area */}
+                <label
+                  htmlFor="pastor-image-upload"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 relative ${
                     isDragActive 
                       ? "border-[#531B24] bg-[#531B24]/5 scale-[1.01]" 
                       : "border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400"
                   }`}
                 >
-                  <input {...getInputProps()} />
                   <FaCloudUploadAlt className={`text-3xl mb-2 transition-transform duration-300 ${isDragActive ? "text-[#531B24] scale-110" : "text-slate-400"}`} />
                   <p className="text-sm font-bold text-slate-700 mb-1">
                     Upload Pastor Image
@@ -713,13 +757,23 @@ export default function Pastors() {
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest text-center">
                     JPG • PNG • WEBP
                   </p>
-                </div>
+                </label>
+                <input
+                  id="pastor-image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileInput}
+                  className="hidden"
+                />
 
                 {/* Preview & Stats */}
                 <div className="flex flex-col gap-3">
                   {preview ? (
                     <div className="relative flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
-                      <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
+                      <div 
+                        className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer hover:ring-2 hover:ring-[#531B24] transition-all"
+                        onClick={() => setShowImagePreview(true)}
+                      >
                         <img src={preview} alt="Preview" className="w-full h-full object-cover" />
                       </div>
 
@@ -963,6 +1017,88 @@ export default function Pastors() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULL PREVIEW / CROP MODAL */}
+      {showImagePreview && preview && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-black/95">
+          <div className="flex items-center justify-between p-4 bg-black/50 absolute top-0 left-0 right-0 z-10">
+            <h3 className="text-white font-bold">{isCropping ? "Crop Image" : "Image Preview"}</h3>
+            <button
+              type="button"
+              onClick={() => {
+                setShowImagePreview(false);
+                setIsCropping(false);
+              }}
+              className="text-white/70 hover:text-white p-2"
+            >
+              <FaTimes size={24} />
+            </button>
+          </div>
+          
+          <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+            {isCropping ? (
+              <div className="absolute inset-0 top-16 bottom-20">
+                <Cropper
+                  image={preview}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)}
+                  onZoomChange={setZoom}
+                  classes={{ containerClassName: 'h-full w-full' }}
+                />
+              </div>
+            ) : (
+              <img src={preview} alt="Full Preview" className="max-w-full max-h-[80vh] object-contain p-4" />
+            )}
+          </div>
+
+          <div className="p-4 sm:p-6 bg-black/50 flex items-center justify-center gap-4 absolute bottom-0 left-0 right-0 z-10">
+            {isCropping ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsCropping(false)}
+                  className="px-6 py-2.5 rounded-lg font-bold text-white bg-slate-700 hover:bg-slate-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      const croppedFile = await getCroppedImgFile(preview, croppedAreaPixels, "cropped-pastor.jpg");
+                      setFile(croppedFile);
+                      setPreview(URL.createObjectURL(croppedFile));
+                      setUploadMeta(prev => ({ ...prev, name: "cropped-pastor.jpg", originalSize: croppedFile.size }));
+                      setIsCropping(false);
+                      toast.success("Image cropped successfully. Save form to apply changes.");
+                    } catch (e) {
+                      console.error(e);
+                      toast.error("Failed to crop image.");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="px-6 py-2.5 rounded-lg font-bold text-white bg-[#531B24] hover:bg-[#40151c] transition-colors shadow-lg"
+                >
+                  Confirm
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsCropping(true)}
+                className="px-6 py-2.5 rounded-lg font-bold text-[#531B24] bg-white hover:bg-slate-100 transition-colors shadow-lg"
+              >
+                Crop Image
+              </button>
+            )}
           </div>
         </div>
       )}

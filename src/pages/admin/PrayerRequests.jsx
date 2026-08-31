@@ -261,15 +261,29 @@ export default function PrayerRequests() {
     setShareBusy(true);
 
     try {
-      const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
       const message = await fetchTranslatedPrayerMessage();
       if (!message) return;
-      const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-      if (popup) {
-        popup.location.href = url;
-        popup.focus();
+      
+      const encodedText = encodeURIComponent(message);
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobileDevice) {
+        const appUrl = `whatsapp://send?text=${encodedText}`;
+        const webUrl = `https://wa.me/?text=${encodedText}`;
+        
+        // Try opening the native app
+        window.location.href = appUrl;
+        
+        // Fallback to web URL if the app doesn't open
+        setTimeout(() => {
+          // If the page is hidden, the app likely opened, so we don't redirect
+          if (!document.hidden) {
+            window.location.href = webUrl;
+          }
+        }, 1000);
       } else {
-        window.location.assign(url);
+        const webUrl = `https://web.whatsapp.com/send?text=${encodedText}`;
+        window.open(webUrl, "_blank", "noopener,noreferrer");
       }
     } catch (err) {
       console.error(err);

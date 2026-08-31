@@ -14,7 +14,10 @@ function getInitials(name = "") {
 }
 
 // ─── Single message card ──────────────────────────────────────────────────────
-function MessageCard({ item, index, t }) {
+function MessageCard({ item, index, t, language }) {
+  const displayTitle = item.title ? (item.title[language] || item.title.en || item.author) : item.author;
+  const displayContent = item.content ? (item.content[language] || item.content.en || item.quote) : item.quote;
+
   return (
     <article
       className={`group relative flex flex-col h-full overflow-hidden rounded-[24px] bg-white border border-[#d8cbb7] p-8 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]`}
@@ -29,17 +32,17 @@ function MessageCard({ item, index, t }) {
 
       {/* Quote */}
       <p className="flex-1 text-base leading-relaxed text-[#54091b] mb-8 font-medium">
-        "{t(item.quote)}"
+        "{displayContent}"
       </p>
 
       {/* Author */}
       <div className="flex items-center gap-4 pt-5 border-t border-slate-100/60">
         <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#54091b]/10 text-base font-bold text-[#54091b] ring-1 ring-[#54091b]/10 group-hover:bg-[#54091b]/15 transition-colors duration-300 shadow-sm">
-          {getInitials(item.author) || "?"}
+          {getInitials(displayTitle) || "?"}
         </div>
         <div className="min-w-0">
           <p className="truncate text-base font-bold text-[#54091b] transition-colors duration-300 group-hover:text-[#54091b]">
-            {item.author}
+            {displayTitle}
           </p>
           {item.role && (
             <p className="truncate text-sm font-semibold text-[#ee0039] mt-0.5">
@@ -56,7 +59,7 @@ function MessageCard({ item, index, t }) {
 const Testimonials = memo(function Testimonials() {
   const [data, setData] = useState({ messages: [] });
   const [loading, setLoading] = useState(true);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     getBlock("pastor-messages")
@@ -81,7 +84,7 @@ const Testimonials = memo(function Testimonials() {
         <FadeUp>
           <div className="mb-5 lg:mb-8">
             <h2 className="text-3xl font-bold text-[#54091b]">
-              {t("Pastor's Message")}
+              {t("Announcement")}
             </h2>
           </div>
         </FadeUp>
@@ -116,6 +119,7 @@ const Testimonials = memo(function Testimonials() {
                     item={item}
                     index={i}
                     t={t}
+                    language={language}
                   />
                 </StaggerItem>
               ))}

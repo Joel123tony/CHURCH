@@ -9,21 +9,14 @@ function MediaCard({
   onSelectToggle,
   isPinned = false,
   onTogglePin,
+  onPreview
 }) {
   const videoRef = useRef(null);
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const isVideo = item.mediaType === "video";
-
-  useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, []);
 
   const handleMouseEnter = () => {
     if (videoRef.current) videoRef.current.play().catch(() => {});
@@ -39,6 +32,7 @@ function MediaCard({
   return (
     <>
       <div
+        onClick={() => { if (onPreview) onPreview(item); }}
         className={`group relative aspect-square w-full cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-200 shadow-sm transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#531B24] ${
           selected ? "ring-2 ring-[#531B24] scale-[0.98] border-transparent" : "hover:shadow-md hover:scale-[1.02] hover:border-slate-300"
         }`}
@@ -53,7 +47,6 @@ function MediaCard({
             preload="metadata"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            onClick={() => setOpen(true)}
             onLoadedMetadata={() => setLoading(false)}
             onError={() => { setLoading(false); setImageError(true); }}
           />
@@ -66,7 +59,6 @@ function MediaCard({
             src={item.thumbnail || item.url}
             alt={item.title}
             className="h-full w-full object-cover"
-            onClick={() => setOpen(true)}
             onLoad={() => setLoading(false)}
             onError={() => { setLoading(false); setImageError(true); }}
           />
@@ -140,43 +132,6 @@ function MediaCard({
           </p>
         </div>
       </div>
-
-      {/* FULLSCREEN PREVIEW MODAL */}
-      {open && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 sm:p-6 backdrop-blur-md"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="relative flex flex-col items-center justify-center max-w-full max-h-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setOpen(false)}
-              className="absolute -top-12 right-0 md:-right-12 md:top-0 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-colors backdrop-blur-sm z-[110]"
-              title="Close Preview"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-
-            {isVideo ? (
-              <video
-                src={item.url}
-                controls
-                autoPlay
-                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-md bg-black object-contain shadow-2xl"
-              />
-            ) : (
-              <img
-                src={item.url}
-                alt={item.title}
-                className="max-w-[95vw] sm:max-w-[90vw] max-h-[85vh] sm:max-h-[90vh] rounded-md object-contain shadow-2xl"
-              />
-            )}
-            <div className="absolute bottom-[-30px] text-white/70 text-sm font-medium">{item.title}</div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

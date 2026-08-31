@@ -1,4 +1,5 @@
-import logoUrl from '../assets/methodist-logo.png';
+import darkLogoUrl from '../assets/methodist-logo.png';
+import lightLogoUrl from '../assets/bible-logo.png';
 
 const loadImage = (src) => new Promise((resolve, reject) => {
   const img = new Image();
@@ -8,7 +9,45 @@ const loadImage = (src) => new Promise((resolve, reject) => {
   img.src = src;
 });
 
-let cachedLogo = null;
+let cachedDarkLogo = null;
+let cachedLightLogo = null;
+
+const hexToRgb = (hex) => {
+  let c = hex.substring(1);
+  if(c.length === 3){
+    c = c.split('').map(x => x + x).join('');
+  }
+  return {
+    r: parseInt(c.substring(0,2), 16),
+    g: parseInt(c.substring(2,4), 16),
+    b: parseInt(c.substring(4,6), 16)
+  };
+};
+
+const getBackgroundBrightness = (theme) => {
+  let color = '#FFFFFF';
+  
+  if (theme.bg.type === 'solid') {
+    color = theme.bg.color;
+  } else if (theme.bg.type === 'linear' || theme.bg.type === 'radial') {
+    if (theme.bg.stops && theme.bg.stops.length > 0) {
+      let rSum = 0, gSum = 0, bSum = 0;
+      theme.bg.stops.forEach(stop => {
+        const rgb = hexToRgb(stop.color);
+        rSum += rgb.r;
+        gSum += rgb.g;
+        bSum += rgb.b;
+      });
+      const avgR = rSum / theme.bg.stops.length;
+      const avgG = gSum / theme.bg.stops.length;
+      const avgB = bSum / theme.bg.stops.length;
+      return 0.299 * avgR + 0.587 * avgG + 0.114 * avgB;
+    }
+  }
+  
+  const rgb = hexToRgb(color);
+  return 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
+};
 
 function wrapText(context, text, maxWidth) {
   const paragraphs = text.split('\n');
@@ -86,9 +125,20 @@ export const renderVerseCanvas = async (options) => {
   }
 
   // Draw Logo (Top)
-  if (!cachedLogo) {
+  const luminance = getBackgroundBrightness(theme);
+  const isLightBackground = luminance > 128;
+  
+  const targetLogoUrl = isLightBackground ? lightLogoUrl : darkLogoUrl;
+  let activeLogo = isLightBackground ? cachedLightLogo : cachedDarkLogo;
+
+  if (!activeLogo) {
     try {
-      cachedLogo = await loadImage(logoUrl);
+      activeLogo = await loadImage(targetLogoUrl);
+      if (isLightBackground) {
+        cachedLightLogo = activeLogo;
+      } else {
+        cachedDarkLogo = activeLogo;
+      }
     } catch (e) {
       console.error("Failed to load logo", e);
     }
@@ -96,31 +146,19 @@ export const renderVerseCanvas = async (options) => {
 
   let currentY = 100; // Padding top
 
-  if (cachedLogo) {
-    const logoHeight = 100; // slightly larger for 1080p
-    const logoWidth = cachedLogo.width * (logoHeight / cachedLogo.height);
+  if (activeLogo) {
+    const logoHeight = 100; 
+    const logoWidth = activeLogo.width * (logoHeight / activeLogo.height);
     const logoX = (width - logoWidth) / 2;
     
-    ctx.globalAlpha = 0.9;
-    ctx.globalCompositeOperation = 'luminosity';
-    ctx.drawImage(cachedLogo, logoX, currentY, logoWidth, logoHeight);
-    ctx.globalAlpha = 1.0;
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(activeLogo, logoX, currentY, logoWidth, logoHeight);
     
     currentY += logoHeight + 40;
   }
 
-  // Draw Reference
-  ctx.fillStyle = fontColor;
-  ctx.font = `bold 48px ${fontFamily}, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(`${bookLocalized} ${chapter}:${verseNum}`, width / 2, currentY);
-  
-  currentY += 70;
-
-  // Draw Bottom Divider & Branding
+  // Footer Area (Fixed)
   const dividerY = height - 160;
+  
   ctx.fillStyle = theme.accentColor;
   ctx.fillRect((width - 150) / 2, dividerY, 150, 4);
   
@@ -138,99 +176,75 @@ export const renderVerseCanvas = async (options) => {
      ctx.letterSpacing = "0px";
   }
 
-  // Draw Verse Text
+  // Calculate Available Space for Verse + Reference
+  const safeGap = 40;
+  const bottomSpaceY = dividerY - safeGap;
   const textSpaceY = currentY;
-  const bottomSpaceY = dividerY - 40;
+  const availableHeight = bottomSpaceY - textSpaceY;
   const textMaxWidth = width - 160; 
   
+  // Reference Configuration
+  const referenceText = `${bookLocalized} ${chapter}:${verseNum}`;
+  const referenceFontSize = 48;
+  const referenceHeight = 50; 
+  const referenceGap = 40; // Gap between verse text and reference
+  
+  // Font Auto-fitting Logic
+  const MIN_FONT_SIZE = 14;
   let currentFontSize = fontSize;
-  // Trigger Vite HMR cache invalidation
-  const scale = 2.4; // original implementation scaling factor (1080 / 450)
-  let scaledFontSize = currentFontSize * scale;
+  const scale = 2.4; 
   
-  ctx.font = `500 ${scaledFontSize}px ${fontFamily}, serif`;
-  ctx.textAlign = textAlign; 
+  let lines = [];
+  let lineHeight = 0;
+  let verseHeight = 0;
+  let totalContentHeight = 0;
+  let scaledFontSize = 0;
   
-  let lineHeight = language === 'ta' ? scaledFontSize * 1.7 : scaledFontSize * 1.5;
   const wrappedText = isMultiple ? text : `"${text}"`;
   
-  let lines = wrapText(ctx, wrappedText, textMaxWidth);
-  let totalTextHeight = lines.length * lineHeight;
-  
-  const availableHeight = bottomSpaceY - textSpaceY;
-  
-  // True DOM measurement auto-fit algorithm
-  const MIN_FONT_SIZE = 16;
-  let iterations = 0;
-  
-  // Create hidden DOM element for accurate measurement of Tamil glyphs
-  const measureDiv = document.createElement('div');
-  measureDiv.style.position = 'absolute';
-  measureDiv.style.visibility = 'hidden';
-  measureDiv.style.width = textMaxWidth + 'px';
-  measureDiv.style.fontFamily = fontFamily;
-  measureDiv.style.fontWeight = '500';
-  measureDiv.style.textAlign = textAlign;
-  measureDiv.style.whiteSpace = 'pre-wrap';
-  measureDiv.style.wordBreak = 'break-word';
-  measureDiv.innerText = text; // Raw text (unwrapped) to let DOM wrap it naturally
-  document.body.appendChild(measureDiv);
-
-  console.log(`Initial font size: ${currentFontSize}px`);
-  console.log(`Available height: ${availableHeight}px`);
-  
-  while (currentFontSize > MIN_FONT_SIZE) {
+  while (currentFontSize >= MIN_FONT_SIZE) {
     scaledFontSize = currentFontSize * scale;
     lineHeight = language === 'ta' ? scaledFontSize * 1.7 : scaledFontSize * 1.5;
     
-    measureDiv.style.fontSize = scaledFontSize + 'px';
-    measureDiv.style.lineHeight = (language === 'ta' ? '1.7' : '1.5');
+    ctx.font = `500 ${scaledFontSize}px ${fontFamily}, serif`;
+    lines = wrapText(ctx, wrappedText, textMaxWidth);
+    verseHeight = lines.length * lineHeight;
     
-    const renderedHeight = measureDiv.getBoundingClientRect().height;
+    // Total block height: Verse Text + Gap + Reference
+    totalContentHeight = verseHeight + referenceGap + referenceHeight;
     
-    console.log(`[Iter ${iterations}] Rendered height: ${renderedHeight}px`);
-    
-    if (renderedHeight <= availableHeight) {
-      console.log(`Fits: true`);
+    if (totalContentHeight <= availableHeight) {
       break; 
     }
-    
-    currentFontSize -= 2; 
-    console.log(`Reducing to: ${currentFontSize}px`);
-    iterations++;
-    
-    if (iterations > 50) {
-      console.log("Max iterations reached, breaking to avoid infinite loop.");
-      break;
-    }
+    currentFontSize -= 1; 
   }
   
-  // Cleanup
-  document.body.removeChild(measureDiv);
+  // Calculate final layout positions (vertically centered in available space)
+  let startY = textSpaceY + (availableHeight - totalContentHeight) / 2;
   
-  // Recalculate canvas wrapping with final font size
-  scaledFontSize = currentFontSize * scale;
+  if (startY < textSpaceY) {
+    startY = textSpaceY; // Never render above the top boundary
+  }
+
+  // Draw Reference Above Verse
+  const referenceY = startY;
+  ctx.fillStyle = fontColor;
+  ctx.font = `bold ${referenceFontSize}px ${fontFamily}, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(referenceText, width / 2, referenceY);
+
+  // Draw Verse Text Below Reference
+  const verseStartY = startY + referenceHeight + referenceGap;
   ctx.font = `500 ${scaledFontSize}px ${fontFamily}, serif`;
-  lineHeight = language === 'ta' ? scaledFontSize * 1.7 : scaledFontSize * 1.5;
-  lines = wrapText(ctx, wrappedText, textMaxWidth);
-  totalTextHeight = measureDiv.getBoundingClientRect ? (measureDiv.offsetHeight || lines.length * lineHeight) : (lines.length * lineHeight);
-  // Re-measure accurately via DOM before removing it? Wait, it's already removed. 
-  // Let's just use the last DOM height for centering.
-  // Actually, we can just center based on lines.length * lineHeight for canvas drawing.
-  totalTextHeight = lines.length * lineHeight;
-  
-  console.log(`Final font size: ${currentFontSize}px`);
-  
-  let startY = textSpaceY + (availableHeight - totalTextHeight) / 2;
-  
-  // Make sure it doesn't overlap the top if text is very long
-  if (startY < textSpaceY) startY = textSpaceY;
+  ctx.textAlign = textAlign;
   
   lines.forEach((line, index) => {
     let x = width / 2;
     if (textAlign === 'left') x = 80;
     if (textAlign === 'right') x = width - 80;
-    ctx.fillText(line, x, startY + (index * lineHeight));
+    ctx.textBaseline = 'top';
+    ctx.fillText(line, x, verseStartY + (index * lineHeight));
   });
 
   return new Promise((resolve) => {

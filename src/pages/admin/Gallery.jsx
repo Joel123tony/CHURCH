@@ -24,6 +24,7 @@ export default function Gallery() {
   const [search, setSearch] = useState("");
   const [filterMode, setFilterMode] = useState("all");
   const [editItem, setEditItem] = useState(null);
+  const [previewMedia, setPreviewMedia] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
 
   const [title, setTitle] = useState("");
@@ -46,6 +47,26 @@ export default function Gallery() {
   useEffect(() => {
     fetchMedia();
   }, []);
+
+  // Scroll lock and Escape key listener for preview modal
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setPreviewMedia(null);
+    };
+
+    if (previewMedia) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleEsc);
+    } else {
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleEsc);
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [previewMedia]);
 
   /* UPLOAD SUCCESS */
   const handleUploadSuccess = useCallback((newItems) => {
@@ -453,6 +474,7 @@ export default function Gallery() {
                                   onSelectToggle={toggleSelection}
                                   isPinned={true}
                                   onTogglePin={toggleGallery}
+                                  onPreview={setPreviewMedia}
                                 />
                               </div>
                             ))}
@@ -492,6 +514,7 @@ export default function Gallery() {
                                         onSelectToggle={toggleSelection}
                                         isPinned={false}
                                         onTogglePin={toggleGallery}
+                                        onPreview={setPreviewMedia}
                                       />
                                     </div>
                                   ))}
@@ -555,6 +578,55 @@ export default function Gallery() {
                 Save
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULLSCREEN PREVIEW MODAL */}
+      {previewMedia && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-4 sm:p-6 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setPreviewMedia(null)}
+        >
+          <div
+            className="relative flex flex-col items-center justify-center max-w-full max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreviewMedia(null)}
+              className="absolute -top-12 right-0 md:-right-12 md:top-0 rounded-full bg-white/10 hover:bg-white/20 p-3 text-white transition-colors backdrop-blur-sm z-[10000]"
+              title="Close Preview"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            {previewMedia.mediaType === "video" ? (
+              <video
+                src={previewMedia.url}
+                controls
+                autoPlay
+                className="rounded-md bg-black object-contain shadow-2xl"
+                style={{
+                  maxWidth: 'calc(100vw - 32px)',
+                  maxHeight: 'calc(100vh - 32px)',
+                }}
+              />
+            ) : (
+              <img
+                src={previewMedia.url}
+                alt={previewMedia.title || "Preview"}
+                className="rounded-md object-contain shadow-2xl"
+                style={{
+                  maxWidth: 'calc(100vw - 32px)',
+                  maxHeight: 'calc(100vh - 32px)',
+                  width: 'auto',
+                  height: 'auto',
+                }}
+              />
+            )}
+            {previewMedia.title && (
+              <div className="absolute bottom-[-30px] text-white/70 text-sm font-medium">{previewMedia.title}</div>
+            )}
           </div>
         </div>
       )}

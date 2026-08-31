@@ -147,7 +147,7 @@ export default function GalleryUpload({ onSuccess }) {
   };
 
   return (
-    <div className="flex flex-col space-y-5">
+    <div className="flex flex-col space-y-4 sm:space-y-5 w-full overflow-hidden">
       {/* INPUTS - Compact inline row on desktop */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">
@@ -173,7 +173,7 @@ export default function GalleryUpload({ onSuccess }) {
       {!uploading && uploadStage === "idle" && (
         <div
           {...getRootProps()}
-          className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+          className={`flex flex-col items-center justify-center p-6 sm:p-8 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 text-center w-full ${
             isDragActive 
               ? "border-[#531B24] bg-[#531B24]/5 scale-[1.01]" 
               : "border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400"
@@ -184,8 +184,8 @@ export default function GalleryUpload({ onSuccess }) {
           <p className="text-sm font-bold text-slate-700 mb-1">
             Drag & Drop Images / Videos
           </p>
-          <p className="text-xs text-slate-500 mb-3">or click to browse files</p>
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+          <p className="text-xs text-slate-500 mb-3">or tap/click to browse files</p>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest break-words w-full px-2">
             JPG • PNG • WEBP • MP4 • MOV • AVI • WEBM
           </p>
         </div>
@@ -193,7 +193,7 @@ export default function GalleryUpload({ onSuccess }) {
 
       {/* FILE PREVIEW CARDS */}
       {files.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3 w-full">
           {files.map((item, index) => {
             const isVideo = item.file.type.startsWith("video");
             const isDone = item.compressionStats && uploadStage === "done";
@@ -209,9 +209,21 @@ export default function GalleryUpload({ onSuccess }) {
             return (
               <div
                 key={`${item.file.name}-${index}`}
-                className="relative flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm"
+                className="relative flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden"
               >
-                <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer" onClick={() => setPreviewFile(item)}>
+                <div className="flex justify-between items-start sm:hidden w-full mb-1">
+                  <p className="text-xs font-bold text-slate-800 truncate pr-4 w-full">{item.file.name}</p>
+                  {!uploading && uploadStage !== "done" && (
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="text-slate-400 hover:text-red-500 transition-colors shrink-0 p-1"
+                    >
+                      <FaTimes size={12} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer self-start sm:self-center" onClick={() => setPreviewFile(item)}>
                   {isVideo ? (
                     <video src={item.preview} className="w-full h-full object-cover" muted />
                   ) : (
@@ -220,7 +232,7 @@ export default function GalleryUpload({ onSuccess }) {
                 </div>
 
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <div className="flex justify-between items-start mb-1">
+                  <div className="hidden sm:flex justify-between items-start mb-1">
                     <p className="text-xs font-bold text-slate-800 truncate pr-4">{item.file.name}</p>
                     {!uploading && uploadStage !== "done" && (
                       <button
@@ -232,16 +244,16 @@ export default function GalleryUpload({ onSuccess }) {
                     )}
                   </div>
                   
-                  <div className="text-[10px] text-slate-500 font-medium mb-1.5 flex items-center gap-2">
+                  <div className="text-[10px] text-slate-500 font-medium mb-1.5 flex flex-wrap items-center gap-2">
                     <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{item.ext}</span>
                     <span>{origSizeStr}</span>
                   </div>
 
-                  <div className="text-[10px] flex items-center gap-1.5 font-semibold">
+                  <div className="text-[10px] flex flex-wrap items-center gap-1.5 font-semibold">
                     {isDone ? (
                       <span className="text-emerald-600 flex items-center gap-1"><FaCheckCircle /> Compressed to {compSizeStr} (Saved {percentStr})</span>
                     ) : (
-                      <span className="text-[#531B24]">Will compress to ~{compSizeStr} (Save {percentStr})</span>
+                      <span className="text-[#531B24] break-words whitespace-normal">Will compress to ~{compSizeStr} (Save {percentStr})</span>
                     )}
                   </div>
                 </div>
@@ -256,13 +268,16 @@ export default function GalleryUpload({ onSuccess }) {
         <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center justify-between pt-4 border-t border-slate-100 mt-2">
           
           {/* Compression Info / Progress */}
-          <div className="flex-1 w-full bg-slate-50 rounded-lg p-3 border border-slate-200 flex items-center gap-3">
+          <div className="flex-1 w-full bg-slate-50 rounded-lg p-3 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-3 overflow-hidden">
             {uploadStage === "idle" && (
               <>
-                <FaInfoCircle className="text-slate-400 text-lg shrink-0" />
-                <div>
-                  <p className="text-xs font-bold text-slate-700">Compression enabled</p>
-                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5">Original {formatBytes(totalBytes)} → Estimated {formatBytes(totalCompressedBytes)}</p>
+                <div className="flex items-center gap-2 sm:contents">
+                  <FaInfoCircle className="text-slate-400 text-lg shrink-0" />
+                  <p className="text-xs font-bold text-slate-700 sm:hidden">Compression enabled</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-700 hidden sm:block">Compression enabled</p>
+                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5 truncate max-w-full">Original {formatBytes(totalBytes)} → Estimated {formatBytes(totalCompressedBytes)}</p>
                 </div>
               </>
             )}

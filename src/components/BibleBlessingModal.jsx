@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { bibleVerses } from "../data/bibleVerses";
 import { useScrollLock } from "../hooks/useScrollLock";
+import { useLanguage } from "../context/LanguageContext";
 import { X, Download, Loader2 } from "lucide-react";
 import bibleLogo from "../assets/bible-logo.png";
+import { renderVerseCanvas } from "../utils/canvasRenderer";
 
 export default function BibleBlessingModal() {
   const [isVisible, setIsVisible] = useState(false);
@@ -12,10 +14,20 @@ export default function BibleBlessingModal() {
   
   const [isClosing, setIsClosing] = useState(false);
   const [verse, setVerse] = useState(null);
-  const [language, setLanguage] = useState("en"); // "en" or "ta"
+  const { language, setLanguage, t } = useLanguage();
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const modalRef = useRef(null);
-  const exportRef = useRef(null);
+
+  // Inject Google Fonts dynamically so canvas can use them
+  useEffect(() => {
+    if (isVisible) {
+      const link = document.createElement('link');
+      link.href = 'https://fonts.googleapis.com/css2?family=Noto+Serif+Tamil:wght@400;700&family=Playfair+Display:wght@400;700&display=swap';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+      return () => { document.head.removeChild(link); };
+    }
+  }, [isVisible]);
 
   useEffect(() => {
     // Check if it has already been shown in this session
@@ -97,26 +109,41 @@ export default function BibleBlessingModal() {
   };
 
   const handleSaveImage = async () => {
-    if (!exportRef.current) return;
+    if (!verse) return;
     setIsGeneratingImage(true);
 
     try {
-      // Dynamically import html2canvas
-      const html2canvas = (await import('html2canvas')).default;
+      const currentVerse = verse[language];
+      const theme = {
+        bg: { type: 'solid', color: '#F8F3EC' },
+        textColor: '#5D1324',
+        accentColor: '#D7C9B5',
+      };
 
-      const canvas = await html2canvas(exportRef.current, {
-        scale: 2, // High DPI for crisp text
-        useCORS: true,
-        backgroundColor: "#F4EFE7",
+      const fontFamily = language === 'en' ? "'Playfair Display', serif" : "'Noto Serif Tamil', serif";
+
+      const { dataUrl } = await renderVerseCanvas({
         width: 1080,
-        height: 1350,
+        height: 1350, // 4:5 Instagram Portrait ratio
+        theme,
+        fontFamily,
+        fontSize: 48,
+        fontColor: theme.textColor,
+        textAlign: 'center',
+        bookLocalized: currentVerse.book,
+        chapter: currentVerse.chapter,
+        verseNum: currentVerse.verse,
+        text: currentVerse.text,
+        language: language,
+        isMultiple: false
       });
 
-      const image = canvas.toDataURL("image/png", 1.0);
       const link = document.createElement("a");
-      link.href = image;
+      link.href = dataUrl;
       link.download = `Bible-Blessing-${language}.png`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error("Failed to generate image:", error);
     } finally {
@@ -164,7 +191,7 @@ export default function BibleBlessingModal() {
               />
             </div>
             <h2 className="text-xl sm:text-2xl font-semibold text-[#5D1324] tracking-wide text-center w-full">
-              {language === "en" ? "Today's Bible Blessing" : "இன்றைய வேத ஆசீர்வாதம்"}
+              {t("Today's Bible Blessing")}
             </h2>
             <div className="w-16 h-1 bg-[#5D1324]/30 mt-4 rounded-full mx-auto" />
           </div>
@@ -201,10 +228,10 @@ export default function BibleBlessingModal() {
               "{currentVerse.text}"
             </p>
             <div className="flex justify-center w-full">
-              <div className="inline-flex items-center justify-center bg-[#5D1324]/5 border border-[#5D1324]/10 rounded-full px-6 py-2">
-                <p className="text-[#5D1324] font-semibold text-sm sm:text-base m-0 text-center leading-none">
+              <div className="inline-grid min-h-10 place-items-center rounded-full border border-[#5D1324]/10 bg-[#5D1324]/5 px-6 py-1.5">
+                <span className="block -translate-y-0.5 text-center text-sm font-semibold leading-[1.35] text-[#5D1324] sm:text-base">
                   {currentVerse.book} {currentVerse.chapter}:{currentVerse.verse}
-                </p>
+                </span>
               </div>
             </div>
           </div>
@@ -219,62 +246,8 @@ export default function BibleBlessingModal() {
             ) : (
               <Download className="w-5 h-5" />
             )}
-            {language === "en" ? "Save Blessing" : "ஆசீர்வாதத்தை சேமிக்க"}
+            {t("Save Blessing")}
           </button>
-        </div>
-      </div>
-
-      {/* Hidden Export Template - 1080x1350 (Instagram Portrait) */}
-      <div className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div
-          ref={exportRef}
-          style={{ width: '1080px', height: '1350px' }}
-          className="bg-[#F4EFE7] flex flex-col items-center justify-between relative p-20 border-[16px] border-[#D7C9B5]"
-        >
-          {/* Decorative Corner Accents */}
-          <div className="absolute top-10 left-10 w-24 h-24 border-t-8 border-l-8 border-[#5D1324]/20" />
-          <div className="absolute top-10 right-10 w-24 h-24 border-t-8 border-r-8 border-[#5D1324]/20" />
-          <div className="absolute bottom-10 left-10 w-24 h-24 border-b-8 border-l-8 border-[#5D1324]/20" />
-          <div className="absolute bottom-10 right-10 w-24 h-24 border-b-8 border-r-8 border-[#5D1324]/20" />
-
-          {/* Logo & Header */}
-          <div className="flex flex-col items-center mt-12 w-full">
-            <div className="flex items-center justify-center w-40 h-40 rounded-full bg-[#5D1324]/10 mb-8 p-4 shadow-[inset_0_4px_8px_rgba(93,19,36,0.1)] border-2 border-[#5D1324]/10 relative">
-              <img src={bibleLogo} alt="Bible Logo" className="w-full h-full object-contain p-0.5" crossOrigin="anonymous" />
-            </div>
-            <h2 className="text-[52px] font-bold text-[#5D1324] tracking-wider uppercase text-center w-full">
-              {language === "en" ? "Today's Bible Blessing" : "இன்றைய வேத ஆசீர்வாதம்"}
-            </h2>
-            <div className="w-32 h-1.5 bg-[#5D1324]/30 mt-10 rounded-full mx-auto" />
-          </div>
-
-          {/* Verse */}
-          <div className="relative w-full max-w-[850px] text-center my-auto flex flex-col items-center justify-center">
-            {/* Quotation Marks Symmetrical */}
-            <div className="absolute -top-24 left-1/2 -translate-x-1/2 text-[200px] text-[#D7C9B5]/40 font-serif leading-none select-none">
-              &ldquo;
-            </div>
-            <p className="relative z-10 text-[46px] text-gray-800 font-medium leading-[1.6] italic px-8 whitespace-pre-wrap break-words text-center">
-              "{currentVerse.text}"
-            </p>
-          </div>
-
-          {/* Reference Badge */}
-          <div className="mb-auto mt-8 flex justify-center w-full">
-            <div className="inline-flex items-center justify-center bg-[#5D1324]/5 border-2 border-[#5D1324]/10 rounded-full px-12 py-5">
-              <p className="text-[#5D1324] font-bold text-3xl text-center m-0 leading-none">
-                {currentVerse.book} {currentVerse.chapter}:{currentVerse.verse}
-              </p>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="w-full px-16 flex flex-col items-center mb-6">
-            <div className="w-full h-px bg-[#5D1324]/20 mb-10" />
-            <p className="text-[#5D1324]/80 font-medium text-2xl tracking-widest uppercase text-center">
-              Methodist Tamil Church - Padikuppam
-            </p>
-          </div>
         </div>
       </div>
     </div>

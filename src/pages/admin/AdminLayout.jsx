@@ -114,7 +114,7 @@ export default function AdminLayout() {
         { to: "/admin/events", label: "Events", icon: CalendarDays },
         { to: "/admin/gallery", label: "Gallery", icon: Images },
         { to: "/admin/prayer-requests", label: "Prayer Requests", icon: HandHeart },
-        { to: "/admin/pastor-message", label: "Pastor Messages", icon: MessageSquare },
+        { to: "/admin/pastor-message", label: "Announcement", icon: MessageSquare },
         { to: "/admin/books", label: "Books", icon: BookOpen },
       ],
     },
@@ -243,7 +243,7 @@ export default function AdminLayout() {
         }`}
       >
         {/* Mobile Header */}
-        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm md:hidden">
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 shadow-sm md:hidden">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMenuOpen(true)}
