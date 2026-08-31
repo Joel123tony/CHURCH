@@ -1,6 +1,7 @@
-import React, { useEffect, useState, memo } from "react";
+import React, { useEffect, useState, useRef, memo } from "react";
 import { getBlock } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import MobileScrollIndicator from "./MobileScrollIndicator";
 import { FadeUp, StaggerContainer, StaggerItem } from "./animations/index.jsx";
 
 // ─── Avatar initials ──────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ function MessageCard({ item, index, t, language }) {
 const Testimonials = memo(function Testimonials() {
   const [data, setData] = useState({ messages: [] });
   const [loading, setLoading] = useState(true);
+  const mobileSliderRef = useRef(null);
   const { t, language } = useLanguage();
 
   useEffect(() => {
@@ -92,28 +94,40 @@ const Testimonials = memo(function Testimonials() {
         {/* ── Content area ── */}
         <div>
 
-          {/* Loading skeleton */}
+          {/* Loading skeleton (Desktop) */}
           {loading && (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 sm:after:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[1, 2, 3, 4].map((n) => (
                 <div
-                  key={n}
-                  className="h-52 shrink-0 w-[85vw] max-w-[340px] sm:w-auto snap-start animate-pulse rounded-3xl shadow-sm bg-[#e5ddd3]"
+                  key={`desktop-skeleton-${n}`}
+                  className="h-52 w-full animate-pulse rounded-3xl shadow-sm bg-[#e5ddd3]"
                 />
               ))}
             </div>
           )}
 
-          {/* Cards */}
+          {/* Loading skeleton (Mobile Slider) */}
+          {loading && (
+            <div className="flex sm:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {[1, 2, 3, 4].map((n) => (
+                <div
+                  key={`mobile-skeleton-${n}`}
+                  className="h-52 shrink-0 w-[85vw] max-w-[340px] snap-start animate-pulse rounded-3xl shadow-sm bg-[#e5ddd3]"
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Desktop Cards */}
           {!loading && items.length > 0 && (
             <StaggerContainer
-              className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-4 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 sm:after:hidden sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:snap-none sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
             >
               {items.map((item, i) => (
                 <StaggerItem 
-                  key={item.id || i} 
+                  key={`desktop-${item.id || i}`} 
                   animation="fade-up"
-                  className="shrink-0 w-[85vw] max-w-[340px] sm:w-auto snap-start h-auto"
+                  className="h-auto"
                 >
                   <MessageCard
                     item={item}
@@ -124,6 +138,31 @@ const Testimonials = memo(function Testimonials() {
                 </StaggerItem>
               ))}
             </StaggerContainer>
+          )}
+
+          {/* Mobile Slider */}
+          {!loading && items.length > 0 && (
+            <>
+              <div
+                ref={mobileSliderRef}
+                className="flex sm:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {items.map((item, i) => (
+                  <div 
+                    key={`mobile-${item.id || i}`} 
+                    className="shrink-0 w-[85vw] max-w-[340px] snap-start h-auto"
+                  >
+                    <MessageCard
+                      item={item}
+                      index={i}
+                      t={t}
+                      language={language}
+                    />
+                  </div>
+                ))}
+              </div>
+              <MobileScrollIndicator scrollRef={mobileSliderRef} theme="light" />
+            </>
           )}
 
           {/* Empty state — plain, matches site tone */}

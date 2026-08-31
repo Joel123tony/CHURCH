@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState, useCallback, memo } from "react";
+import React, { useEffect, useMemo, useState, useCallback, memo, useRef } from "react";
 import { FaTimes, FaDownload, FaSpinner, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 import { FadeUp } from "./animations/index.jsx";
+import MobileScrollIndicator from "./MobileScrollIndicator";
 
 function getMediaDate(item) {
   const value = item?.eventDate || item?.createdAt;
@@ -149,6 +150,7 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
 
 const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
   const { t } = useLanguage();
+  const mobileSliderRef = useRef(null);
   const [featuredMedia, setFeaturedMedia] = useState(() => {
     if (initialGallery && initialGallery.length > 0) {
       return [...initialGallery].sort((a, b) => getMediaDate(b) - getMediaDate(a));
@@ -371,28 +373,61 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
           </FadeUp>
 
           {loading ? (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex flex-col bg-[#5d1324] rounded-[20px] p-[8px] w-[260px] sm:w-[250px] shrink-0 snap-start md:w-full border border-[#d4af37]/10">
-                  <div className="w-full aspect-video bg-[#3a0613] rounded-[14px] mb-3"></div>
-                  <div className="h-3 bg-[#3a0613] rounded w-1/4 mb-2 ml-1"></div>
-                  <div className="h-4 bg-[#3a0613] rounded w-3/4 mb-1.5 ml-1"></div>
-                  <div className="mt-auto h-2 bg-[#3a0613] rounded w-1/3 pt-3 ml-1"></div>
-                </div>
-              ))}
-            </div>
+            <>
+              {/* Desktop Loading Grid */}
+              <div className="hidden md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={`desktop-skel-${i}`} className="flex flex-col bg-[#5d1324] rounded-[20px] p-[8px] w-full border border-[#d4af37]/10">
+                    <div className="w-full aspect-video bg-[#3a0613] rounded-[14px] mb-3"></div>
+                    <div className="h-3 bg-[#3a0613] rounded w-1/4 mb-2 ml-1"></div>
+                    <div className="h-4 bg-[#3a0613] rounded w-3/4 mb-1.5 ml-1"></div>
+                    <div className="mt-auto h-2 bg-[#3a0613] rounded w-1/3 pt-3 ml-1"></div>
+                  </div>
+                ))}
+              </div>
+              {/* Mobile Loading Slider */}
+              <div className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-3 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {[...Array(4)].map((_, i) => (
+                  <div key={`mobile-skel-${i}`} className="flex flex-col bg-[#5d1324] rounded-[20px] p-[8px] w-[85vw] max-w-[320px] shrink-0 snap-start border border-[#d4af37]/10">
+                    <div className="w-full aspect-video bg-[#3a0613] rounded-[14px] mb-3"></div>
+                    <div className="h-3 bg-[#3a0613] rounded w-1/4 mb-2 ml-1"></div>
+                    <div className="h-4 bg-[#3a0613] rounded w-3/4 mb-1.5 ml-1"></div>
+                    <div className="mt-auto h-2 bg-[#3a0613] rounded w-1/3 pt-3 ml-1"></div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {featuredMedia.map((item) => (
-                <PremiumPinnedCard
-                  key={item._id}
-                  item={item}
-                  onClick={() => setSelectedMedia(item)}
-                  t={t}
-                  className="w-[260px] sm:w-[250px] shrink-0 snap-start md:w-full"
-                />
-              ))}
-            </div>
+            <>
+              {/* Desktop Cards */}
+              <div className="hidden md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4">
+                {featuredMedia.map((item) => (
+                  <PremiumPinnedCard
+                    key={`desktop-${item._id}`}
+                    item={item}
+                    onClick={() => setSelectedMedia(item)}
+                    t={t}
+                    className="w-full"
+                  />
+                ))}
+              </div>
+              {/* Mobile Slider */}
+              <div 
+                ref={mobileSliderRef}
+                className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-3 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              >
+                {featuredMedia.map((item) => (
+                  <PremiumPinnedCard
+                    key={`mobile-${item._id}`}
+                    item={item}
+                    onClick={() => setSelectedMedia(item)}
+                    t={t}
+                    className="w-[85vw] max-w-[320px] shrink-0 snap-start"
+                  />
+                ))}
+              </div>
+              <MobileScrollIndicator scrollRef={mobileSliderRef} theme="light" />
+            </>
           )}
         </div>
       </section>

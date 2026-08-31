@@ -1,9 +1,11 @@
-import React, { useEffect, useState, memo } from "react";
+import React, { useEffect, useState, useRef, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
+import MobileScrollIndicator from "./MobileScrollIndicator";
 
 const YoutubeSection = memo(function YoutubeSection({ initialVideos, waitForData }) {
   const { t } = useLanguage();
+  const mobileSliderRef = useRef(null);
   const [videos, setVideos] = useState(() => {
     if (Array.isArray(initialVideos) && initialVideos.length > 0) {
       return initialVideos.slice(0, 4).map((video) => ({
@@ -89,66 +91,134 @@ const YoutubeSection = memo(function YoutubeSection({ initialVideos, waitForData
         ) : videos.length === 0 ? (
           <div className="text-center text-[#F4EFE7]/70">{t("youtube.noVideos")}</div>
         ) : (
-          <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 md:after:hidden md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {videos.map((video, index) => {
-              const isLive = video.snippet?.liveBroadcastContent === 'live';
-              return (
-                <a
-                  key={video.videoId || video.title}
-                  href={
-                    video.videoId
-                      ? `https://www.youtube.com/watch?v=${video.videoId}`
-                      : "https://www.youtube.com/@MethodistChurchPadikuppam"
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="youtube-card block shrink-0 snap-start w-[300px] sm:w-[340px] md:w-auto"
-                  style={{ animationDelay: `${index * 80}ms` }}
-                >
-                  <div className="youtube-thumbnail">
-                    <img
-                      src={getBestThumbnail(video)}
-                      alt={video.title}
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => {
-                        if (video.videoId) {
-                          e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
-                        }
-                      }}
-                    />
+          <>
+            {/* Desktop Cards */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {videos.map((video, index) => {
+                const isLive = video.snippet?.liveBroadcastContent === 'live';
+                return (
+                  <a
+                    key={`desktop-${video.videoId || video.title}`}
+                    href={
+                      video.videoId
+                        ? `https://www.youtube.com/watch?v=${video.videoId}`
+                        : "https://www.youtube.com/@MethodistChurchPadikuppam"
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="youtube-card block w-full"
+                    style={{ animationDelay: `${index * 80}ms` }}
+                  >
+                    <div className="youtube-thumbnail">
+                      <img
+                        src={getBestThumbnail(video)}
+                        alt={video.title}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          if (video.videoId) {
+                            e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
+                          }
+                        }}
+                      />
 
-                    {/* Play Button Overlay */}
-                    <div className="youtube-play-btn">
-                      <svg className="youtube-play-icon" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </div>
-
-                    {/* Live Badge */}
-                    {isLive && (
-                      <div className="youtube-live-badge">
-                        <span className="youtube-live-dot"></span>
-                        LIVE
+                      {/* Play Button Overlay */}
+                      <div className="youtube-play-btn">
+                        <svg className="youtube-play-icon" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="p-4">
-                    <div className="youtube-title !text-[#54091b]" role="heading" aria-level="3">
-                      {video.title}
+                      {/* Live Badge */}
+                      {isLive && (
+                        <div className="youtube-live-badge">
+                          <span className="youtube-live-dot"></span>
+                          LIVE
+                        </div>
+                      )}
                     </div>
 
-                    {video.publishedAt && (
-                      <p className="mt-2 text-sm text-[#F4EFE7]/80 font-medium">
-                        {new Date(video.publishedAt).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                </a>
-              );
-            })}
-          </div>
+                    <div className="p-4">
+                      <div className="youtube-title !text-[#54091b]" role="heading" aria-level="3">
+                        {video.title}
+                      </div>
+
+                      {video.publishedAt && (
+                        <p className="mt-2 text-sm text-[#F4EFE7]/80 font-medium">
+                          {new Date(video.publishedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+
+            {/* Mobile Slider */}
+            <div 
+              ref={mobileSliderRef}
+              className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-8 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            >
+              {videos.map((video, index) => {
+                const isLive = video.snippet?.liveBroadcastContent === 'live';
+                return (
+                  <a
+                    key={`mobile-${video.videoId || video.title}`}
+                    href={
+                      video.videoId
+                        ? `https://www.youtube.com/watch?v=${video.videoId}`
+                        : "https://www.youtube.com/@MethodistChurchPadikuppam"
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="youtube-card block shrink-0 snap-start w-[85vw] max-w-[320px]"
+                  >
+                    <div className="youtube-thumbnail">
+                      <img
+                        src={getBestThumbnail(video)}
+                        alt={video.title}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          if (video.videoId) {
+                            e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
+                          }
+                        }}
+                      />
+
+                      {/* Play Button Overlay */}
+                      <div className="youtube-play-btn">
+                        <svg className="youtube-play-icon" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+
+                      {/* Live Badge */}
+                      {isLive && (
+                        <div className="youtube-live-badge">
+                          <span className="youtube-live-dot"></span>
+                          LIVE
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <div className="youtube-title !text-[#54091b]" role="heading" aria-level="3">
+                        {video.title}
+                      </div>
+
+                      {video.publishedAt && (
+                        <p className="mt-2 text-sm text-[#F4EFE7]/80 font-medium">
+                          {new Date(video.publishedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+            <MobileScrollIndicator scrollRef={mobileSliderRef} theme="dark" />
+          </>
         )}
       </div>
     </section>

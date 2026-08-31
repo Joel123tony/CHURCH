@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { bibleVerses } from "../data/bibleVerses";
 import { useScrollLock } from "../hooks/useScrollLock";
 import { useLanguage } from "../context/LanguageContext";
+import { translations } from "../data/translations";
 import { X, Download, Loader2 } from "lucide-react";
 import bibleLogo from "../assets/bible-logo.png";
 import { renderVerseCanvas } from "../utils/canvasRenderer";
@@ -14,9 +15,24 @@ export default function BibleBlessingModal() {
   
   const [isClosing, setIsClosing] = useState(false);
   const [verse, setVerse] = useState(null);
-  const { language, setLanguage, t } = useLanguage();
+  const { language } = useLanguage();
+  const [popupLanguage, setPopupLanguage] = useState("en");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const modalRef = useRef(null);
+
+  // Initialize popup language when language is available
+  useEffect(() => {
+    if (language && !isVisible) {
+      setPopupLanguage(language);
+    }
+  }, [language, isVisible]);
+
+  const t = (key) => {
+    if (!key) return "";
+    if (popupLanguage === "en") return translations.en[key] || key;
+    if (popupLanguage === "ta") return translations.ta[key] || translations.en[key] || key;
+    return key;
+  };
 
   // Inject Google Fonts dynamically so canvas can use them
   useEffect(() => {
@@ -113,14 +129,14 @@ export default function BibleBlessingModal() {
     setIsGeneratingImage(true);
 
     try {
-      const currentVerse = verse[language];
+      const currentVerse = verse[popupLanguage];
       const theme = {
         bg: { type: 'solid', color: '#F8F3EC' },
         textColor: '#5D1324',
         accentColor: '#D7C9B5',
       };
 
-      const fontFamily = language === 'en' ? "'Playfair Display', serif" : "'Noto Serif Tamil', serif";
+      const fontFamily = popupLanguage === 'en' ? "'Playfair Display', serif" : "'Noto Serif Tamil', serif";
 
       const { dataUrl } = await renderVerseCanvas({
         width: 1080,
@@ -134,13 +150,13 @@ export default function BibleBlessingModal() {
         chapter: currentVerse.chapter,
         verseNum: currentVerse.verse,
         text: currentVerse.text,
-        language: language,
+        language: popupLanguage,
         isMultiple: false
       });
 
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = `Bible-Blessing-${language}.png`;
+      link.download = `Bible-Blessing-${popupLanguage}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -153,7 +169,7 @@ export default function BibleBlessingModal() {
 
   if (!isVisible || !verse) return null;
 
-  const currentVerse = verse[language];
+  const currentVerse = verse[popupLanguage];
 
   return (
     <div
@@ -199,8 +215,8 @@ export default function BibleBlessingModal() {
           {/* Language Toggle */}
           <div className="flex items-center gap-1 bg-[#D7C9B5]/30 p-1 rounded-lg mb-6">
             <button
-              onClick={() => setLanguage("en")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${language === "en"
+              onClick={() => setPopupLanguage("en")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${popupLanguage === "en"
                   ? "bg-[#5D1324] text-white shadow-sm"
                   : "text-[#5D1324] hover:bg-[#5D1324]/10"
                 }`}
@@ -208,8 +224,8 @@ export default function BibleBlessingModal() {
               English
             </button>
             <button
-              onClick={() => setLanguage("ta")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${language === "ta"
+              onClick={() => setPopupLanguage("ta")}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${popupLanguage === "ta"
                   ? "bg-[#5D1324] text-white shadow-sm"
                   : "text-[#5D1324] hover:bg-[#5D1324]/10"
                 }`}

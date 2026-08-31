@@ -24,10 +24,14 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
 
   // Advanced Desktop Features
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0, pointerId: null });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const bookRef = useRef(null);
   const containerRef = useRef(null);
+  const mainAreaRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -133,6 +137,59 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
   };
 
   const handleFitToPage = () => setZoomLevel(1);
+
+  // Reset pan when returning to 1x zoom
+  useEffect(() => {
+    if (zoomLevel <= 1) {
+      setPan({ x: 0, y: 0 });
+    }
+  }, [zoomLevel]);
+
+  // Pan handlers
+  const handlePointerDown = (e) => {
+    if (zoomLevel <= 1 || isDragging) return;
+    setIsDragging(true);
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      panX: pan.x,
+      panY: pan.y,
+      pointerId: e.pointerId
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging || zoomLevel <= 1 || e.pointerId !== dragStart.current.pointerId) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    
+    let newX = dragStart.current.panX + dx;
+    let newY = dragStart.current.panY + dy;
+
+    if (mainAreaRef.current) {
+      const containerWidth = mainAreaRef.current.clientWidth;
+      const containerHeight = mainAreaRef.current.clientHeight;
+      
+      const scaledWidth = targetWidth * zoomLevel;
+      const scaledHeight = targetHeight * zoomLevel;
+      
+      const maxPanX = Math.max(0, (scaledWidth - containerWidth) / 2);
+      const maxPanY = Math.max(0, (scaledHeight - containerHeight) / 2);
+      
+      newX = Math.max(-maxPanX, Math.min(maxPanX, newX));
+      newY = Math.max(-maxPanY, Math.min(maxPanY, newY));
+    }
+
+    setPan({ x: newX, y: newY });
+  };
+
+  const handlePointerUp = (e) => {
+    if (e.pointerId === dragStart.current.pointerId) {
+      setIsDragging(false);
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
 
   // Mobile fixes for Download and Open PDF
   const handleMobileDownload = async (e) => {
@@ -386,7 +443,18 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
       </div>
 
       {/* Main Content Area */}
-      <div className={`flex-1 min-h-0 relative w-full overflow-auto custom-scrollbar flex items-center justify-center transition-transform duration-300 ${isMobile ? 'p-2 sm:p-4 pb-24' : 'px-8 pt-[20px] pb-[20px]'}`}>
+      <div 
+        ref={mainAreaRef}
+        className={`flex-1 min-h-0 relative w-full overflow-hidden flex items-center justify-center ${isMobile ? 'p-2 sm:p-4 pb-24' : 'px-8 pt-[20px] pb-[20px]'}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{ 
+          touchAction: zoomLevel > 1 ? 'none' : 'auto', 
+          cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'auto' 
+        }}
+      >
 
         {/* Floating Navigation Arrows (Desktop) */}
         {!isMobile && numPages > 1 && (
@@ -413,11 +481,11 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
         {/* Zoom Transform Wrapper */}
         {numPages === 1 ? (
           <div
-            className="relative flex items-center justify-center transition-transform duration-300 origin-center shadow-2xl"
+            className={`relative flex items-center justify-center origin-center shadow-2xl transition-transform ${isDragging ? 'duration-0' : 'duration-300'}`}
             style={{
               width: `${targetWidth}px`,
               height: `${targetHeight}px`,
-              transform: `scale(${zoomLevel})`
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})`
             }}
           >
             <PdfPage
@@ -429,11 +497,11 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
           </div>
         ) : (
           <div
-            className="relative flex items-center justify-center transition-transform duration-500 origin-center"
+            className={`relative flex items-center justify-center origin-center transition-transform ${isDragging ? 'duration-0' : 'duration-300'}`}
             style={{
               width: `${targetWidth}px`,
               height: `${targetHeight}px`,
-              transform: `scale(${zoomLevel}) translateX(${xShift})`
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel}) translateX(${xShift})`
             }}
           >
             <HTMLFlipBook
