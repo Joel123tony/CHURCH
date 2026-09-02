@@ -3,7 +3,6 @@ import { FaTimes, FaDownload, FaSpinner, FaChevronLeft, FaChevronRight } from "r
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 import { FadeUp } from "./animations/index.jsx";
-import MobileScrollIndicator from "./MobileScrollIndicator";
 
 function getMediaDate(item) {
   const value = item?.eventDate || item?.createdAt;
@@ -11,87 +10,136 @@ function getMediaDate(item) {
   return Number.isFinite(time) ? time : 0;
 }
 
-function PremiumPinnedCard({ item, onClick, t, className = "" }) {
-  const isVideo = item.mediaType === "video";
-  const [loading, setLoading] = useState(true);
+const FeaturedSlider = memo(({ items, onMediaClick }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState(null);
+  
+  const timerRef = useRef(null);
+  const numItems = items.length;
 
-  const dateStr = item.eventDate || item.createdAt;
-  const formattedDate = dateStr
-    ? new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    : '';
+  const startTimer = useCallback(() => {
+    if (numItems <= 1) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setCurrentIndex((prev) => (prev === numItems - 1 ? 0 : prev + 1));
+    }, 5000);
+  }, [numItems]);
+
+  useEffect(() => {
+    startTimer();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startTimer, currentIndex]);
+
+  const handleNext = useCallback((e) => {
+    e?.stopPropagation();
+    setCurrentIndex((prev) => (prev === numItems - 1 ? 0 : prev + 1));
+  }, [numItems]);
+
+  const handlePrev = useCallback((e) => {
+    e?.stopPropagation();
+    setCurrentIndex((prev) => (prev === 0 ? numItems - 1 : prev - 1));
+  }, [numItems]);
+
+  const handleDotClick = (index, e) => {
+    e?.stopPropagation();
+    setCurrentIndex(index);
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (diff > 50) {
+      handleNext();
+    } else if (diff < -50) {
+      handlePrev();
+    }
+    setTouchStartX(null);
+  };
+
+  if (numItems === 0) return null;
 
   return (
-    <div
+    <div 
+      className="relative w-full overflow-hidden rounded-[20px] shadow-lg aspect-[4/3] sm:aspect-[16/10] md:aspect-auto md:w-[560px] md:h-[300px] lg:w-[640px] lg:h-[320px] xl:w-[768px] xl:h-[350px] mx-auto bg-[#5d1324] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#54091b]"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onClick={() => onMediaClick?.(items[currentIndex])}
       role="button"
       tabIndex={0}
-      onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onClick?.();
+          onMediaClick?.(items[currentIndex]);
+        }
+        if (e.key === "ArrowLeft") {
+          handlePrev();
+        }
+        if (e.key === "ArrowRight") {
+          handleNext();
         }
       }}
-      className={`group relative flex flex-col h-full bg-[#5d1324] rounded-[20px] overflow-hidden [transform:translateZ(0)] p-[8px] sm:p-4 border border-[#d4af37]/20 shadow-md shadow-[#54091b]/30 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:border-[#d4af37]/40 hover:shadow-[#54091b]/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37] ${className}`}
     >
-      <div className="relative w-full overflow-hidden rounded-[14px] sm:rounded-[16px] [transform:translateZ(0)] aspect-video bg-[#3a0613]">
-        {isVideo ? (
-          <img
-            src={item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")}
-            alt={item.title || "video thumbnail"}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-            onLoad={() => setLoading(false)}
-          />
-        ) : (
-          <img
-            src={item.url}
-            alt={item.title || "gallery media"}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-            onLoad={() => setLoading(false)}
-          />
-        )}
-
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#3a0613]"></div>
-        )}
-
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ring-1 ring-inset ring-[#d4af37]/30 rounded-[14px] sm:rounded-[16px]"></div>
-
-        {isVideo && (
-          <div className="absolute right-1.5 top-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#d4af37] backdrop-blur-md border border-[#d4af37]/30 shadow-sm">
-            VIDEO
+      {items.map((item, index) => {
+        const isActive = index === currentIndex;
+        const isVideo = item.mediaType === "video";
+        const imgSrc = isVideo ? (item.thumbnail || item.url.replace(/\.[^/.]+$/, ".jpg")) : item.url;
+        
+        return (
+          <div 
+            key={item._id || index}
+            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+          >
+             <img 
+               src={imgSrc} 
+               alt=""
+               className={`w-full h-full object-cover transition-transform duration-700 ease-out ${isActive ? 'scale-100' : 'scale-105'}`}
+               loading={index === 0 ? "eager" : "lazy"}
+               decoding="async"
+             />
           </div>
-        )}
-      </div>
+        );
+      })}
 
-      <div className="mt-3 flex flex-col flex-1 px-1 sm:px-0">
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-sm bg-[#d4af37]/15 text-[#d4af37] text-[9px] font-bold uppercase tracking-widest border border-[#d4af37]/20">
-            ★ {t("Pinned")}
-          </span>
-          {item.category && (
-            <span className="text-[10px] text-[#F4EFE7]/70 uppercase tracking-wide truncate">
-              {item.category}
-            </span>
-          )}
-        </div>
+      {numItems > 1 && (
+        <>
+          <button 
+            onClick={handlePrev}
+            aria-label="Previous image"
+            className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-full bg-black/20 text-white/90 backdrop-blur-md transition-all hover:bg-black/50 hover:scale-110"
+          >
+            <FaChevronLeft size={16} className="md:w-5 md:h-5 ml-[-2px]" />
+          </button>
+          <button 
+            onClick={handleNext}
+            aria-label="Next image"
+            className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-full bg-black/20 text-white/90 backdrop-blur-md transition-all hover:bg-black/50 hover:scale-110"
+          >
+            <FaChevronRight size={16} className="md:w-5 md:h-5 mr-[-2px]" />
+          </button>
 
-        <h3 className="text-[#F4EFE7] font-bold text-xs sm:text-sm leading-snug line-clamp-2 mb-1 group-hover:text-[#d4af37] transition-colors duration-300">
-          {item.title ? t(item.title) : t("Featured Moment")}
-        </h3>
-
-        <div className="mt-auto pt-1.5 flex items-center text-[#F4EFE7]/70 text-[10px] font-medium">
-          <span className="mr-1.5 opacity-80">📅</span>
-          {formattedDate || t("Recent")}
-        </div>
-      </div>
+          <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2 md:gap-3">
+            {items.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => handleDotClick(index, e)}
+                aria-label={`Go to slide ${index + 1}`}
+                className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-all duration-300 ${index === currentIndex ? 'bg-white scale-125' : 'bg-white/40 hover:bg-white/80'}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
-}
-
+});
 function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
   const isVideo = item.mediaType === "video";
   const [loading, setLoading] = useState(true);
@@ -150,7 +198,6 @@ function CompactTile({ item, onClick, t, aspectClass = "aspect-square" }) {
 
 const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
   const { t } = useLanguage();
-  const mobileSliderRef = useRef(null);
   const [featuredMedia, setFeaturedMedia] = useState(() => {
     if (initialGallery && initialGallery.length > 0) {
       return [...initialGallery].sort((a, b) => getMediaDate(b) - getMediaDate(a));
@@ -373,61 +420,13 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
           </FadeUp>
 
           {loading ? (
-            <>
-              {/* Desktop Loading Grid */}
-              <div className="hidden md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={`desktop-skel-${i}`} className="flex flex-col bg-[#5d1324] rounded-[20px] p-[8px] w-full border border-[#d4af37]/10">
-                    <div className="w-full aspect-video bg-[#3a0613] rounded-[14px] mb-3"></div>
-                    <div className="h-3 bg-[#3a0613] rounded w-1/4 mb-2 ml-1"></div>
-                    <div className="h-4 bg-[#3a0613] rounded w-3/4 mb-1.5 ml-1"></div>
-                    <div className="mt-auto h-2 bg-[#3a0613] rounded w-1/3 pt-3 ml-1"></div>
-                  </div>
-                ))}
-              </div>
-              {/* Mobile Loading Slider */}
-              <div className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-3 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                {[...Array(4)].map((_, i) => (
-                  <div key={`mobile-skel-${i}`} className="flex flex-col bg-[#5d1324] rounded-[20px] p-[8px] w-[85vw] max-w-[320px] shrink-0 snap-start border border-[#d4af37]/10">
-                    <div className="w-full aspect-video bg-[#3a0613] rounded-[14px] mb-3"></div>
-                    <div className="h-3 bg-[#3a0613] rounded w-1/4 mb-2 ml-1"></div>
-                    <div className="h-4 bg-[#3a0613] rounded w-3/4 mb-1.5 ml-1"></div>
-                    <div className="mt-auto h-2 bg-[#3a0613] rounded w-1/3 pt-3 ml-1"></div>
-                  </div>
-                ))}
-              </div>
-            </>
+            <div className="w-full rounded-[20px] bg-[#5d1324]/50 animate-pulse aspect-[4/3] sm:aspect-[16/10] md:aspect-auto md:w-[560px] md:h-[300px] lg:w-[640px] lg:h-[320px] xl:w-[768px] xl:h-[350px] mx-auto border border-[#d4af37]/10" />
+          ) : featuredMedia.length > 0 ? (
+            <FeaturedSlider items={featuredMedia} onMediaClick={setSelectedMedia} />
           ) : (
-            <>
-              {/* Desktop Cards */}
-              <div className="hidden md:grid md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] md:gap-4">
-                {featuredMedia.map((item) => (
-                  <PremiumPinnedCard
-                    key={`desktop-${item._id}`}
-                    item={item}
-                    onClick={() => setSelectedMedia(item)}
-                    t={t}
-                    className="w-full"
-                  />
-                ))}
-              </div>
-              {/* Mobile Slider */}
-              <div 
-                ref={mobileSliderRef}
-                className="flex md:hidden overflow-x-auto snap-x snap-mandatory gap-3 pb-6 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-              >
-                {featuredMedia.map((item) => (
-                  <PremiumPinnedCard
-                    key={`mobile-${item._id}`}
-                    item={item}
-                    onClick={() => setSelectedMedia(item)}
-                    t={t}
-                    className="w-[85vw] max-w-[320px] shrink-0 snap-start"
-                  />
-                ))}
-              </div>
-              <MobileScrollIndicator scrollRef={mobileSliderRef} theme="light" />
-            </>
+            <div className="flex w-full items-center justify-center p-8 text-[#54091b]/60">
+               {t("No featured media.")}
+            </div>
           )}
         </div>
       </section>
