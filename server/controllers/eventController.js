@@ -7,7 +7,8 @@ const CACHE_KEY = "events_all";
 export const createEvent = async (req, res) => {
   try {
     const event = await Event.create(req.body);
-    clearCache(CACHE_KEY);
+    clearCache("events");
+    clearCache("home_page_aggregate");
 
     return res.status(201).json({
       success: true,
@@ -61,7 +62,8 @@ export const updateEvent = async (req, res) => {
       });
     }
 
-    clearCache(CACHE_KEY);
+    clearCache("events");
+    clearCache("home_page_aggregate");
 
     res.json({
       success: true,
@@ -87,7 +89,8 @@ export const deleteEvent = async (req, res) => {
       });
     }
 
-    clearCache(CACHE_KEY);
+    clearCache("events");
+    clearCache("home_page_aggregate");
 
     res.json({
       success: true,

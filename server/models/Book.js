@@ -23,6 +23,10 @@ const bookSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    category: {
+      type: String,
+      default: "Pamphlet"
+    },
 
     pdf_public_id: {
       type: String,

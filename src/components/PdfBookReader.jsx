@@ -21,6 +21,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
   const [error, setError] = useState(null);
   const [aspectRatio, setAspectRatio] = useState(0.707); // Default to A4 portrait (width/height)
   const [pageDims, setPageDims] = useState({ width: 595, height: 842 }); // Default A4 points
+  const [viewMode, setViewMode] = useState("book"); // "book" | "pdf"
 
   // Advanced Desktop Features
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -191,7 +192,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
     }
   };
 
-  // Mobile fixes for Download and Open PDF
+  // Mobile fixes for Download
   const handleMobileDownload = async (e) => {
     e.preventDefault();
     if (!downloadUrl) return;
@@ -209,19 +210,6 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
     } catch (err) {
       console.error("Download fallback failed", err);
       window.open(downloadUrl, '_blank');
-    }
-  };
-
-  const handleOpenPdf = (e) => {
-    e.preventDefault();
-    if (!pdfUrl) return;
-    try {
-      const newWin = window.open(pdfUrl, '_blank');
-      if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-        window.location.href = pdfUrl;
-      }
-    } catch (err) {
-      window.location.href = pdfUrl;
     }
   };
 
@@ -279,12 +267,6 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
             className="px-6 py-2 bg-[#F4EFE7] text-[#5B0E21] rounded-full font-bold hover:bg-white transition"
           >
             Retry
-          </button>
-          <button
-            onClick={handleOpenPdf}
-            className="px-6 py-2 bg-transparent border-2 border-[#D4AF37] text-[#D4AF37] rounded-full font-bold hover:bg-[#D4AF37]/10 transition"
-          >
-            Open PDF
           </button>
           <button
             onClick={handleMobileDownload}
@@ -357,194 +339,289 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
       }}
     >
 
-      {/* Header: 70px */}
-      <div
-        className="w-full h-[70px] shrink-0 flex items-center justify-between px-4 sm:px-6 z-50"
-        style={{
-          background: '#5B0E21',
-          borderBottom: '1px solid rgba(212,175,55,0.15)'
-        }}
-      >
-        <div className="flex items-center flex-1 overflow-hidden">
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="mr-4 text-[#F4EFE7] hover:text-[#D4AF37] transition flex items-center gap-2 font-bold shrink-0"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Back</span>
-            </button>
-          )}
-          <h2 className="text-[#F4EFE7] font-bold text-lg truncate pr-4" title={title}>
-            {title || "PDF Document"}
-          </h2>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="text-[#D4AF37] font-medium text-sm whitespace-nowrap hidden md:block">
-            Page {currentPage + 1} / {numPages}
-          </div>
-          {onClose && !isMobile && (
-            <button onClick={onClose} className="w-[40px] h-[40px] rounded-full flex items-center justify-center bg-white/5 hover:bg-[#7A0F24] text-[#F4EFE7] transition-all duration-250 shrink-0" title="Close">
-              <X className="w-5 h-5" />
-            </button>
-          )}
-          {onClose && isMobile && (
-            <button onClick={onClose} className="w-[44px] h-[44px] rounded-xl flex items-center justify-center bg-white/10 hover:bg-[#7A0F24] text-[#F4EFE7] transition-all duration-250 shrink-0" title="Close">
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className={`w-full flex items-center justify-center shrink-0 z-50 ${isMobile ? 'h-[64px]' : 'absolute top-[90px] left-1/2 -translate-x-1/2 w-auto pointer-events-none'}`}>
+      {/* --- DESKTOP TOOLBAR --- */}
+      {!isMobile && (
         <div
-          className={`flex items-center ${isMobile ? 'gap-2 w-full px-4 h-full' : 'gap-1 shadow-2xl rounded-full px-2 py-1.5 pointer-events-auto transition-transform hover:-translate-y-[2px]'}`}
-          style={isMobile ? {
-            background: 'rgba(122,15,36,0.85)',
-            backdropFilter: 'blur(14px)',
-            borderBottom: '1px solid rgba(212,175,55,0.18)'
-          } : {
-            background: 'rgba(122,15,36,0.85)',
-            backdropFilter: 'blur(14px)',
-            border: '1px solid rgba(212,175,55,0.18)'
+          className="w-full h-[70px] shrink-0 flex items-center justify-between px-6 z-50 transition-all duration-300"
+          style={{
+            background: '#5B0E21',
+            borderBottom: '1px solid rgba(212,175,55,0.15)'
           }}
         >
-          {/* Zoom Controls */}
-          <div className={`flex items-center overflow-hidden ${isMobile ? 'gap-2' : 'bg-[#7A0F24] rounded-full p-0.5'}`}>
-            <button onClick={handleZoomOut} disabled={zoomLevel <= 0.75} className={`flex items-center justify-center text-[#F4EFE7] transition-all duration-250 disabled:opacity-30 ${isMobile ? 'w-[44px] h-[44px] rounded-xl bg-[#7A0F24] hover:bg-[#8F1730]' : 'w-[36px] h-[36px] rounded-full hover:bg-[#8F1730]'}`} title="Zoom Out">
-              <ZoomOut className={isMobile ? 'w-5 h-5' : 'w-[16px] h-[16px]'} />
-            </button>
-            <div className={`text-center text-[#F4EFE7] font-bold ${isMobile ? 'w-16 text-sm' : 'w-14 text-[13px]'}`}>
-              {Math.round(zoomLevel * 100)}%
-            </div>
-            <button onClick={handleZoomIn} disabled={zoomLevel >= 3} className={`flex items-center justify-center text-[#F4EFE7] transition-all duration-250 disabled:opacity-30 ${isMobile ? 'w-[44px] h-[44px] rounded-xl bg-[#7A0F24] hover:bg-[#8F1730]' : 'w-[36px] h-[36px] rounded-full hover:bg-[#8F1730]'}`} title="Zoom In">
-              <ZoomIn className={isMobile ? 'w-5 h-5' : 'w-[16px] h-[16px]'} />
-            </button>
+          {/* Left: Back & Title */}
+          <div className="flex items-center flex-1 overflow-hidden min-w-0">
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="mr-4 text-[#F4EFE7] hover:text-[#D4AF37] transition flex items-center gap-2 font-bold shrink-0"
+                title="Back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back</span>
+              </button>
+            )}
+            <h2 className="text-[#F4EFE7] font-bold text-lg truncate pr-4" title={title}>
+              {title || "PDF Document"}
+            </h2>
           </div>
 
-          <div className={`w-px ${isMobile ? 'h-8 bg-white/20 mx-2' : 'h-5 bg-white/20 mx-2'}`}></div>
+          {/* Center: Book / PDF Toggle */}
+          <div className="flex items-center justify-center mx-4">
+            <div className="flex bg-black/40 rounded-full p-1 border border-white/10 shadow-inner">
+              <button 
+                onClick={() => setViewMode("book")}
+                className={`flex items-center gap-2 px-5 py-1.5 rounded-full text-sm font-bold transition-all duration-300 ${viewMode === 'book' ? 'bg-[#D4AF37] text-[#5B0E21] shadow-md' : 'text-[#F4EFE7] hover:bg-white/10'}`}
+              >
+                <span className="text-base">📖</span> Book
+              </button>
+              <button 
+                onClick={() => setViewMode("pdf")}
+                className={`flex items-center gap-2 px-5 py-1.5 rounded-full text-sm font-bold transition-all duration-300 ${viewMode === 'pdf' ? 'bg-[#D4AF37] text-[#5B0E21] shadow-md' : 'text-[#F4EFE7] hover:bg-white/10'}`}
+              >
+                <span className="text-base">📄</span> PDF
+              </button>
+            </div>
+          </div>
 
-          {downloadUrl && (
-            <button onClick={handleMobileDownload} className={`flex items-center justify-center text-[#F4EFE7] transition-all duration-250 ${isMobile ? 'w-[44px] h-[44px] rounded-xl bg-[#7A0F24] hover:bg-[#8F1730]' : 'h-[36px] px-3 rounded-full hover:bg-[#7A0F24]'}`} title="Download">
-              <Download className={isMobile ? 'w-5 h-5' : 'w-[16px] h-[16px]'} />
-              {!isMobile && <span className="ml-2 text-[13px] font-semibold">Download</span>}
-            </button>
-          )}
+          {/* Right: Controls & Close */}
+          <div className="flex items-center flex-1 justify-end gap-4 min-w-0">
+            {viewMode === "book" && (
+              <div className="flex items-center bg-black/40 rounded-full p-0.5 border border-white/10">
+                <button onClick={handleZoomOut} disabled={zoomLevel <= 0.75} className="w-[36px] h-[36px] flex items-center justify-center rounded-full hover:bg-white/20 text-[#F4EFE7] disabled:opacity-30 transition-colors">
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <div className="text-center text-[#F4EFE7] font-bold w-12 text-[13px]">
+                  {Math.round(zoomLevel * 100)}%
+                </div>
+                <button onClick={handleZoomIn} disabled={zoomLevel >= 3} className="w-[36px] h-[36px] flex items-center justify-center rounded-full hover:bg-white/20 text-[#F4EFE7] disabled:opacity-30 transition-colors">
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            
+            {downloadUrl && (
+              <button onClick={handleMobileDownload} className="flex items-center justify-center h-[36px] px-4 rounded-full bg-white/10 hover:bg-white/20 text-[#F4EFE7] border border-white/10 transition-all font-semibold text-[13px]">
+                <Download className="w-4 h-4 mr-2" /> Download
+              </button>
+            )}
 
-          {pdfUrl && (
-            <button onClick={handleOpenPdf} className={`flex items-center justify-center text-[#F4EFE7] transition-all duration-250 ${isMobile ? 'w-[44px] h-[44px] rounded-xl bg-[#7A0F24] hover:bg-[#8F1730]' : 'h-[36px] px-3 rounded-full hover:bg-[#7A0F24]'}`} title="Open PDF">
-              <ExternalLink className={isMobile ? 'w-5 h-5' : 'w-[16px] h-[16px]'} />
-              {!isMobile && <span className="ml-2 text-[13px] font-semibold">Open PDF</span>}
-            </button>
+            {onClose && (
+              <button onClick={onClose} className="w-[40px] h-[40px] rounded-full flex items-center justify-center bg-white/5 hover:bg-[#7A0F24] text-[#F4EFE7] transition-all border border-transparent hover:border-white/20 ml-2" title="Close">
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* --- MOBILE TOOLBAR --- */}
+      {isMobile && (
+        <div className="w-full shrink-0 flex flex-col z-50 bg-[#5B0E21] border-b border-[#D4AF37]/15 pb-3">
+          {/* Top row: Back + Title + Close */}
+          <div className="w-full h-[60px] flex items-center justify-between px-4">
+            <div className="flex items-center flex-1 overflow-hidden">
+              {onClose && (
+                <button onClick={onClose} className="mr-3 text-white" title="Back">
+                  <ArrowLeft className="w-6 h-6" />
+                </button>
+              )}
+              <h2 className="text-white font-bold text-base truncate">{title}</h2>
+            </div>
+            {onClose && (
+              <button onClick={onClose} className="text-white ml-2 bg-white/10 p-2 rounded-full active:bg-white/20">
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          
+          {/* Second row: Toggle + Page/Save */}
+          <div className="flex items-center justify-between px-4 mt-1">
+            <div className="flex bg-black/40 rounded-full p-1 border border-white/10 shadow-inner">
+              <button 
+                onClick={() => setViewMode("book")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${viewMode === 'book' ? 'bg-[#D4AF37] text-[#5B0E21] shadow-md' : 'text-[#F4EFE7] hover:bg-white/10'}`}
+              >
+                <span>📖</span> Book
+              </button>
+              <button 
+                onClick={() => setViewMode("pdf")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${viewMode === 'pdf' ? 'bg-[#D4AF37] text-[#5B0E21] shadow-md' : 'text-[#F4EFE7] hover:bg-white/10'}`}
+              >
+                <span>📄</span> PDF
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {viewMode === "book" && (
+                <div className="text-[#D4AF37] font-bold text-[13px] px-2">
+                  Pg {currentPage + 1}/{numPages}
+                </div>
+              )}
+              {downloadUrl && (
+                <button onClick={handleMobileDownload} className="text-[#F4EFE7] border border-white/20 px-3 py-1.5 rounded-full text-[13px] font-bold bg-white/10 flex items-center">
+                  <Download className="w-[14px] h-[14px] mr-1.5"/> Save
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Third row: Zoom Controls (Book View Only) */}
+          {viewMode === "book" && (
+            <div className="flex items-center justify-center px-4 mt-3">
+              <div className="flex items-center bg-black/40 rounded-full p-0.5 border border-white/10">
+                <button onClick={handleZoomOut} disabled={zoomLevel <= 0.75} className="w-[44px] h-[44px] flex items-center justify-center rounded-full hover:bg-white/20 text-[#F4EFE7] disabled:opacity-30 transition-colors">
+                  <ZoomOut className="w-5 h-5" />
+                </button>
+                <div className="text-center text-[#F4EFE7] font-bold w-16 text-sm">
+                  {Math.round(zoomLevel * 100)}%
+                </div>
+                <button onClick={handleZoomIn} disabled={zoomLevel >= 3} className="w-[44px] h-[44px] flex items-center justify-center rounded-full hover:bg-white/20 text-[#F4EFE7] disabled:opacity-30 transition-colors">
+                  <ZoomIn className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Main Content Area */}
+      {/* --- MAIN CONTENT AREA --- */}
       <div 
         ref={mainAreaRef}
-        className={`flex-1 min-h-0 relative w-full overflow-hidden flex items-center justify-center ${isMobile ? 'p-2 sm:p-4 pb-24' : 'px-8 pt-[20px] pb-[20px]'}`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        style={{ 
+        className={`flex-1 relative w-full ${viewMode === 'book' ? 'overflow-hidden min-h-0 flex items-center justify-center' : 'overflow-y-auto overflow-x-hidden overscroll-y-auto block'} ${isMobile && viewMode === 'book' ? 'p-2 sm:p-4 pb-24' : (!isMobile && viewMode === 'book' ? 'px-8 pt-[20px] pb-[20px]' : '')}`}
+        onPointerDown={viewMode === 'book' ? handlePointerDown : undefined}
+        onPointerMove={viewMode === 'book' ? handlePointerMove : undefined}
+        onPointerUp={viewMode === 'book' ? handlePointerUp : undefined}
+        onPointerCancel={viewMode === 'book' ? handlePointerUp : undefined}
+        style={viewMode === 'book' ? { 
           touchAction: zoomLevel > 1 ? 'none' : 'auto', 
           cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'auto' 
+        } : {
+          WebkitOverflowScrolling: 'touch'
         }}
       >
-
-        {/* Floating Navigation Arrows (Desktop) */}
-        {!isMobile && numPages > 1 && (
-          <>
-            <button
-              onClick={prevButtonClick}
-              disabled={currentPage === 0}
-              className="absolute left-[24px] top-1/2 -translate-y-1/2 z-40 w-[56px] h-[56px] rounded-full bg-[#7A0F24] border border-[#D4AF37]/30 hover:bg-[#D4AF37] hover:text-[#5B0E21] text-white flex items-center justify-center transition-all duration-300 disabled:opacity-0 shadow-xl"
-              title="Previous Page"
-            >
-              ◀
-            </button>
-            <button
-              onClick={nextButtonClick}
-              disabled={currentPage >= maxPageIdx}
-              className="absolute right-[24px] top-1/2 -translate-y-1/2 z-40 w-[56px] h-[56px] rounded-full bg-[#7A0F24] border border-[#D4AF37]/30 hover:bg-[#D4AF37] hover:text-[#5B0E21] text-white flex items-center justify-center transition-all duration-300 disabled:opacity-0 shadow-xl"
-              title="Next Page"
-            >
-              ▶
-            </button>
-          </>
-        )}
-
-        {/* Zoom Transform Wrapper */}
-        {numPages === 1 ? (
-          <div
-            className={`relative flex items-center justify-center origin-center shadow-2xl transition-transform ${isDragging ? 'duration-0' : 'duration-300'}`}
-            style={{
-              width: `${targetWidth}px`,
-              height: `${targetHeight}px`,
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})`
-            }}
-          >
-            <PdfPage
-              pageNum={1}
-              pdf={pdf}
-              currentPage={0}
-              isCover={false}
-            />
-          </div>
+        {viewMode === "pdf" ? (
+          <iframe 
+             src={`${pdfUrl}#toolbar=1&navpanes=0`} 
+             className="w-full border-none bg-white md:rounded-b-lg block"
+             style={{ minHeight: '100%', height: isMobile ? 'max-content' : '100%' }}
+             title={title}
+          />
         ) : (
-          <div
-            className={`relative flex items-center justify-center origin-center transition-transform ${isDragging ? 'duration-0' : 'duration-300'}`}
-            style={{
-              width: `${targetWidth}px`,
-              height: `${targetHeight}px`,
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel}) translateX(${xShift})`
-            }}
-          >
-            <HTMLFlipBook
-              width={pageDims.width}
-              height={pageDims.height}
-              size="stretch"
-              minWidth={100}
-              maxWidth={9999}
-              minHeight={100}
-              maxHeight={9999}
-              maxShadowOpacity={0.5}
-              showCover={true}
-              mobileScrollSupport={true}
-              useMouseEvents={zoomLevel === 1} // Disable drag-to-flip while zoomed for panning
-              onFlip={onFlip}
-              usePortrait={pagesToShow === 1}
-              ref={bookRef}
-              className={`mx-auto shadow-2xl ${isMobile ? '' : 'rounded-sm overflow-hidden'}`}
-              style={{ margin: '0 auto' }}
-            >
-              {Array.from({ length: numPages }).map((_, i) => (
-                <PdfPage
-                  key={i}
-                  pageNum={i + 1}
-                  pdf={pdf}
-                  currentPage={currentPage}
-                  isCover={i === 0 || (i === numPages - 1 && numPages % 2 === 0)}
-                />
-              ))}
-              {numPages % 2 !== 0 && (
+          <>
+            {/* Floating Navigation Arrows (Desktop Book View) */}
+            {!isMobile && numPages > 1 && (
+              <>
+                <button
+                  onClick={prevButtonClick}
+                  disabled={currentPage === 0}
+                  className="absolute left-[24px] top-1/2 -translate-y-1/2 z-40 w-[56px] h-[56px] rounded-full bg-[#7A0F24] border border-[#D4AF37]/30 hover:bg-[#D4AF37] hover:text-[#5B0E21] text-white flex items-center justify-center transition-all duration-300 disabled:opacity-0 shadow-xl"
+                  title="Previous Page"
+                >
+                  ◀
+                </button>
+                <button
+                  onClick={nextButtonClick}
+                  disabled={currentPage >= maxPageIdx}
+                  className="absolute right-[24px] top-1/2 -translate-y-1/2 z-40 w-[56px] h-[56px] rounded-full bg-[#7A0F24] border border-[#D4AF37]/30 hover:bg-[#D4AF37] hover:text-[#5B0E21] text-white flex items-center justify-center transition-all duration-300 disabled:opacity-0 shadow-xl"
+                  title="Next Page"
+                >
+                  ▶
+                </button>
+              </>
+            )}
+
+            {/* Zoom Transform Wrapper */}
+            {(() => {
+              if (numPages === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center w-full h-full text-slate-400 font-bold">
+                    No pages available
+                  </div>
+                );
+              }
+
+              if (numPages === 1) {
+                return (
+                  <div
+                    className={`relative flex items-center justify-center origin-center shadow-2xl transition-transform ${isDragging ? 'duration-0' : 'duration-300'}`}
+                    style={{
+                      width: `${targetWidth}px`,
+                      height: `${targetHeight}px`,
+                      transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})`
+                    }}
+                  >
+                    <PdfPage
+                      pageNum={1}
+                      pdf={pdf}
+                      currentPage={0}
+                      isCover={false}
+                    />
+                  </div>
+                );
+              }
+
+              // Pre-construct valid React elements array for react-pageflip to avoid null/false crashes
+              const flipbookPages = [];
+              for (let i = 0; i < numPages; i++) {
+                flipbookPages.push(
+                  <PdfPage
+                    key={`pdf-page-${i + 1}`}
+                    pageNum={i + 1}
+                    pdf={pdf}
+                    currentPage={currentPage}
+                    isCover={i === 0 || (i === numPages - 1 && numPages % 2 === 0)}
+                  />
+                );
+              }
+              
+              if (numPages % 2 !== 0) {
+                flipbookPages.push(
+                  <div
+                    key="blank-back-cover"
+                    className="bg-transparent overflow-hidden relative w-full h-full"
+                    data-density="hard"
+                  ></div>
+                );
+              }
+
+              return (
                 <div
-                  key="blank-back-cover"
-                  className="bg-transparent overflow-hidden relative w-full h-full"
-                  data-density="hard"
-                ></div>
-              )}
-            </HTMLFlipBook>
-          </div>
+                  className={`relative flex items-center justify-center origin-center transition-transform ${isDragging ? 'duration-0' : 'duration-300'}`}
+                  style={{
+                    width: `${targetWidth}px`,
+                    height: `${targetHeight}px`,
+                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel}) translateX(${xShift})`
+                  }}
+                >
+                  <HTMLFlipBook
+                    width={pageDims.width}
+                    height={pageDims.height}
+                    size="stretch"
+                    minWidth={100}
+                    maxWidth={9999}
+                    minHeight={100}
+                    maxHeight={9999}
+                    maxShadowOpacity={0.5}
+                    showCover={true}
+                    mobileScrollSupport={true}
+                    useMouseEvents={zoomLevel === 1} // Disable drag-to-flip while zoomed for panning
+                    onFlip={onFlip}
+                    usePortrait={pagesToShow === 1}
+                    ref={bookRef}
+                    className={`mx-auto shadow-2xl ${isMobile ? '' : 'rounded-sm overflow-hidden'}`}
+                    style={{ margin: '0 auto' }}
+                  >
+                    {flipbookPages}
+                  </HTMLFlipBook>
+                </div>
+              );
+            })()}
+          </>
         )}
       </div>
 
-      {/* Desktop Footer: 44px */}
-      {!isMobile && (
+      {/* Desktop Footer (Book View only) */}
+      {!isMobile && viewMode === "book" && (
         <div
           className="w-full h-[44px] shrink-0 flex items-center justify-center px-8 z-50"
           style={{ background: '#5B0E21' }}
@@ -555,26 +632,22 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation (Floating) */}
-      {isMobile && numPages > 1 && (
+      {/* Mobile Bottom Navigation (Floating) (Book View only) */}
+      {isMobile && numPages > 1 && viewMode === "book" && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-[400px]">
-          <div className="bg-[#5B0E21] text-white rounded-full flex items-center justify-between p-2 shadow-[0_10px_25px_rgba(0,0,0,0.5)] border border-[#D4AF37]/30 backdrop-blur-md">
+          <div className="bg-[#5B0E21]/95 text-white rounded-full flex items-center justify-between p-2 shadow-[0_10px_25px_rgba(0,0,0,0.5)] border border-[#D4AF37]/30 backdrop-blur-md">
             <button
               onClick={prevButtonClick}
               disabled={currentPage === 0}
-              className="h-[48px] px-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-[#D4AF37] active:bg-[#D4AF37]/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 font-bold tracking-wide"
+              className="h-[48px] px-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-[#D4AF37] active:bg-[#D4AF37]/80 hover:text-[#5B0E21] transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 font-bold tracking-wide"
             >
-              ◀ Previous
+              ◀ Prev
             </button>
-
-            <div className="text-sm font-bold tracking-widest px-2 truncate text-[#D4AF37]">
-              {currentPage + 1} / {numPages}
-            </div>
 
             <button
               onClick={nextButtonClick}
               disabled={currentPage >= maxPageIdx}
-              className="h-[48px] px-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-[#D4AF37] active:bg-[#D4AF37]/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 font-bold tracking-wide"
+              className="h-[48px] px-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-[#D4AF37] active:bg-[#D4AF37]/80 hover:text-[#5B0E21] transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 font-bold tracking-wide"
             >
               Next ▶
             </button>

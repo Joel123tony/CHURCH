@@ -55,11 +55,11 @@ const VerseItem = memo(({ verseNum, text, zoomLevel, fontIndex, isDark, onToggle
       {showActions && (
         <div className="absolute top-full right-4 sm:right-8 z-50 -mt-3 animate-in fade-in zoom-in duration-200">
           <div className={`flex items-center gap-1 p-1.5 rounded-xl shadow-lg border backdrop-blur-md ${isDark ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-100'}`}>
-            <button onClick={(e) => { e.stopPropagation(); onCopyAction(); }} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors ${isDark ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-[#54091b]/80 hover:bg-[#F4EFE7] hover:text-[#54091b]'}`}>
+            <button onClick={(e) => { e.stopPropagation(); onCopyAction(); }} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors outline-none ${isDark ? 'text-gray-300 hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'text-[#54091b]/80 hover:bg-[#F4EFE7] hover:text-[#54091b]'}`}>
               <Copy size={16} /> Copy
             </button>
             <div className={`w-px h-4 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-            <button onClick={(e) => { e.stopPropagation(); onShareAction(); }} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors ${isDark ? 'text-[#D4AF37] hover:bg-gray-700 hover:text-yellow-400' : 'text-[#D4AF37] hover:bg-[#F4EFE7] hover:text-[#b8952a]'}`}>
+            <button onClick={(e) => { e.stopPropagation(); onShareAction(); }} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors outline-none ${isDark ? 'text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'text-[#D4AF37] hover:bg-[#F4EFE7] hover:text-[#b8952a]'}`}>
               <Image size={16} /> Share Image
             </button>
           </div>
@@ -125,9 +125,9 @@ const CustomSelect = ({ value, options, onChange, isDark }) => {
         ref={buttonRef}
         onClick={toggleDropdown}
         className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border-2 transition-all duration-200 font-bold text-sm outline-none shadow-sm min-h-[44px] ${isDark
-          ? 'bg-gray-800 border-gray-700 text-gray-200 hover:border-gray-600 focus:border-[#D4AF37]'
+          ? 'bg-gray-800 border-gray-700 text-gray-200 hover:border-[#D4AF37]/50 focus:border-[#D4AF37] focus:shadow-[0_0_8px_rgba(212,175,55,0.3)]'
           : 'bg-[#F4EFE7] border-[#54091b]/20 text-[#54091b] hover:border-[#54091b]/50 focus:border-[#54091b]'
-          } ${isOpen ? (isDark ? 'border-[#D4AF37]' : 'border-[#54091b] ring-2 ring-[#54091b]/10') : ''}`}
+          } ${isOpen ? (isDark ? 'border-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.3)]' : 'border-[#54091b] ring-2 ring-[#54091b]/10') : ''}`}
       >
         <span className="truncate">{selectedLabel}</span>
         <ChevronDown size={16} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -148,8 +148,8 @@ const CustomSelect = ({ value, options, onChange, isDark }) => {
                   setIsOpen(false);
                 }}
                 className={`w-full text-left px-4 py-3 min-h-[44px] text-sm font-medium transition-colors ${value === opt.value
-                  ? (isDark ? 'bg-gray-700 text-[#D4AF37] font-bold' : 'bg-[#54091b] text-[#F6EFE3]')
-                  : (isDark ? 'text-gray-300 hover:bg-gray-700/50' : 'text-[#54091b]/80 hover:bg-[#54091b]/10 hover:text-[#54091b]')
+                  ? (isDark ? 'bg-[#D4AF37]/10 text-[#D4AF37] font-bold border-l-2 border-[#D4AF37]' : 'bg-[#54091b] text-[#F6EFE3]')
+                  : (isDark ? 'text-gray-300 hover:bg-gray-700/50 hover:text-[#D4AF37] border-l-2 border-transparent' : 'text-[#54091b]/80 hover:bg-[#54091b]/10 hover:text-[#54091b]')
                   }`}
               >
                 {opt.label}
@@ -538,14 +538,14 @@ export default function Bible() {
               onKeyDown={handleKeyDown}
               onFocus={() => { if (searchInput.trim().length > 0) setIsSearchOpen(true); }}
               className={`w-full pl-10 pr-9 py-2.5 rounded-xl border-2 transition-all text-sm font-medium outline-none min-h-[44px] ${isDark
-                ? 'border-gray-700 bg-gray-800 text-white focus:border-[#D4AF37]'
+                ? 'border-gray-700 bg-gray-800 text-white hover:border-[#D4AF37]/50 focus:border-[#D4AF37] focus:shadow-[0_0_8px_rgba(212,175,55,0.3)]'
                 : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] focus:border-[#54091b] focus:bg-white placeholder-[#54091b]/40'
                 }`}
             />
             {searchInput && (
               <button
                 onClick={() => { setSearchInput(""); setIsSearchOpen(false); setDebouncedSearch(""); }}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors p-1 rounded-full ${isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-[#54091b]/50 hover:text-[#54091b] hover:bg-[#54091b]/10'}`}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors p-1 rounded-full ${isDark ? 'text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10' : 'text-[#54091b]/50 hover:text-[#54091b] hover:bg-[#54091b]/10'}`}
               >
                 <X size={14} />
               </button>
@@ -559,7 +559,7 @@ export default function Bible() {
                         key={idx}
                         id={`search-res-${idx}`}
                         onClick={() => handleResultClick(result)}
-                        className={`px-4 py-3 cursor-pointer transition-colors ${focusedResultIndex === idx ? (isDark ? 'bg-gray-700' : 'bg-[#54091b]/10') : (isDark ? 'hover:bg-gray-700/50' : 'hover:bg-[#54091b]/5')} ${idx !== searchResults.length - 1 ? (isDark ? 'border-b border-gray-700' : 'border-b border-[#E8DCCB]') : ''}`}
+                        className={`px-4 py-3 cursor-pointer transition-colors ${focusedResultIndex === idx ? (isDark ? 'bg-[#D4AF37]/10' : 'bg-[#54091b]/10') : (isDark ? 'hover:bg-[#D4AF37]/10' : 'hover:bg-[#54091b]/5')} ${idx !== searchResults.length - 1 ? (isDark ? 'border-b border-gray-700' : 'border-b border-[#E8DCCB]') : ''}`}
                       >
                         <div className={`text-xs font-bold mb-1 ${isDark ? 'text-[#D4AF37]' : 'text-[#D4AF37]'}`}>
                           {getBookName(result.book, language)} {result.chapter}:{result.verseNum}
@@ -582,17 +582,17 @@ export default function Bible() {
 
 
             <div className={`flex items-center gap-1 p-1.5 rounded-xl shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
-              <button onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))} className={`p-1.5 rounded-lg transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Decrease zoom"><Minus size={16} /></button>
+              <button onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))} className={`p-1.5 rounded-lg transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center outline-none ${isDark ? 'hover:bg-[#D4AF37]/10 text-gray-400 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Decrease zoom"><Minus size={16} /></button>
               <span className={`text-xs font-bold w-12 text-center select-none ${isDark ? 'text-gray-300' : 'text-[#54091b]'}`}>{zoomLevel}%</span>
-              <button onClick={() => setZoomLevel(prev => Math.min(200, prev + 10))} className={`p-1.5 rounded-lg transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Increase zoom"><Plus size={16} /></button>
+              <button onClick={() => setZoomLevel(prev => Math.min(200, prev + 10))} className={`p-1.5 rounded-lg transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center outline-none ${isDark ? 'hover:bg-[#D4AF37]/10 text-gray-400 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Increase zoom"><Plus size={16} /></button>
               <div className={`w-px h-5 mx-1 ${isDark ? 'bg-gray-700' : 'bg-[#54091b]/20'}`}></div>
-              <button onClick={() => setZoomLevel(100)} className={`p-1.5 rounded-lg transition-colors flex items-center justify-center gap-1 min-h-[32px] min-w-[32px] ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Reset zoom"><RotateCcw size={14} /></button>
+              <button onClick={() => setZoomLevel(100)} className={`p-1.5 rounded-lg transition-colors flex items-center justify-center gap-1 min-h-[32px] min-w-[32px] outline-none ${isDark ? 'hover:bg-[#D4AF37]/10 text-gray-400 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'hover:bg-white hover:shadow-sm text-[#54091b]/70 hover:text-[#54091b]'}`} title="Reset zoom"><RotateCcw size={14} /></button>
             </div>
             <div className={`flex items-center rounded-xl p-1 shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
-              <button onClick={() => setLanguage("ta")} className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 text-center min-h-[32px] ${language === "ta" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-[#54091b]/60 hover:text-[#54091b]')}`}>தமிழ்</button>
-              <button onClick={() => setLanguage("en")} className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 text-center min-h-[32px] ${language === "en" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-[#54091b]/60 hover:text-[#54091b]')}`}>EN</button>
+              <button onClick={() => setLanguage("ta")} className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 text-center min-h-[32px] outline-none ${language === "ta" ? (isDark ? 'bg-[#D4AF37] text-gray-900 shadow-[0_0_8px_rgba(212,175,55,0.3)]' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'text-[#54091b]/60 hover:text-[#54091b]')}`}>தமிழ்</button>
+              <button onClick={() => setLanguage("en")} className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 text-center min-h-[32px] outline-none ${language === "en" ? (isDark ? 'bg-[#D4AF37] text-gray-900 shadow-[0_0_8px_rgba(212,175,55,0.3)]' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'text-[#54091b]/60 hover:text-[#54091b]')}`}>EN</button>
             </div>
-            <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-colors border-2 shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center ${isDark ? 'border-gray-700 bg-gray-800 text-yellow-400 hover:border-gray-600' : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] hover:border-[#54091b]/30'}`} title="Toggle Theme">{isDark ? <Sun size={18} /> : <Moon size={18} />}</button>
+            <button onClick={toggleTheme} className={`p-2.5 rounded-xl transition-all border-2 shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center outline-none ${isDark ? 'border-gray-700 bg-gray-800 text-[#D4AF37] hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 focus:border-[#D4AF37] focus:shadow-[0_0_8px_rgba(212,175,55,0.3)]' : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] hover:border-[#54091b]/30'}`} title="Toggle Theme">{isDark ? <Sun size={18} /> : <Moon size={18} />}</button>
           </div>
         </div>
       </div>
@@ -623,14 +623,14 @@ export default function Bible() {
             onKeyDown={handleKeyDown}
             onFocus={() => { if (searchInput.trim().length > 0) setIsSearchOpen(true); }}
             className={`w-full pl-10 pr-9 py-2 min-h-[44px] rounded-xl border-2 transition-all text-[16px] font-medium outline-none ${isDark
-              ? 'border-gray-700 bg-gray-800 text-white focus:border-[#D4AF37]'
+              ? 'border-gray-700 bg-gray-800 text-white hover:border-[#D4AF37]/50 focus:border-[#D4AF37] focus:shadow-[0_0_8px_rgba(212,175,55,0.3)]'
               : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] focus:border-[#54091b] focus:bg-white placeholder-[#54091b]/40'
               }`}
           />
           {searchInput && (
             <button
               onClick={() => { setSearchInput(""); setIsSearchOpen(false); setDebouncedSearch(""); }}
-              className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors p-1 rounded-full ${isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-[#54091b]/50 hover:text-[#54091b] hover:bg-[#54091b]/10'}`}
+              className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors p-1 rounded-full ${isDark ? 'text-gray-400 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10' : 'text-[#54091b]/50 hover:text-[#54091b] hover:bg-[#54091b]/10'}`}
             >
               <X size={14} />
             </button>
@@ -671,20 +671,20 @@ export default function Bible() {
           <button
             onClick={toggleTheme}
             aria-label="Toggle Theme"
-            className={`p-2.5 rounded-xl transition-colors border-2 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center ${isDark ? 'border-gray-700 bg-gray-800 text-yellow-400 hover:border-gray-600' : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] hover:border-[#54091b]/30'}`}
+            className={`p-2.5 rounded-xl transition-all border-2 shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center outline-none ${isDark ? 'border-gray-700 bg-gray-800 text-[#D4AF37] hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 focus:border-[#D4AF37] focus:shadow-[0_0_8px_rgba(212,175,55,0.3)]' : 'border-[#54091b]/10 bg-[#F4EFE7] text-[#54091b] hover:border-[#54091b]/30'}`}
           >
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
           <div className={`flex flex-1 items-center rounded-xl p-1 min-h-[44px] shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
-            <button aria-label="Switch to Tamil" onClick={() => setLanguage("ta")} className={`flex-1 px-2 py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-300 text-center min-w-[36px] ${language === "ta" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400' : 'text-[#54091b]/60')}`}>TA</button>
-            <button aria-label="Switch to English" onClick={() => setLanguage("en")} className={`flex-1 px-2 py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-300 text-center min-w-[36px] ${language === "en" ? (isDark ? 'bg-gray-700 text-white' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400' : 'text-[#54091b]/60')}`}>EN</button>
+            <button aria-label="Switch to Tamil" onClick={() => setLanguage("ta")} className={`flex-1 px-2 py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-300 text-center min-w-[36px] outline-none ${language === "ta" ? (isDark ? 'bg-[#D4AF37] text-gray-900 shadow-[0_0_8px_rgba(212,175,55,0.3)]' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'text-[#54091b]/60')}`}>TA</button>
+            <button aria-label="Switch to English" onClick={() => setLanguage("en")} className={`flex-1 px-2 py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all duration-300 text-center min-w-[36px] outline-none ${language === "en" ? (isDark ? 'bg-[#D4AF37] text-gray-900 shadow-[0_0_8px_rgba(212,175,55,0.3)]' : 'bg-white text-[#54091b] shadow-sm') : (isDark ? 'text-gray-400 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]' : 'text-[#54091b]/60')}`}>EN</button>
           </div>
 
           <div className={`flex flex-1 items-center rounded-xl p-1 min-h-[44px] shrink-0 ${isDark ? 'bg-gray-800' : 'bg-[#F4EFE7] border border-[#54091b]/10'}`}>
-            <button aria-label="Decrease font size" onClick={() => setFontIndex(Math.max(0, fontIndex - 1))} disabled={fontIndex === 0} className={`flex-1 px-2 py-2 text-sm font-bold rounded-lg transition-all text-center flex justify-center items-center gap-1 ${isDark ? 'text-gray-300 hover:bg-gray-700 disabled:opacity-30' : 'text-[#54091b] hover:bg-white/50 disabled:opacity-30'}`}>A−</button>
+            <button aria-label="Decrease font size" onClick={() => setFontIndex(Math.max(0, fontIndex - 1))} disabled={fontIndex === 0} className={`flex-1 px-2 py-2 text-sm font-bold rounded-lg transition-all text-center flex justify-center items-center gap-1 outline-none ${isDark ? 'text-gray-300 hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] disabled:opacity-30' : 'text-[#54091b] hover:bg-white/50 disabled:opacity-30'}`}>{language === "ta" ? "அ−" : "A−"}</button>
             <div className={`w-px h-4 mx-0.5 ${isDark ? 'bg-gray-700' : 'bg-[#54091b]/20'}`}></div>
-            <button aria-label="Increase font size" onClick={() => setFontIndex(Math.min(4, fontIndex + 1))} disabled={fontIndex === 4} className={`flex-1 px-2 py-2 text-sm font-bold rounded-lg transition-all text-center flex justify-center items-center gap-1 ${isDark ? 'text-gray-300 hover:bg-gray-700 disabled:opacity-30' : 'text-[#54091b] hover:bg-white/50 disabled:opacity-30'}`}>A+</button>
+            <button aria-label="Increase font size" onClick={() => setFontIndex(Math.min(4, fontIndex + 1))} disabled={fontIndex === 4} className={`flex-1 px-2 py-2 text-sm font-bold rounded-lg transition-all text-center flex justify-center items-center gap-1 outline-none ${isDark ? 'text-gray-300 hover:bg-[#D4AF37]/10 hover:text-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] disabled:opacity-30' : 'text-[#54091b] hover:bg-white/50 disabled:opacity-30'}`}>{language === "ta" ? "அ+" : "A+"}</button>
           </div>
         </div>
 
@@ -747,8 +747,8 @@ export default function Bible() {
                 {getPrevLabel() ? (
                   <button
                     onClick={handlePrevChapter}
-                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 min-h-[44px] rounded-2xl font-bold text-sm transition-all duration-300 ${isDark
-                      ? 'bg-gray-800 hover:bg-gray-700 text-white border-2 border-gray-700'
+                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 min-h-[44px] rounded-2xl font-bold text-sm transition-all duration-300 outline-none ${isDark
+                      ? 'bg-gray-800 hover:bg-gray-800 text-white border-2 border-gray-700 hover:border-[#D4AF37]/50 focus:border-[#D4AF37] focus:shadow-[0_0_8px_rgba(212,175,55,0.3)] hover:text-[#D4AF37]'
                       : 'bg-white hover:bg-[#F4EFE7] text-[#54091b] border-2 border-[#E8DCCB] hover:border-[#54091b]/30 hover:shadow-md'
                       }`}
                   >
@@ -760,8 +760,8 @@ export default function Bible() {
                 {getNextLabel() ? (
                   <button
                     onClick={handleNextChapter}
-                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 min-h-[44px] rounded-2xl font-bold text-sm transition-all duration-300 ${isDark
-                      ? 'bg-gray-800 hover:bg-gray-700 text-white border-2 border-gray-700'
+                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-4 min-h-[44px] rounded-2xl font-bold text-sm transition-all duration-300 outline-none ${isDark
+                      ? 'bg-gray-800 hover:bg-gray-800 text-white border-2 border-gray-700 hover:border-[#D4AF37]/50 focus:border-[#D4AF37] focus:shadow-[0_0_8px_rgba(212,175,55,0.3)] hover:text-[#D4AF37]'
                       : 'bg-white hover:bg-[#F4EFE7] text-[#54091b] border-2 border-[#E8DCCB] hover:border-[#54091b]/30 hover:shadow-md'
                       }`}
                   >

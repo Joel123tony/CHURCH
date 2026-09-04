@@ -40,6 +40,7 @@ export default function Books() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [author, setAuthor] = useState("");
+  const [category, setCategory] = useState("Book");
   
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
@@ -92,10 +93,11 @@ export default function Books() {
     }
   }, []);
 
-  const { getRootProps: getPdfRootProps, getInputProps: getPdfInputProps, isDragActive: isPdfDragActive } = useDropzone({
+  const { getRootProps: getPdfRootProps, getInputProps: getPdfInputProps, isDragActive: isPdfDragActive, open: openPdfDropzone } = useDropzone({
     onDrop: onPdfDrop,
     accept: { "application/pdf": [".pdf"] },
-    multiple: false
+    multiple: false,
+    noClick: (localPdfUrl || editItem?.pdfUrl) ? true : false
   });
 
   const fetchBooks = async () => {
@@ -137,6 +139,7 @@ export default function Books() {
     setTitle("");
     setDate("");
     setAuthor("");
+    setCategory("Book");
     setCoverFile(null);
     if (coverPreview && typeof coverPreview === 'string' && coverPreview.startsWith('blob:')) {
       URL.revokeObjectURL(coverPreview);
@@ -156,6 +159,7 @@ export default function Books() {
     setTitle(book.title || "");
     setDate(book.date || "");
     setAuthor(book.author || "");
+    setCategory(book.category || "Pamphlet");
     setCoverPreview(book.coverImageUrl || null);
     setActiveTab("add");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -178,9 +182,13 @@ export default function Books() {
       formData.append("title", title);
       formData.append("date", date);
       formData.append("author", author);
+      formData.append("category", category);
       
       if (coverFile) {
         formData.append("coverImageUrl", coverFile);
+        if (uploadStats && uploadStats.public_id) {
+          formData.append("cover_public_id", uploadStats.public_id);
+        }
       }
       if (pdfFile) {
         formData.append("pdfFile", pdfFile);
@@ -199,8 +207,9 @@ export default function Books() {
       setUploadStats(null);
       setActiveTab("shelf");
     } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Failed to save book");
+      console.error("Upload Book Error:", err);
+      const errorMessage = err?.response?.data?.message || err.message || "Failed to save book";
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -299,10 +308,10 @@ export default function Books() {
                         File Preview
                       </h3>
                       
-                      <div className="grid grid-cols-2 gap-4 sm:gap-5 mb-2">
+                      <div className="flex flex-col gap-6 mb-2">
                         
                         {/* Cover Preview Mini */}
-                        <div className="flex flex-col space-y-1.5">
+                        <div className="flex flex-col space-y-1.5 w-full">
                           <label className="text-xs font-bold text-slate-500 text-center">Cover Image {editItem ? "(Optional)" : "*"}</label>
                           <div 
                             {...getRootProps()}
@@ -330,36 +339,39 @@ export default function Books() {
                           </div>
                         </div>
 
-                        {/* PDF Preview Mini */}
-                        <div className="flex flex-col space-y-1.5">
+                        {/* PDF Preview Responsive Viewer */}
+                        <div className="flex flex-col space-y-1.5 w-full">
                           <label className="text-xs font-bold text-slate-500 text-center">PDF File {editItem ? "(Optional)" : "*"}</label>
                           <div 
                             {...getPdfRootProps()}
-                            className={`relative w-full max-w-[160px] mx-auto aspect-[3/4] rounded-2xl overflow-hidden bg-slate-50 border-2 border-dashed shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer group ${isPdfDragActive ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-blue-300'}`}
+                            className={`relative w-full h-[250px] md:h-[450px] rounded-2xl overflow-hidden bg-slate-50 border-2 border-dashed shadow-sm transition-all duration-300 group ${isPdfDragActive ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-blue-300'} ${!(localPdfUrl || editItem?.pdfUrl) ? 'hover:-translate-y-1 hover:shadow-md cursor-pointer aspect-[3/4] mx-auto max-w-[160px]' : ''}`}
                           >
                             <input {...getPdfInputProps()} />
                             {(localPdfUrl || editItem?.pdfUrl) ? (
                                <>
-                                 <object
-                                   data={`${localPdfUrl || editItem?.pdfUrl}#page=1&view=FitH&toolbar=0&navpanes=0`}
-                                   type="application/pdf"
-                                   className="absolute inset-0 w-full h-full pointer-events-none"
-                                 >
-                                   <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-50 p-4 text-center">
-                                     <FaFilePdf className="text-3xl mb-2 opacity-50 text-blue-400" />
-                                     <p className="text-[11px] font-medium break-words w-full truncate">
-                                       {pdfFile ? pdfFile.name : "PDF Attached"}
-                                     </p>
+                                 <iframe
+                                   src={`${localPdfUrl || editItem?.pdfUrl}#toolbar=0&navpanes=0`}
+                                   title="PDF Preview"
+                                   className="w-full h-full border-none pointer-events-auto block"
+                                 />
+                                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-20 pointer-events-none">
+                                   <div className="flex flex-col gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-auto mt-auto mb-6">
+                                     <button 
+                                       type="button"
+                                       className="text-white text-xs font-bold bg-black/80 hover:bg-black px-4 py-2.5 rounded-full flex items-center gap-1.5 shadow-lg transition transform hover:scale-105"
+                                       onClick={(e) => {
+                                         e.preventDefault();
+                                         e.stopPropagation();
+                                         openPdfDropzone();
+                                       }}
+                                     ><FaFilePdf /> Change PDF</button>
+                                     <button 
+                                        type="button" 
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPdfPreview(true); }} 
+                                        className="text-white text-xs font-bold bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition shadow-lg transform hover:scale-105"
+                                      ><FaEye /> Preview Fullscreen</button>
                                    </div>
-                                 </object>
-                                 <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition-opacity z-20">
-                                   <p className="text-white text-xs font-bold bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 shadow-sm"><FaFilePdf /> Change PDF</p>
-                                   <button 
-                                      type="button" 
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPdfPreview(true); }} 
-                                      className="text-white text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 transition shadow-sm"
-                                    ><FaEye /> Preview PDF</button>
-                                   {pdfFile && <span className="absolute bottom-2 right-2 text-[10px] text-white/90 font-medium bg-black/40 px-2 py-0.5 rounded">{formatBytes(pdfFile.size)}</span>}
+                                   {pdfFile && <span className="absolute top-2 right-2 text-[10px] text-white/90 font-medium bg-black/40 px-2 py-0.5 rounded pointer-events-none">{formatBytes(pdfFile.size)}</span>}
                                  </div>
                                </>
                             ) : (
@@ -403,6 +415,34 @@ export default function Books() {
                           placeholder="e.g. Rev. John Doe"
                           className="admin-input !py-2"
                         />
+                      </div>
+
+                      <div>
+                        <label className="admin-label !mb-2">Publication Type *</label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="category"
+                              value="Book"
+                              checked={category === "Book"}
+                              onChange={(e) => setCategory(e.target.value)}
+                              className="w-4 h-4 text-[#54091b] focus:ring-[#54091b] border-slate-300"
+                            />
+                            <span className="text-sm font-bold text-slate-700">Book</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="category"
+                              value="Pamphlet"
+                              checked={category === "Pamphlet"}
+                              onChange={(e) => setCategory(e.target.value)}
+                              className="w-4 h-4 text-[#54091b] focus:ring-[#54091b] border-slate-300"
+                            />
+                            <span className="text-sm font-bold text-slate-700">Pamphlet</span>
+                          </label>
+                        </div>
                       </div>
 
                       <div>

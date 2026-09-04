@@ -105,3 +105,36 @@ export const compressVideo = (inputPath) => {
     }
   });
 };
+
+export const compressPdf = async (inputPath) => {
+  const originalSize = fs.statSync(inputPath).size;
+
+  if (originalSize < 100 * 1024) { // Don't compress if < 100KB
+    return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
+  }
+
+  try {
+    const { PDFDocument } = await import("pdf-lib");
+    const pdfBytes = fs.readFileSync(inputPath);
+    const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+    
+    // Save the PDF. This strips out unused objects and optimizes structure.
+    const optimizedPdfBytes = await pdfDoc.save({ useObjectStreams: true });
+    
+    const tempOutput = path.join(os.tmpdir(), `pdf-out-${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`);
+    fs.writeFileSync(tempOutput, optimizedPdfBytes);
+
+    const compressedSize = fs.statSync(tempOutput).size;
+
+    // If compression didn't save at least 5%, keep original
+    if (compressedSize > originalSize * 0.95) {
+      if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+      return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
+    }
+
+    return { filePath: tempOutput, originalSize, compressedSize, isCompressed: true };
+  } catch (error) {
+    console.error("PDF Compression Error:", error);
+    return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
+  }
+};

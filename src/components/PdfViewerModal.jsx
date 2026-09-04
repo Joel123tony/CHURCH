@@ -46,9 +46,10 @@ export default function PdfViewerModal({ isOpen, onClose, pdfUrl, title }) {
       window.addEventListener("keydown", handleKeyDown);
       return () => {
         window.removeEventListener("keydown", handleKeyDown);
+        document.body.style.overflow = "";
       };
     } else {
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "";
     }
   }, [isOpen, onClose]);
 
@@ -65,6 +66,7 @@ export default function PdfViewerModal({ isOpen, onClose, pdfUrl, title }) {
       >
         <div className="relative flex-1 w-full h-full bg-transparent overflow-hidden">
           <PdfBookReader 
+            key={resolvedUrl}
             pdfUrl={resolvedUrl} 
             title={title || "PDF Document"} 
             downloadUrl={downloadUrl} 

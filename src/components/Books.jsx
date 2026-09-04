@@ -36,6 +36,11 @@ export default function Books() {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const datePickerRef = useRef(null);
+  
+  const [activeMobileIndex, setActiveMobileIndex] = useState(0);
+  const mobileScrollRef = useRef(null);
+  
+  const [isArchiveView, setIsArchiveView] = useState(false);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -73,6 +78,22 @@ export default function Books() {
       }
     });
     return Array.from(years).sort((a, b) => b - a);
+  }, [books]);
+
+  const archiveGroups = useMemo(() => {
+    const groups = {};
+    const sorted = [...books].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    
+    sorted.forEach(book => {
+      let key = "Older";
+      if (book.date) {
+        const d = new Date(book.date);
+        key = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
+      }
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(book);
+    });
+    return groups;
   }, [books]);
 
   const filteredBooks = useMemo(() => {
@@ -132,6 +153,27 @@ export default function Books() {
     setSelectedYear("");
   };
 
+  const handleMobileScroll = (e) => {
+    if (!mobileScrollRef.current) return;
+    const scrollLeft = e.target.scrollLeft;
+    const itemWidth = e.target.clientWidth;
+    const newIndex = Math.round(scrollLeft / itemWidth);
+    if (newIndex !== activeMobileIndex) {
+      setActiveMobileIndex(newIndex);
+    }
+  };
+
+  const scrollToMobileIndex = (index) => {
+    if (mobileScrollRef.current) {
+      const itemWidth = mobileScrollRef.current.clientWidth;
+      mobileScrollRef.current.scrollTo({
+        left: itemWidth * index,
+        behavior: 'smooth'
+      });
+      setActiveMobileIndex(index);
+    }
+  };
+
   const filterChipText = useMemo(() => {
     if (!selectedMonth && !selectedYear) return null;
     const m = MONTHS.find(m => m.value === selectedMonth)?.label || "";
@@ -150,8 +192,72 @@ export default function Books() {
     <section id="books" className="py-16 bg-[#F4EFE7]">
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
 
-        {/* Header Section */}
-        <div className="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
+        {isArchiveView ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header for Archive */}
+            <div className="flex items-center gap-4 mb-10 sm:mb-14 sticky top-[70px] sm:top-[80px] z-30 bg-[#F4EFE7]/95 backdrop-blur-md py-4 -mx-5 px-5 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-[#E8DCCB] shadow-sm">
+              <button 
+                onClick={() => {
+                  setIsArchiveView(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full bg-white shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-[#E8DCCB] text-[#54091b] hover:bg-[#54091b] hover:text-white transition-all duration-300"
+              >
+                <FaChevronLeft className="pr-1 text-sm sm:text-lg" />
+              </button>
+              <div>
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#54091b]">
+                  {t("Publication Archive")}
+                </h2>
+                <p className="text-xs sm:text-sm font-semibold text-[#54091b]/60 mt-0.5">
+                  {books.length} {t("items in library")}
+                </p>
+              </div>
+            </div>
+
+            {/* Archive Content */}
+            <div className="flex flex-col gap-12 sm:gap-16 pb-12">
+              {Object.entries(archiveGroups).map(([groupDate, groupBooks]) => (
+                <div key={groupDate}>
+                  <h3 className="text-xl sm:text-2xl font-black text-[#54091b] mb-4 sm:mb-6 px-1 tracking-tight">
+                    {groupDate}
+                  </h3>
+                  {/* Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 px-1">
+                    {groupBooks.map(book => (
+                      <div 
+                        key={book._id}
+                        onClick={() => setSelectedBook(book)}
+                        className="group/archive flex flex-col cursor-pointer"
+                      >
+                        <div className="relative aspect-[3/4] w-full rounded-[14px] overflow-hidden bg-white shadow-[0_4px_15px_rgba(0,0,0,0.03)] border border-[#E8DCCB] group-hover/archive:shadow-[0_12px_30px_rgba(0,0,0,0.1)] transition-all duration-300 group-hover/archive:-translate-y-1.5 flex items-center justify-center p-3 sm:p-4">
+                          <img 
+                            src={book.coverImageUrl} 
+                            alt={book.title} 
+                            loading="lazy"
+                            className="w-full h-full object-contain group-hover/archive:scale-[1.03] transition-transform duration-500 ease-out"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover/archive:bg-black/5 transition-colors duration-300 pointer-events-none rounded-[14px]"></div>
+                        </div>
+                        <div className="mt-3.5 px-1 flex flex-col items-start text-left">
+                          <h4 className="text-sm sm:text-base font-bold text-[#54091b] line-clamp-2 leading-snug group-hover/archive:text-[#D4AF37] transition-colors">
+                            {book.title}
+                          </h4>
+                          <span className="inline-block mt-2 text-[10px] sm:text-[11px] font-extrabold text-[#D4AF37] uppercase tracking-widest bg-[#D4AF37]/10 px-2 py-0.5 rounded">
+                            {book.category || "Pamphlet"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="animate-in fade-in duration-500">
+            {/* Header Section */}
+            <div className="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6">
           <div>
             <h2 className="text-3xl font-bold text-[#54091b]">
               {t("Books & Pamphlets")}
@@ -283,98 +389,192 @@ export default function Books() {
               )}
             </div>
           ) : (
-            <div className="relative px-2 sm:px-12 md:px-16">
-              {/* Navigation Arrows (Desktop) */}
-              <button
-                onClick={scrollLeft}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[#F6EFE3] text-[#54091b] shadow-xl border border-gray-200 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white"
-              >
-                <FaChevronLeft className="pr-1 text-lg" />
-              </button>
+            <>
+              {/* DESKTOP VIEW */}
+              <div className="hidden md:block relative px-12 md:px-16">
+                {/* Navigation Arrows (Desktop) */}
+                <button
+                  onClick={scrollLeft}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-12 rounded-full bg-[#F6EFE3] text-[#54091b] shadow-xl border border-gray-200 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white"
+                >
+                  <FaChevronLeft className="pr-1 text-lg" />
+                </button>
 
-              <button
-                onClick={scrollRight}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[#F6EFE3] text-[#54091b] shadow-xl border border-gray-200 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white"
-              >
-                <FaChevronRight className="pl-1 text-lg" />
-              </button>
+                <button
+                  onClick={scrollRight}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-12 h-12 rounded-full bg-[#F6EFE3] text-[#54091b] shadow-xl border border-gray-200 opacity-0 group-hover/container:opacity-100 transition-all duration-300 hover:scale-110 hover:bg-white"
+                >
+                  <FaChevronRight className="pl-1 text-lg" />
+                </button>
 
-              {/* Swipe Indicator (Animated Hint) */}
-              {!hasScrolled && filteredBooks.length > 1 && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-none transition-opacity duration-500 opacity-100 flex flex-col items-center">
-                  <div className="bg-black/60 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 animate-bounce-horizontal shadow-lg">
-                    <span className="hidden sm:inline">← Scroll →</span>
-                    <span className="sm:hidden">← Swipe →</span>
+                {/* Swipe Indicator (Animated Hint) */}
+                {!hasScrolled && filteredBooks.length > 1 && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 pointer-events-none transition-opacity duration-500 opacity-100 flex flex-col items-center">
+                    <div className="bg-black/60 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 animate-bounce-horizontal shadow-lg">
+                      <span>← Scroll →</span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Horizontal Scroll Area */}
-              <div
-                ref={scrollContainerRef}
-                onScroll={handleScroll}
-                className="flex overflow-x-auto gap-5 sm:gap-6 pb-8 pt-4 snap-x snap-mandatory resources-scrollbar scroll-smooth relative z-10"
-              >
-                {filteredBooks.map((book) => (
-                  <div
-                    key={book._id}
-                    onClick={() => setSelectedBook(book)}
-                    className="snap-center shrink-0 w-[85vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)] cursor-pointer"
-                  >
-                    {/* Premium Book Card */}
+                {/* Horizontal Scroll Area */}
+                <div
+                  ref={scrollContainerRef}
+                  onScroll={handleScroll}
+                  className="flex overflow-x-auto gap-6 pb-8 pt-4 snap-x snap-mandatory resources-scrollbar scroll-smooth relative z-10"
+                >
+                  {filteredBooks.map((book) => (
                     <div
-                      className="group/card rounded-[20px] overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_30px_-4px_rgba(84,9,27,0.15)] transition-all duration-300 hover:-translate-y-1.5 border border-[#E8DCCB] flex flex-col h-full bg-[#F4EFE7] relative"
+                      key={book._id}
+                      onClick={() => setSelectedBook(book)}
+                      className="snap-start shrink-0 w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)] cursor-pointer"
                     >
-                      {/* Inner border glow effect */}
-                      <div className="absolute inset-0 rounded-[20px] ring-2 ring-transparent group-hover/card:ring-[#D4AF37]/50 transition-all duration-300 z-20 pointer-events-none"></div>
-                      
-                      <div className="relative aspect-[3/4] overflow-hidden bg-gray-200 shadow-inner">
-                        <img
-                          src={book.coverImageUrl}
-                          alt={book.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500 ease-out"
-                        />
-                        {/* Subtle overlay for better depth */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
-                      </div>
-
-                      {/* Glass-style Footer */}
-                      <div className="p-4 sm:p-5 flex-1 flex flex-col bg-[#54091b]/95 backdrop-blur-sm group-hover/card:bg-[#5f0a1e] transition-colors duration-300 relative z-10 border-t border-[#D4AF37]/10">
-                        <div 
-                          role="heading" 
-                          aria-level="3"
-                          className="line-clamp-2 book-title"
-                        >
-                          {book.title}
+                      {/* Premium Book Card */}
+                      <div
+                        className="group/card rounded-[20px] overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_30px_-4px_rgba(84,9,27,0.15)] transition-all duration-300 hover:-translate-y-1.5 border border-[#E8DCCB] flex flex-col h-full bg-[#F4EFE7] relative"
+                      >
+                        {/* Inner border glow effect */}
+                        <div className="absolute inset-0 rounded-[20px] ring-2 ring-transparent group-hover/card:ring-[#D4AF37]/50 transition-all duration-300 z-20 pointer-events-none"></div>
+                        
+                        <div className="relative aspect-[3/4] overflow-hidden bg-gray-200 shadow-inner">
+                          <img
+                            src={book.coverImageUrl}
+                            alt={book.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500 ease-out"
+                          />
+                          {/* Subtle overlay for better depth */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
                         </div>
-                        
-                        {book.author && (
-                          <p className="mt-1.5 opacity-90 text-sm font-medium text-[#F6EFE3]">
-                            {book.author}
-                          </p>
-                        )}
-                        
-                        <div className="mt-auto pt-4 flex items-center justify-between text-xs sm:text-sm font-medium">
-                          {book.date ? (
-                            <span className="flex items-center text-[#D4AF37]/90">
-                              <span className="mr-1.5">📅</span> {formatDate(book.date)}
-                            </span>
-                          ) : (
-                            <span></span>
+
+                        {/* Glass-style Footer */}
+                        <div className="p-5 flex-1 flex flex-col bg-[#54091b]/95 backdrop-blur-sm group-hover/card:bg-[#5f0a1e] transition-colors duration-300 relative z-10 border-t border-[#D4AF37]/10">
+                          <div 
+                            role="heading" 
+                            aria-level="3"
+                            className="line-clamp-2 book-title"
+                          >
+                            {book.title}
+                          </div>
+                          
+                          {book.author && (
+                            <p className="mt-1.5 opacity-90 text-sm font-medium text-[#F6EFE3]">
+                              {book.author}
+                            </p>
                           )}
-                          <span className="flex items-center text-[#F6EFE3]/80 bg-[#F6EFE3]/10 px-2 py-1 rounded-md">
-                            <FaFilePdf className="mr-1.5 text-xs text-[#D4AF37]" /> PDF
-                          </span>
+                          
+                          <div className="mt-auto pt-4 flex items-center justify-between text-sm font-medium">
+                            {book.date ? (
+                              <span className="flex items-center text-[#D4AF37]/90">
+                                <span className="mr-1.5">📅</span> {formatDate(book.date)}
+                              </span>
+                            ) : (
+                              <span></span>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-extrabold text-[#D4AF37] uppercase tracking-widest bg-[#D4AF37]/10 px-2 py-1 rounded-md">
+                                {book.category || "Pamphlet"}
+                              </span>
+                              <span className="flex items-center text-[#F6EFE3]/80 bg-[#F6EFE3]/10 px-2 py-1 rounded-md">
+                                <FaFilePdf className="mr-1.5 text-xs text-[#D4AF37]" /> PDF
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+
+              {/* MOBILE VIEW (Carousel) */}
+              <div className="md:hidden relative w-full overflow-hidden flex flex-col items-center">
+                {/* Navigation Arrows */}
+                <button 
+                  onClick={() => scrollToMobileIndex(Math.max(0, activeMobileIndex - 1))} 
+                  disabled={activeMobileIndex === 0}
+                  className="absolute left-2 top-[35%] -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/95 text-[#54091b] shadow-[0_4px_15px_rgba(0,0,0,0.15)] disabled:opacity-0 transition-opacity duration-300 border border-[#E8DCCB]"
+                >
+                  <FaChevronLeft className="pr-0.5 text-lg" />
+                </button>
+                <button 
+                  onClick={() => scrollToMobileIndex(Math.min(filteredBooks.length - 1, activeMobileIndex + 1))} 
+                  disabled={activeMobileIndex === filteredBooks.length - 1 || filteredBooks.length === 0}
+                  className="absolute right-2 top-[35%] -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-white/95 text-[#54091b] shadow-[0_4px_15px_rgba(0,0,0,0.15)] disabled:opacity-0 transition-opacity duration-300 border border-[#E8DCCB]"
+                >
+                  <FaChevronRight className="pl-0.5 text-lg" />
+                </button>
+
+                {/* Carousel track */}
+                <div 
+                  ref={mobileScrollRef}
+                  onScroll={handleMobileScroll}
+                  className="flex overflow-x-auto snap-x snap-mandatory w-full hide-scrollbar scroll-smooth"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {filteredBooks.map((book, idx) => {
+                    const isActive = activeMobileIndex === idx;
+                    return (
+                      <div key={book._id} className="w-full shrink-0 snap-center flex flex-col items-center px-10 py-6">
+                        {/* Book Cover */}
+                        <div 
+                          onClick={() => setSelectedBook(book)}
+                          className={`relative cursor-pointer transition-all duration-500 ease-out flex justify-center items-center ${isActive ? 'scale-100 opacity-100' : 'scale-90 opacity-40'}`}
+                          style={{ width: '240px', height: '340px' }}
+                        >
+                          <img 
+                            src={book.coverImageUrl} 
+                            alt={book.title} 
+                            className="w-full h-full object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.2)] rounded-md"
+                          />
+                        </div>
+                        {/* Book Details */}
+                        <div className={`mt-8 text-center transition-all duration-500 max-w-[260px] ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                          <h3 className="text-2xl font-black text-[#54091b] mb-2 leading-tight">{book.title}</h3>
+                          <div className="flex items-center justify-center gap-2 text-[15px] font-semibold text-[#54091b]/70 tracking-wide uppercase">
+                            {book.date && <span>{new Date(book.date).getFullYear()}</span>}
+                            {book.date && <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]"></span>}
+                            <span>{book.category || "Pamphlet"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Pagination Dots */}
+                {filteredBooks.length > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-2 pb-4">
+                    {filteredBooks.map((_, idx) => (
+                      <button 
+                        key={idx}
+                        onClick={() => scrollToMobileIndex(idx)}
+                        className={`transition-all duration-300 rounded-full ${activeMobileIndex === idx ? 'w-8 h-2 bg-[#D4AF37]' : 'w-2 h-2 bg-[#54091b]/20'}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
+        
+        {/* View All Button */}
+        <div className="mt-14 sm:mt-16 flex justify-center pb-4">
+          <button 
+            onClick={() => {
+              setIsArchiveView(true);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="group relative inline-flex items-center justify-center gap-2 px-8 sm:px-10 py-4 sm:py-5 bg-[#54091b] text-[#F6EFE3] rounded-full font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(84,9,27,0.2)] hover:shadow-[0_12px_25px_rgba(84,9,27,0.3)] transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+          >
+            <span className="relative z-10">{t("View All Books & Pamphlets")}</span>
+            <FaChevronRight className="relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#7a0f24] to-[#54091b] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+        </div>
+
+        </div>
+        )}
       </div>
 
       <PdfViewerModal
