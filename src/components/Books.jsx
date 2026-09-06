@@ -69,12 +69,30 @@ export default function Books() {
     fetchBooks();
   }, []);
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const trimmed = dateString.trim();
+    // If it's exactly 4 digits, just return it
+    if (/^\d{4}$/.test(trimmed)) return trimmed;
+    
+    const d = new Date(trimmed);
+    if (isNaN(d)) return trimmed; // Fallback to exact raw string
+    
+    const options = { year: 'numeric', month: 'long' };
+    return d.toLocaleDateString(undefined, options);
+  };
+
   const availableYears = useMemo(() => {
     const years = new Set();
     books.forEach(book => {
       if (book.date) {
-        const y = new Date(book.date).getFullYear();
-        if (!isNaN(y)) years.add(y);
+        const d = new Date(book.date);
+        if (!isNaN(d)) {
+          years.add(d.getFullYear());
+        } else {
+          const match = book.date.match(/\d{4}/);
+          if (match) years.add(parseInt(match[0], 10));
+        }
       }
     });
     return Array.from(years).sort((a, b) => b - a);
@@ -82,13 +100,21 @@ export default function Books() {
 
   const archiveGroups = useMemo(() => {
     const groups = {};
-    const sorted = [...books].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    const sorted = [...books].sort((a, b) => {
+      const getVal = (dStr) => {
+         if (!dStr) return 0;
+         const d = new Date(dStr);
+         if (!isNaN(d)) return d.getTime();
+         const m = dStr.match(/\d{4}/);
+         return m ? new Date(m[0], 0, 1).getTime() : 0;
+      };
+      return getVal(b.date) - getVal(a.date);
+    });
     
     sorted.forEach(book => {
       let key = "Older";
       if (book.date) {
-        const d = new Date(book.date);
-        key = `${d.toLocaleString('en-US', { month: 'long' })} ${d.getFullYear()}`;
+        key = formatDate(book.date);
       }
       if (!groups[key]) groups[key] = [];
       groups[key].push(book);
@@ -182,11 +208,7 @@ export default function Books() {
     return m || y;
   }, [selectedMonth, selectedYear]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const options = { year: 'numeric', month: 'long' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
+
 
   return (
     <section id="books" className="py-16 bg-[#F4EFE7]">
@@ -531,7 +553,7 @@ export default function Books() {
                         <div className={`mt-8 text-center transition-all duration-500 max-w-[260px] ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                           <h3 className="text-2xl font-black text-[#54091b] mb-2 leading-tight">{book.title}</h3>
                           <div className="flex items-center justify-center gap-2 text-[15px] font-semibold text-[#54091b]/70 tracking-wide uppercase">
-                            {book.date && <span>{new Date(book.date).getFullYear()}</span>}
+                            {book.date && <span>{formatDate(book.date)}</span>}
                             {book.date && <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]"></span>}
                             <span>{book.category || "Pamphlet"}</span>
                           </div>

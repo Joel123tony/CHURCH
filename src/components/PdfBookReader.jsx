@@ -21,14 +21,14 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
   const [error, setError] = useState(null);
   const [aspectRatio, setAspectRatio] = useState(0.707); // Default to A4 portrait (width/height)
   const [pageDims, setPageDims] = useState({ width: 595, height: 842 }); // Default A4 points
-  const [viewMode, setViewMode] = useState("book"); // "book" | "pdf"
+  const [viewMode, setViewMode] = useState(null); // "book" | "pdf"
 
   // Advanced Desktop Features
   const [zoomLevel, setZoomLevel] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0, pointerId: null });
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fullscreenPage, setFullscreenPage] = useState(null);
 
   const bookRef = useRef(null);
   const containerRef = useRef(null);
@@ -64,6 +64,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
           setPageDims({ width: viewport.width, height: viewport.height });
           setPdf(loadedPdf);
           setNumPages(loadedPdf.numPages);
+          setViewMode(loadedPdf.numPages <= 3 ? "pdf" : "book");
           setLoading(false);
         } else {
           loadedPdf.destroy();
@@ -164,20 +165,20 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
     if (!isDragging || zoomLevel <= 1 || e.pointerId !== dragStart.current.pointerId) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    
+
     let newX = dragStart.current.panX + dx;
     let newY = dragStart.current.panY + dy;
 
     if (mainAreaRef.current) {
       const containerWidth = mainAreaRef.current.clientWidth;
       const containerHeight = mainAreaRef.current.clientHeight;
-      
+
       const scaledWidth = targetWidth * zoomLevel;
       const scaledHeight = targetHeight * zoomLevel;
-      
+
       const maxPanX = Math.max(0, (scaledWidth - containerWidth) / 2);
       const maxPanY = Math.max(0, (scaledHeight - containerHeight) / 2);
-      
+
       newX = Math.max(-maxPanX, Math.min(maxPanX, newX));
       newY = Math.max(-maxPanY, Math.min(maxPanY, newY));
     }
@@ -312,6 +313,18 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
     targetHeight = targetWidth / bookRatio;
   }
 
+  // PDF View dimensions (fit to width)
+  const pdfViewWidth = isMobile ? availableWidth : Math.min(availableWidth, 800);
+  const pdfViewHeight = pdfViewWidth / aspectRatio;
+
+  // Lightbox dimensions calculation
+  let lightboxHeight = windowDims.height * 0.9;
+  let lightboxWidth = lightboxHeight * aspectRatio;
+  if (lightboxWidth > windowDims.width * 0.9) {
+    lightboxWidth = windowDims.width * 0.9;
+    lightboxHeight = lightboxWidth / aspectRatio;
+  }
+
   // Logic to prevent artificial blank spaces
   const isTwoPage = !isMobile && pagesToShow === 2 && numPages > 1;
 
@@ -368,13 +381,13 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
           {/* Center: Book / PDF Toggle */}
           <div className="flex items-center justify-center mx-4">
             <div className="flex bg-black/40 rounded-full p-1 border border-white/10 shadow-inner">
-              <button 
+              <button
                 onClick={() => setViewMode("book")}
                 className={`flex items-center gap-2 px-5 py-1.5 rounded-full text-sm font-bold transition-all duration-300 ${viewMode === 'book' ? 'bg-[#D4AF37] text-[#5B0E21] shadow-md' : 'text-[#F4EFE7] hover:bg-white/10'}`}
               >
                 <span className="text-base">📖</span> Book
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode("pdf")}
                 className={`flex items-center gap-2 px-5 py-1.5 rounded-full text-sm font-bold transition-all duration-300 ${viewMode === 'pdf' ? 'bg-[#D4AF37] text-[#5B0E21] shadow-md' : 'text-[#F4EFE7] hover:bg-white/10'}`}
               >
@@ -398,7 +411,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
                 </button>
               </div>
             )}
-            
+
             {downloadUrl && (
               <button onClick={handleMobileDownload} className="flex items-center justify-center h-[36px] px-4 rounded-full bg-white/10 hover:bg-white/20 text-[#F4EFE7] border border-white/10 transition-all font-semibold text-[13px]">
                 <Download className="w-4 h-4 mr-2" /> Download
@@ -433,24 +446,24 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
               </button>
             )}
           </div>
-          
+
           {/* Second row: Toggle + Page/Save */}
           <div className="flex items-center justify-between px-4 mt-1">
             <div className="flex bg-black/40 rounded-full p-1 border border-white/10 shadow-inner">
-              <button 
+              <button
                 onClick={() => setViewMode("book")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${viewMode === 'book' ? 'bg-[#D4AF37] text-[#5B0E21] shadow-md' : 'text-[#F4EFE7] hover:bg-white/10'}`}
               >
                 <span>📖</span> Book
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode("pdf")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ${viewMode === 'pdf' ? 'bg-[#D4AF37] text-[#5B0E21] shadow-md' : 'text-[#F4EFE7] hover:bg-white/10'}`}
               >
                 <span>📄</span> PDF
               </button>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {viewMode === "book" && (
                 <div className="text-[#D4AF37] font-bold text-[13px] px-2">
@@ -459,7 +472,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
               )}
               {downloadUrl && (
                 <button onClick={handleMobileDownload} className="text-[#F4EFE7] border border-white/20 px-3 py-1.5 rounded-full text-[13px] font-bold bg-white/10 flex items-center">
-                  <Download className="w-[14px] h-[14px] mr-1.5"/> Save
+                  <Download className="w-[14px] h-[14px] mr-1.5" /> Save
                 </button>
               )}
             </div>
@@ -485,27 +498,47 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
       )}
 
       {/* --- MAIN CONTENT AREA --- */}
-      <div 
+      <div
         ref={mainAreaRef}
-        className={`flex-1 relative w-full ${viewMode === 'book' ? 'overflow-hidden min-h-0 flex items-center justify-center' : 'overflow-y-auto overflow-x-hidden overscroll-y-auto block'} ${isMobile && viewMode === 'book' ? 'p-2 sm:p-4 pb-24' : (!isMobile && viewMode === 'book' ? 'px-8 pt-[20px] pb-[20px]' : '')}`}
+        className={`flex-1 relative w-full ${viewMode === 'book' ? 'overflow-hidden min-h-0 flex items-center justify-center' : 'overflow-auto overscroll-y-auto block'} ${isMobile && viewMode === 'book' ? 'p-2 sm:p-4 pb-24' : (!isMobile && viewMode === 'book' ? 'px-8 pt-[20px] pb-[20px]' : '')}`}
         onPointerDown={viewMode === 'book' ? handlePointerDown : undefined}
         onPointerMove={viewMode === 'book' ? handlePointerMove : undefined}
         onPointerUp={viewMode === 'book' ? handlePointerUp : undefined}
         onPointerCancel={viewMode === 'book' ? handlePointerUp : undefined}
-        style={viewMode === 'book' ? { 
-          touchAction: zoomLevel > 1 ? 'none' : 'auto', 
-          cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'auto' 
+        style={viewMode === 'book' ? {
+          touchAction: zoomLevel > 1 ? 'none' : 'auto',
+          cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'auto'
         } : {
           WebkitOverflowScrolling: 'touch'
         }}
       >
         {viewMode === "pdf" ? (
-          <iframe 
-             src={`${pdfUrl}#toolbar=1&navpanes=0`} 
-             className="w-full border-none bg-white md:rounded-b-lg block"
-             style={{ minHeight: '100%', height: isMobile ? 'max-content' : '100%' }}
-             title={title}
-          />
+          <div className="w-full min-h-full flex flex-col items-center gap-6 py-6 pb-24">
+            {Array.from({ length: numPages }).map((_, i) => (
+              <div 
+                key={`pdf-page-${i + 1}`} 
+                className="shadow-2xl relative bg-white md:rounded-lg overflow-hidden shrink-0 cursor-pointer group hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-300"
+                onClick={() => setFullscreenPage(i + 1)}
+                title="Click to view fullscreen"
+                style={{ 
+                  width: `${pdfViewWidth}px`, 
+                  height: `${pdfViewHeight}px` 
+                }}
+              >
+                {/* Overlay hint on desktop */}
+                {!isMobile && (
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 z-10 transition-colors pointer-events-none flex items-center justify-center">
+                  </div>
+                )}
+                <PdfPage
+                  pageNum={i + 1}
+                  pdf={pdf}
+                  currentPage={i + 1}
+                  isCover={false}
+                />
+              </div>
+            ))}
+          </div>
         ) : (
           <>
             {/* Floating Navigation Arrows (Desktop Book View) */}
@@ -573,7 +606,7 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
                   />
                 );
               }
-              
+
               if (numPages % 2 !== 0) {
                 flipbookPages.push(
                   <div
@@ -651,6 +684,47 @@ export default function PdfBookReader({ pdfUrl, title, downloadUrl, onClose }) {
             >
               Next ▶
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Fullscreen Preview Modal */}
+      {fullscreenPage !== null && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-300"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)'
+          }}
+          onClick={() => setFullscreenPage(null)} // Click outside to close
+        >
+          {/* Container for the preview */}
+          <div 
+            className="relative bg-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] rounded-md overflow-hidden flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
+            style={{
+              width: `${lightboxWidth}px`,
+              height: `${lightboxHeight}px`
+            }}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => setFullscreenPage(null)}
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 p-2 sm:p-3 bg-black/60 hover:bg-black/90 text-white rounded-full transition-colors shadow-lg backdrop-blur-sm"
+              title="Close Preview"
+            >
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            
+            <div className="w-full h-full relative">
+              <PdfPage
+                pageNum={fullscreenPage}
+                pdf={pdf}
+                currentPage={fullscreenPage} // ensure rendering
+                isCover={false}
+              />
+            </div>
           </div>
         </div>
       )}
