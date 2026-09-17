@@ -462,10 +462,6 @@ export default function Gallery() {
                                 className="animate-admin-card-in relative flex flex-col group"
                                 style={{ animationDelay: `${Math.min(index, 8) * 70}ms` }}
                               >
-                                <div className="absolute z-20 top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
-                                  Position #{item.clientPriority}
-                                </div>
-
                                 <MediaCard
                                   item={item}
                                   onDelete={deleteMedia}
@@ -473,6 +469,7 @@ export default function Gallery() {
                                   selected={selectedSet.has(item._id)}
                                   onSelectToggle={toggleSelection}
                                   isPinned={true}
+                                  pinPosition={item.clientPriority}
                                   onTogglePin={toggleGallery}
                                   onPreview={setPreviewMedia}
                                 />

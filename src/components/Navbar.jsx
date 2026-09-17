@@ -36,6 +36,7 @@ export default function Navbar() {
   const resources = [
     { key: "Bible", href: "/bible" },
     { key: "Books & Pamphlets", href: "/books" },
+    { key: "Song Lyrics", href: "/song-lyrics" },
   ];
 
   // Active state based strictly on routing/hash (for non-home pages or initial load)

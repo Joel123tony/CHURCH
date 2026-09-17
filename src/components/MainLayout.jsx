@@ -35,7 +35,7 @@ export default function MainLayout() {
     return () => window.clearTimeout(timeout);
   }, [pathname, hash]);
 
-  const isDarkContact = pathname.startsWith("/bible") || pathname.startsWith("/books");
+  const isDarkContact = pathname.startsWith("/bible") || pathname.startsWith("/books") || pathname.startsWith("/song-lyrics");
   const contactTheme = isDarkContact ? "dark" : "light";
 
   return (

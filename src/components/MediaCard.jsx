@@ -8,10 +8,16 @@ function MediaCard({
   selected = false,
   onSelectToggle,
   isPinned = false,
+  pinPosition,
   onTogglePin,
   onPreview
 }) {
   const videoRef = useRef(null);
+  const timerRef = useRef(null);
+  const touchStartY = useRef(0);
+  const touchStartX = useRef(0);
+  const longPressTriggered = useRef(false);
+
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -29,13 +35,67 @@ function MediaCard({
     }
   };
 
+  const handleTouchStart = (e) => {
+    longPressTriggered.current = false;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    timerRef.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(50);
+      }
+      onSelectToggle(item._id);
+    }, 600);
+  };
+
+  const handleTouchMove = (e) => {
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
+  const handleTouchCancel = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const handleClick = (e) => {
+    if (longPressTriggered.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (onPreview) onPreview(item);
+  };
+
   return (
     <>
       <div
-        onClick={() => { if (onPreview) onPreview(item); }}
+        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
+        onContextMenu={(e) => {
+          if (e.pointerType === 'touch' || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+            e.preventDefault();
+          }
+        }}
         className={`group relative aspect-square w-full cursor-pointer overflow-hidden rounded-xl bg-white border border-slate-200 shadow-sm transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#531B24] ${
           selected ? "ring-2 ring-[#531B24] scale-[0.98] border-transparent" : "hover:shadow-md hover:scale-[1.02] hover:border-slate-300"
         }`}
+        style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
       >
         {/* MEDIA LAYER */}
         {isVideo ? (
@@ -101,7 +161,7 @@ function MediaCard({
               )}
               {isPinned && (
                 <div className="rounded-full bg-emerald-500/90 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white backdrop-blur-md flex items-center gap-1 shadow-sm">
-                  <FaThumbtack size={8} /> PINNED
+                  <FaThumbtack size={8} /> {pinPosition ? `PINNED #${pinPosition}` : "PINNED"}
                 </div>
               )}
             </div>

@@ -29,6 +29,7 @@ import youtubeRoutes from "./routes/youtubeRoutes.js";
 import contentRoutes from "./routes/content.routes.js";
 import translateRoutes from "./routes/translate.routes.js";
 import bookRoutes from "./routes/bookRoutes.js";
+import songLyricRoutes from "./routes/songLyric.routes.js";
 import donationRoutes, { donationWebhookHandler } from "./routes/donationRoutes.js";
 import compression from "compression";
 
@@ -165,6 +166,7 @@ app.use("/api/prayer-requests", prayerRequestRoutes);
 app.use("/api/youtube", youtubeRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/books", bookRoutes);
+app.use("/api/song-lyrics", songLyricRoutes);
 app.use("/api/donations", donationRoutes);
 
 /* =========================

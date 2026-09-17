@@ -43,6 +43,7 @@ export const uploadMedia = async (req, res) => {
     });
 
     clearCache(CACHE_KEY);
+    clearCache("home_page_aggregate");
 
     return res.status(201).json({
       success: true,
@@ -170,6 +171,7 @@ export const updateMedia = async (
     }
 
     clearCache(CACHE_KEY);
+    clearCache("home_page_aggregate");
 
     return res.json({
       success: true,
@@ -211,6 +213,7 @@ export const deleteMedia = async (
     await media.deleteOne();
 
     clearCache(CACHE_KEY);
+    clearCache("home_page_aggregate");
 
     return res.json({
       success: true,
@@ -272,6 +275,7 @@ export const bulkDeleteMedia = async (
     });
 
     clearCache(CACHE_KEY);
+    clearCache("home_page_aggregate");
 
     return res.json({
       success: true,
@@ -315,6 +319,7 @@ export const toggleClientGallery =
 
         await media.save();
         clearCache(CACHE_KEY);
+        clearCache("home_page_aggregate");
 
         return res.json({
           success: true,
@@ -358,6 +363,7 @@ export const toggleClientGallery =
 
       await media.save();
       clearCache(CACHE_KEY);
+      clearCache("home_page_aggregate");
 
       return res.json({
         success: true,

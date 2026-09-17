@@ -420,7 +420,9 @@ const Gallery = memo(function Gallery({ initialGallery, waitForData }) {
           </FadeUp>
 
           {loading ? (
-            <div className="w-full rounded-[20px] bg-[#5d1324]/50 animate-pulse aspect-[4/3] sm:aspect-[16/10] md:aspect-auto md:w-[560px] md:h-[300px] lg:w-[640px] lg:h-[320px] xl:w-[768px] xl:h-[350px] mx-auto border border-[#d4af37]/10" />
+            <div className="flex w-full items-center justify-center rounded-[20px] bg-[#5d1324] shadow-lg aspect-[4/3] sm:aspect-[16/10] md:aspect-auto md:w-[560px] md:h-[300px] lg:w-[640px] lg:h-[320px] xl:w-[768px] xl:h-[350px] mx-auto">
+              <FaSpinner className="animate-spin text-white/50 text-3xl" />
+            </div>
           ) : featuredMedia.length > 0 ? (
             <FeaturedSlider items={featuredMedia} onMediaClick={setSelectedMedia} />
           ) : (

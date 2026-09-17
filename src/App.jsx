@@ -13,6 +13,8 @@ const Login = lazy(() => import("./pages/Login"));
 const ClientGallery = lazy(() => import("./pages/ClientGallery"));
 const Bible = lazy(() => import("./pages/Bible"));
 const BooksPage = lazy(() => import("./pages/BooksPage"));
+const SongLyricsClient = lazy(() => import("./pages/SongLyrics"));
+const SongLyricsView = lazy(() => import("./pages/SongLyricsView"));
 const MainLayout = lazy(() => import("./components/MainLayout"));
 
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
@@ -24,6 +26,7 @@ const Messages = lazy(() => import("./pages/admin/Messages"));
 const PrayerRequests = lazy(() => import("./pages/admin/PrayerRequests"));
 const PastorMessage = lazy(() => import("./pages/admin/PastorMessage"));
 const Books = lazy(() => import("./pages/admin/Books"));
+const SongLyrics = lazy(() => import("./pages/admin/SongLyrics"));
 const Settings = lazy(() => import("./pages/admin/Settings"));
 const Donations = lazy(() => import("./pages/admin/Donations"));
 const PageLoader = () => (
@@ -72,6 +75,8 @@ export default function App() {
                 <Route path="/gallery" element={<ClientGallery />} />
                 <Route path="/bible" element={<Bible />} />
                 <Route path="/books" element={<BooksPage />} />
+                <Route path="/song-lyrics" element={<SongLyricsClient />} />
+                <Route path="/song-lyrics/:id" element={<SongLyricsView />} />
               </Route>
 
               <Route
@@ -88,6 +93,7 @@ export default function App() {
                 <Route path="events" element={<Events />} />
                 <Route path="gallery" element={<Gallery />} />
                 <Route path="books" element={<Books />} />
+                <Route path="song-lyrics" element={<SongLyrics />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="prayer-requests" element={<PrayerRequests />} />
                 <Route path="pastor-message" element={<PastorMessage />} />
