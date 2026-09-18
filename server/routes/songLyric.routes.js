@@ -8,7 +8,8 @@ import {
   deleteSong,
   downloadSongPPT,
   extractPreview,
-  regenerateThanglish
+  regenerateThanglish,
+  generateTxtPPT
 } from "../controllers/songLyricController.js";
 import auth from "../middleware/auth.js";
 
@@ -20,6 +21,7 @@ const router = express.Router();
 router.get("/", getSongs);
 router.get("/:id", getSongById);
 router.get("/:id/download", downloadSongPPT);
+router.get("/:id/generate-ppt", generateTxtPPT);
 
 /* =========================
    ADMIN ROUTES

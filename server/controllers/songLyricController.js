@@ -1,9 +1,11 @@
 import SongLyric from "../models/SongLyric.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
 import { deleteFromCloudinary } from "../utils/deleteFromCloudinary.js";
-import { extractLyricsText, generateSongPPT } from "../utils/pptUtils.js";
+import { extractLyricsText, generateSongPPT, generateTxtToPPT } from "../utils/pptUtils.js";
 import fs from "fs";
 import { translate } from "@vitalets/google-translate-api";
+import crypto from "crypto";
+import { GoogleGenAI } from "@google/genai";
 
 /* =========================
    EXTRACT PREVIEW
@@ -12,6 +14,23 @@ export const extractPreview = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "Song file is required" });
+    }
+
+    // Check for duplicate file before extraction
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
+    const existingByHash = await SongLyric.findOne({ fileHash });
+    const existingByName = await SongLyric.findOne({ 
+      originalFileName: req.file.originalname, 
+      fileHash: { $exists: false } 
+    });
+
+    if (existingByHash || existingByName) {
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(409).json({ exists: true, message: "This song file already exists." });
     }
 
     let lyricsText = "";
@@ -95,24 +114,58 @@ export const extractPreview = async (req, res) => {
 export const regenerateThanglish = async (req, res) => {
   try {
     const { lyricsTamil } = req.body;
-    if (!lyricsTamil) {
-       return res.status(400).json({ success: false, message: "Tamil lyrics are required" });
+    
+    // Exact requested validation code and message
+    if (!lyricsTamil || typeof lyricsTamil !== 'string' || lyricsTamil.trim() === "") {
+      return res.status(422).json({ 
+        success: false, 
+        message: "Tamil lyrics are required",
+        code: "MISSING_LYRICS_TAMIL"
+      });
     }
 
     let generatedThanglish = "";
-    const transResult = await translate(lyricsTamil, { to: 'en' });
-    if (transResult.raw && transResult.raw.sentences) {
-        const translitObj = transResult.raw.sentences.find(s => s.src_translit);
-        if (translitObj) {
-            generatedThanglish = translitObj.src_translit;
-        }
+    
+    // Use Gemini AI for transliteration
+    if (!process.env.GEMINI_API_KEY) {
+       return res.status(503).json({ success: false, message: "Transliteration service is temporarily unavailable (API key missing)." });
+    }
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `Transliterate the following Tamil text into natural readable Thanglish using Latin characters. Do not translate the meaning. Preserve every line break and blank line exactly. Return only the transliterated text.
+
+Tamil Text:
+${lyricsTamil}`;
+
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+          config: {
+              temperature: 0.1,
+          }
+      });
+      
+      if (response.text) {
+         // Gemini might wrap in markdown blocks, although requested not to
+         generatedThanglish = response.text.replace(/```[\s\S]*?\n/g, '').replace(/```/g, '').trim();
+      }
+    } catch (aiError) {
+      console.error("Gemini AI transliteration error:", aiError);
+      return res.status(503).json({ success: false, message: "Transliteration service is temporarily unavailable. Please try again later." });
     }
 
     if (!generatedThanglish) {
-      throw new Error("Transliteration service returned empty output");
+      return res.status(500).json({ success: false, message: "Thanglish could not be generated." });
     }
-
-    return res.status(200).json({ success: true, data: { lyricsThanglish: generatedThanglish } });
+    
+    return res.status(200).json({ 
+      success: true, 
+      data: { 
+        lyricsThanglish: generatedThanglish, 
+        titleEnglish: generatedThanglish
+      } 
+    });
   } catch (err) {
     console.error("Regenerate Thanglish error:", err);
     return res.status(500).json({ success: false, message: "Thanglish regeneration failed." });
@@ -152,6 +205,9 @@ export const uploadSong = async (req, res) => {
       return res.status(409).json({ success: false, message: "This song name already exists. Please use a different song name." });
     }
 
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
     // 1. Upload original file to Cloudinary as raw
     const result = await uploadToCloudinary(req.file.path, {
       folder: "mtc-padikuppam/song-lyrics",
@@ -171,6 +227,7 @@ export const uploadSong = async (req, res) => {
       originalFileUrl: result.url,
       originalFileType: req.file.originalname.split('.').pop().toLowerCase(),
       originalFileName: req.file.originalname,
+      fileHash,
     });
 
     return res.status(201).json({ success: true, data: song });
@@ -226,8 +283,11 @@ export const getSongs = async (req, res) => {
 ========================= */
 export const getSongById = async (req, res) => {
   try {
+    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: "Invalid song ID." });
+    }
     const song = await SongLyric.findById(req.params.id).lean();
-    if (!song) return res.status(404).json({ success: false, message: "Song not found" });
+    if (!song) return res.status(404).json({ success: false, message: "Song not found." });
     return res.json({ success: true, data: song });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -291,9 +351,13 @@ export const updateSong = async (req, res) => {
         resource_type: "raw",
       });
 
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+
       song.originalFileUrl = result.url;
       song.originalFileType = req.file.originalname.split('.').pop().toLowerCase();
       song.originalFileName = req.file.originalname;
+      song.fileHash = fileHash;
     }
 
     await song.save();
@@ -346,5 +410,29 @@ export const downloadSongPPT = async (req, res) => {
   } catch (err) {
     console.error("Error generating PPT:", err);
     return res.status(500).json({ success: false, message: "Failed to generate PowerPoint" });
+  }
+};
+
+/* =========================
+   GENERATE TXT TO PPT
+========================= */
+export const generateTxtPPT = async (req, res) => {
+  try {
+    const song = await SongLyric.findById(req.params.id);
+    if (!song) return res.status(404).json({ success: false, message: "Song not found" });
+
+    if (!song.lyricsText || song.lyricsText.trim() === "") {
+        return res.status(400).json({ success: false, message: "Song has no usable lyrics to generate PPT." });
+    }
+
+    const titleToUse = song.titleTamil || song.title || "Song";
+    const language = req.query.language || 'tamil';
+    
+    // Stream the dynamically generated PPTX directly to the response
+    await generateTxtToPPT(titleToUse, song.lyricsText, song.lyricsThanglish, language, res);
+    
+  } catch (err) {
+    console.error("Error generating TXT PPT:", err);
+    return res.status(500).json({ success: false, message: "Failed to generate PowerPoint from TXT" });
   }
 };

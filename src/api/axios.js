@@ -1,4 +1,5 @@
 import axios from "axios";
+import { waitForBackend } from "../utils/backendState";
 
 const baseURL = import.meta.env.VITE_API_URL || "/api";
 
@@ -8,7 +9,10 @@ const API = axios.create({
 
 /* TOKEN INTERCEPTOR */
 API.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    // Wait until the backend is awake (Render cold-start protection)
+    await waitForBackend();
+
     const token = localStorage.getItem("token");
 
     if (

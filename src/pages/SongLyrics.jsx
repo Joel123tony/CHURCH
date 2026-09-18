@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import API from "../api/axios";
 import { Search, Music, X } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
@@ -10,6 +11,11 @@ export default function SongLyrics() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
+
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [requestSongName, setRequestSongName] = useState("");
+  const [requestDetails, setRequestDetails] = useState("");
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
   const searchInputRef = useRef(null);
   const listContainerRef = useRef(null);
@@ -29,6 +35,37 @@ export default function SongLyrics() {
       console.error("Failed to load songs");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenRequestModal = () => {
+    setRequestSongName(searchQuery);
+    setRequestDetails("");
+    setIsRequestModalOpen(true);
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!requestSongName.trim()) {
+      toast.error(t("Please enter the song name."));
+      return;
+    }
+    
+    setIsSubmittingRequest(true);
+    try {
+      await API.post("/song-requests", {
+        songName: requestSongName.trim(),
+        details: requestDetails.trim()
+      });
+      toast.success(t("Song request sent successfully!"));
+      setIsRequestModalOpen(false);
+    } catch (err) {
+      if (err.response?.status === 409) {
+        toast.error(t("This song has already been requested."));
+      } else {
+        toast.error(t("Unable to send the request. Please try again."));
+      }
+    } finally {
+      setIsSubmittingRequest(false);
     }
   };
 
@@ -92,9 +129,23 @@ export default function SongLyrics() {
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#531B24]/20 border-t-[#531B24]" />
             </div>
           ) : songs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-3xl border border-[#d4af37]/20 shadow-sm">
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-3xl border border-[#d4af37]/20 shadow-sm px-6 text-center">
               <Music className="w-16 h-16 text-slate-300 mb-4" />
-              <p className="text-slate-500 font-medium text-lg">{t("No songs found.")}</p>
+              <p className="text-slate-500 font-medium text-lg mb-2">{t("Song not found")}</p>
+              
+              {searchQuery && (
+                <>
+                  <p className="text-slate-400 text-sm mb-6 max-w-sm">
+                    {t("Can't find the song you're looking for?")}
+                  </p>
+                  <button
+                    onClick={handleOpenRequestModal}
+                    className="bg-[#531B24] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#6c232f] transition-colors shadow-sm"
+                  >
+                    {t("Request Song")}
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div className="flex flex-col border-t border-[#531B24]/10 mt-6">
@@ -157,6 +208,70 @@ export default function SongLyrics() {
           )}
         </div>
       </div>
+
+      {/* REQUEST MODAL */}
+      {isRequestModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-slide-up">
+            <div className="p-5">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-slate-800">
+                  {t("Request a Song")}
+                </h3>
+                <button
+                  onClick={() => !isSubmittingRequest && setIsRequestModalOpen(false)}
+                  disabled={isSubmittingRequest}
+                  className="p-1 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors disabled:opacity-50"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                    {t("Song Name")} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={requestSongName}
+                    onChange={(e) => setRequestSongName(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all text-slate-800"
+                    placeholder="Enter song name..."
+                    disabled={isSubmittingRequest}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                    {t("Optional details")}
+                  </label>
+                  <textarea
+                    value={requestDetails}
+                    onChange={(e) => setRequestDetails(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] outline-none transition-all text-slate-800 resize-none h-24"
+                    placeholder={t("Artist, album, lyrics, YouTube link, or any other details...")}
+                    disabled={isSubmittingRequest}
+                  />
+                </div>
+
+                <button
+                  onClick={handleSubmitRequest}
+                  disabled={isSubmittingRequest || !requestSongName.trim()}
+                  className="w-full bg-[#531B24] text-white py-3 rounded-xl font-bold tracking-wide hover:bg-[#6c232f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex justify-center items-center h-[52px]"
+                >
+                  {isSubmittingRequest ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    t("Send Request")
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

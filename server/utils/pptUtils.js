@@ -171,3 +171,74 @@ export const generateSongPPT = async (title, lyricsText, res) => {
   res.setHeader('Content-type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
   res.end(buffer);
 };
+
+/**
+ * Generates a PPTX from TXT lyrics where ONE STANZA = ONE SLIDE.
+ * Supports Tamil, English, and Bilingual modes.
+ * No title slide. Dynamic font sizing.
+ */
+export const generateTxtToPPT = async (title, lyricsTextTamil, lyricsTextEnglish, language, res) => {
+  const pptx = new pptxgen();
+  pptx.layout = 'LAYOUT_16x9';
+
+  const normalize = (text) => (text || '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  
+  const tamilStanzas = normalize(lyricsTextTamil).split(/\n{2,}/).map(s => s.trim()).filter(s => s !== '');
+  const englishStanzas = normalize(lyricsTextEnglish).split(/\n{2,}/).map(s => s.trim()).filter(s => s !== '');
+
+  const maxStanzas = Math.max(tamilStanzas.length, englishStanzas.length);
+
+  for (let i = 0; i < maxStanzas; i++) {
+    const tStanza = tamilStanzas[i] || '';
+    const eStanza = englishStanzas[i] || '';
+
+    let combinedLines = [];
+    if (language === 'tamil' && tStanza) combinedLines = tStanza.split('\n');
+    else if (language === 'english' && eStanza) combinedLines = eStanza.split('\n');
+    else if (language === 'bilingual') {
+      if (tStanza) combinedLines.push(...tStanza.split('\n'));
+      if (tStanza && eStanza) combinedLines.push(''); // blank line between languages
+      if (eStanza) combinedLines.push(...eStanza.split('\n'));
+    }
+
+    if (combinedLines.length === 0) continue;
+
+    const slide = pptx.addSlide();
+    slide.background = { color: '000000' };
+
+    // Determine font size dynamically based on line count and max line length
+    let fontSize = 40;
+    const maxLineLength = Math.max(...combinedLines.map(l => l.length));
+    
+    if (combinedLines.length > 12 || maxLineLength > 60) {
+      fontSize = 24;
+    } else if (combinedLines.length > 8 || maxLineLength > 50) {
+      fontSize = 28;
+    } else if (combinedLines.length > 6 || maxLineLength > 40) {
+      fontSize = 32;
+    } else if (combinedLines.length > 4 || maxLineLength > 30) {
+      fontSize = 36;
+    }
+
+    slide.addText(combinedLines.join("\n"), {
+      x: '5%', y: '5%', w: '90%', h: '90%',
+      align: 'center', 
+      valign: 'middle',
+      fontSize: fontSize, 
+      color: 'FFFFFF',
+      fontFace: 'Nirmala UI', // Unicode Tamil font broadly available on Windows
+      margin: 10
+    });
+  }
+
+  // Generate buffer
+  const buffer = await pptx.write('nodebuffer');
+  
+  // Clean up filename (remove invalid chars)
+  const safeFilename = title.replace(/[<>:"/\\|?*]/g, "").replace(/\s+/g, " ").trim() || "song";
+  
+  // Send as downloadable file
+  res.setHeader('Content-disposition', `attachment; filename="${encodeURIComponent(safeFilename)}.pptx"`);
+  res.setHeader('Content-type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+  res.end(buffer);
+};

@@ -49,6 +49,11 @@ const songLyricSchema = new mongoose.Schema(
       type: String,
       default: "Unknown",
     },
+    fileHash: {
+      type: String,
+      trim: true,
+      index: true,
+    },
     generatedPptUrl: {
       type: String,
       default: null,
