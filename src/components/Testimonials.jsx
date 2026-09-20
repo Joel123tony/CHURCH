@@ -3,6 +3,7 @@ import { getBlock } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import MobileScrollIndicator from "./MobileScrollIndicator";
 import { FadeUp, StaggerContainer, StaggerItem } from "./animations/index.jsx";
+import { FaSpinner } from "react-icons/fa";
 
 // ─── Avatar initials ──────────────────────────────────────────────────────────
 function getInitials(name = "") {
@@ -94,27 +95,10 @@ const Testimonials = memo(function Testimonials() {
         {/* ── Content area ── */}
         <div>
 
-          {/* Loading skeleton (Desktop) */}
+          {/* Loading state */}
           {loading && (
-            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((n) => (
-                <div
-                  key={`desktop-skeleton-${n}`}
-                  className="h-52 w-full animate-pulse rounded-3xl shadow-sm bg-[#e5ddd3]"
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Loading skeleton (Mobile Slider) */}
-          {loading && (
-            <div className="flex sm:hidden overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-5 px-5 scroll-pl-5 after:content-[''] after:w-[1px] after:shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {[1, 2, 3, 4].map((n) => (
-                <div
-                  key={`mobile-skeleton-${n}`}
-                  className="h-52 shrink-0 w-[85vw] max-w-[340px] snap-start animate-pulse rounded-3xl shadow-sm bg-[#e5ddd3]"
-                />
-              ))}
+            <div className="flex w-full items-center justify-center py-16">
+              <FaSpinner className="animate-spin text-[#54091b]/50 text-3xl" />
             </div>
           )}
 

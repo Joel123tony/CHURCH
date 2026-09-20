@@ -113,7 +113,7 @@ export const extractPreview = async (req, res) => {
 ========================= */
 export const regenerateThanglish = async (req, res) => {
   try {
-    const { lyricsTamil } = req.body;
+    const { songId, lyricsTamil } = req.body;
     
     // Exact requested validation code and message
     if (!lyricsTamil || typeof lyricsTamil !== 'string' || lyricsTamil.trim() === "") {
@@ -125,40 +125,72 @@ export const regenerateThanglish = async (req, res) => {
     }
 
     let generatedThanglish = "";
-    
-    // Use Gemini AI for transliteration
-    if (!process.env.GEMINI_API_KEY) {
-       return res.status(503).json({ success: false, message: "Transliteration service is temporarily unavailable (API key missing)." });
-    }
+    let errorReason = "";
 
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `Transliterate the following Tamil text into natural readable Thanglish using Latin characters. Do not translate the meaning. Preserve every line break and blank line exactly. Return only the transliterated text.
-
+    // 1. Try Gemini if configured
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const { GoogleGenAI } = await import("@google/genai");
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const prompt = `Transliterate the following Tamil text into natural readable Thanglish using Latin characters. Do not translate the meaning. Preserve every line break and blank line exactly. Return only the transliterated text.
 Tamil Text:
 ${lyricsTamil}`;
 
-      const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
-          config: {
-              temperature: 0.1,
-          }
-      });
-      
-      if (response.text) {
-         // Gemini might wrap in markdown blocks, although requested not to
-         generatedThanglish = response.text.replace(/```[\s\S]*?\n/g, '').replace(/```/g, '').trim();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { temperature: 0.1 }
+        });
+        
+        if (response.text) {
+           generatedThanglish = response.text.replace(/```[\s\S]*?\n/g, '').replace(/```/g, '').trim();
+        }
+      } catch (geminiError) {
+        console.error("Gemini AI transliteration error:", geminiError);
+        errorReason = "Gemini AI failed: " + geminiError.message;
       }
-    } catch (aiError) {
-      console.error("Gemini AI transliteration error:", aiError);
-      return res.status(503).json({ success: false, message: "Transliteration service is temporarily unavailable. Please try again later." });
+    } else {
+      errorReason = "GEMINI_API_KEY environment variable is missing";
+    }
+
+    // 2. Fallback to direct Google Translate API (bypass library 429 blocks)
+    if (!generatedThanglish) {
+      try {
+        const axios = (await import("axios")).default;
+        const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ta&tl=en&dt=t&dt=rm&q=' + encodeURIComponent(lyricsTamil);
+        const gtxRes = await axios.get(url, { timeout: 8000 });
+        
+        if (gtxRes.data && gtxRes.data[0]) {
+          const segments = gtxRes.data[0];
+          const translitSegment = segments.find(item => item[0] === null && typeof item[3] === 'string');
+          if (translitSegment) {
+            generatedThanglish = translitSegment[3];
+          }
+        }
+      } catch (gtxError) {
+        console.error("Google Translate Fallback error:", gtxError);
+        errorReason = errorReason ? `${errorReason} | Google Translate API failed: ${gtxError.message}` : `Google Translate API failed: ${gtxError.message}`;
+      }
     }
 
     if (!generatedThanglish) {
-      return res.status(500).json({ success: false, message: "Thanglish could not be generated." });
+      return res.status(500).json({ 
+        success: false, 
+        message: "Failed to generate Thanglish. Configuration or API error.",
+        reason: errorReason
+      });
     }
     
+    if (songId) {
+      const song = await SongLyric.findById(songId);
+      if (song) {
+        song.lyricsThanglish = generatedThanglish;
+        song.thanglishStatus = "available";
+        song.thanglishSource = "generated";
+        await song.save();
+      }
+    }
+
     return res.status(200).json({ 
       success: true, 
       data: { 
@@ -168,7 +200,7 @@ ${lyricsTamil}`;
     });
   } catch (err) {
     console.error("Regenerate Thanglish error:", err);
-    return res.status(500).json({ success: false, message: "Thanglish regeneration failed." });
+    return res.status(500).json({ success: false, message: "Thanglish regeneration failed: " + err.message });
   }
 };
 
@@ -272,7 +304,9 @@ export const getSongs = async (req, res) => {
       .sort(sortOption)
       .lean();
 
-    return res.json({ success: true, data: songs });
+    const total = await SongLyric.countDocuments();
+
+    return res.json({ success: true, data: songs, total });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

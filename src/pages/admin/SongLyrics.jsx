@@ -104,7 +104,7 @@ export default function SongLyrics() {
     try {
       const res = await API.get(`/song-lyrics?search=${encodeURIComponent(searchQuery)}&sort=${sortOption}`);
       setSongs(res.data.data);
-      if (res.data.total) setTotalSongsCount(res.data.total);
+      if (res.data.total !== undefined) setTotalSongsCount(res.data.total);
     } catch (err) {
       console.error("Failed to fetch songs");
     } finally {
@@ -386,18 +386,7 @@ export default function SongLyrics() {
     if (isRegeneratingTitleRef.current) return;
     isRegeneratingTitleRef.current = true;
     setIsRegeneratingTitle(true);
-    const ok = await confirm({
-      title: "Regenerate Title",
-      message: "Regenerate Thanglish title? This will replace the current Thanglish title.",
-      confirmText: "Regenerate",
-      cancelText: "Cancel",
-      isDanger: false,
-    });
-    if (!ok) {
-      isRegeneratingTitleRef.current = false;
-      setIsRegeneratingTitle(false);
-      return;
-    }
+
 
     try {
       const res = await API.post('/song-lyrics/regenerate-thanglish', { lyricsTamil: uploadTitleTamil });
@@ -416,18 +405,7 @@ export default function SongLyrics() {
     if (isRegeneratingRef.current) return;
     isRegeneratingRef.current = true;
     setIsRegenerating(true);
-    const ok = await confirm({
-      title: "Regenerate Lyrics",
-      message: "Regenerate Thanglish lyrics? This will replace the current Thanglish lyrics.",
-      confirmText: "Regenerate",
-      cancelText: "Cancel",
-      isDanger: false,
-    });
-    if (!ok) {
-      isRegeneratingRef.current = false;
-      setIsRegenerating(false);
-      return;
-    }
+
 
     try {
       const res = await API.post('/song-lyrics/regenerate-thanglish', { lyricsTamil: uploadLyricsTamil });
@@ -552,18 +530,7 @@ export default function SongLyrics() {
     if (isRegeneratingTitleRef.current) return;
     isRegeneratingTitleRef.current = true;
     setIsRegeneratingTitle(true);
-    const ok = await confirm({
-      title: "Regenerate Title",
-      message: "Regenerate Thanglish title? This will replace the current Thanglish title.",
-      confirmText: "Regenerate",
-      cancelText: "Cancel",
-      isDanger: false,
-    });
-    if (!ok) {
-      isRegeneratingTitleRef.current = false;
-      setIsRegeneratingTitle(false);
-      return;
-    }
+
 
     try {
       const res = await API.post('/song-lyrics/regenerate-thanglish', { songId: editingSong._id, lyricsTamil: editTitleTamil });
@@ -595,18 +562,7 @@ export default function SongLyrics() {
     if (isRegeneratingRef.current) return;
     isRegeneratingRef.current = true;
     setIsRegenerating(true);
-    const ok = await confirm({
-      title: "Regenerate Lyrics",
-      message: "Regenerate Thanglish? This will replace the current Thanglish lyrics.",
-      confirmText: "Regenerate",
-      cancelText: "Cancel",
-      isDanger: false,
-    });
-    if (!ok) {
-      isRegeneratingRef.current = false;
-      setIsRegenerating(false);
-      return;
-    }
+
 
     try {
        const res = await API.post('/song-lyrics/regenerate-thanglish', { songId: editingSong._id, lyricsTamil: editLyricsTamil });

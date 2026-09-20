@@ -173,7 +173,7 @@ export default function Contact({ theme = "light" }) {
               </a>
 
               <a
-                href="https://www.youtube.com/@MethodistChurchPadikuppam"
+                href="https://www.youtube.com/@MethodistTamilChurchPadikuppam"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`flex h-11 w-11 items-center justify-center rounded-full transition hover:scale-110 sm:h-12 sm:w-12 ${socialBtn}`}

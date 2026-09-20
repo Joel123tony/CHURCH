@@ -170,25 +170,25 @@ export default function SongLyrics() {
 
           {/* Pagination Controls */}
           {!loading && totalPages > 1 && (
-            <div className="mt-10 mb-6 flex flex-wrap justify-center items-center gap-2">
+            <div className="mt-10 mb-8 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 text-sm font-semibold text-slate-600">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#531B24]/20 text-[#531B24] hover:bg-[#531B24]/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-lg"
+                className="flex items-center gap-1 hover:text-[#531B24] disabled:opacity-30 disabled:hover:text-slate-600 transition-colors"
                 aria-label="Previous page"
               >
-                ‹
+                <span className="text-lg leading-none">‹</span> Previous
               </button>
               
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                   <button
                     key={pageNum}
                     onClick={() => handlePageChange(pageNum)}
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                    className={`transition-all px-1 ${
                       currentPage === pageNum 
-                        ? 'bg-[#531B24] text-white shadow-md' 
-                        : 'border border-[#531B24]/20 text-[#531B24] hover:bg-[#531B24]/5 hover:border-[#531B24]/40'
+                        ? 'text-[#531B24] border-b-2 border-[#531B24] font-bold' 
+                        : 'hover:text-[#531B24]'
                     }`}
                   >
                     {pageNum}
@@ -199,10 +199,10 @@ export default function SongLyrics() {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="w-10 h-10 flex items-center justify-center rounded-lg border border-[#531B24]/20 text-[#531B24] hover:bg-[#531B24]/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-lg"
+                className="flex items-center gap-1 hover:text-[#531B24] disabled:opacity-30 disabled:hover:text-slate-600 transition-colors"
                 aria-label="Next page"
               >
-                ›
+                Next <span className="text-lg leading-none">›</span>
               </button>
             </div>
           )}
