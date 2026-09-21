@@ -62,12 +62,22 @@ const allowedOrigins = [
   "https://church-rp0n.onrender.com",
 ];
 
+const normalizeOrigin = (o) => {
+  if (!o) return "";
+  return o
+    .trim()
+    .replace(/^["']|["']$/g, "") // remove surrounding quotes
+    .replace(/\/+$/, ""); // remove trailing slashes
+};
+
 if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL.trim());
+  allowedOrigins.push(normalizeOrigin(process.env.FRONTEND_URL));
 }
 
 if (process.env.ALLOWED_ORIGINS) {
-  const origins = process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim());
+  const origins = process.env.ALLOWED_ORIGINS.split(",")
+    .map(normalizeOrigin)
+    .filter(Boolean);
   allowedOrigins.push(...origins);
 }
 
@@ -77,12 +87,13 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
-      if (allowedOrigins.includes(origin)) {
+      const normalizedRequestOrigin = normalizeOrigin(origin);
+      if (allowedOrigins.includes(normalizedRequestOrigin)) {
         return callback(null, true);
       }
       
-      // Strict CORS rejection for unknown origins
-      return callback(new Error("Not allowed by CORS. Ensure FRONTEND_URL is set correctly in Render environment variables."));
+      // Strict CORS rejection for unknown origins (returning false prevents a 500 error)
+      return callback(null, false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
