@@ -55,12 +55,16 @@ const YoutubeSection = memo(function YoutubeSection({ initialVideos, waitForData
   };
 
   useEffect(() => {
-    if (Array.isArray(initialVideos) && initialVideos.length > 0) {
-      setVideos(initialVideos.slice(0, 4).map((video) => ({
-        ...video,
-        videoId: video.videoId || video.id || video?.id?.videoId || "",
-        title: video.title || video.snippet?.title || "No Title",
-      })));
+    if (Array.isArray(initialVideos)) {
+      if (initialVideos.length > 0) {
+        setVideos(initialVideos.slice(0, 4).map((video) => ({
+          ...video,
+          videoId: video.videoId || video.id || video?.id?.videoId || "",
+          title: video.title || video.snippet?.title || "No Title",
+        })));
+      } else {
+        setVideos([]);
+      }
       setLoading(false);
       return;
     }

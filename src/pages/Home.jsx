@@ -81,6 +81,7 @@ export default function Home() {
         });
       } catch (err) {
         console.warn("Failed to load aggregated home page data", err);
+        setHomeData({});
       }
     };
 
@@ -149,7 +150,7 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Hero initialVideo={homeData?.youtubeHero} waitForData={true} />
+            <Hero initialVideo={homeData?.youtubeHero} waitForData={homeData === null} />
           </div>
         );
       case "history":
@@ -191,7 +192,7 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <YoutubeSection initialVideos={homeData?.youtubeLatest} waitForData={true} />
+            <YoutubeSection initialVideos={homeData?.youtubeLatest} waitForData={homeData === null} />
           </div>
         );
       default:
