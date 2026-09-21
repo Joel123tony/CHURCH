@@ -235,17 +235,25 @@ export default function BibleBlessingModal() {
           </div>
 
           {/* Verse Content */}
-          <div className="relative w-full py-6 px-2 flex flex-col items-center justify-center">
+          <div className="relative w-full h-[240px] sm:h-[220px] flex flex-col items-center justify-between mb-2">
             {/* Symmetrical quotation marks watermark */}
-            <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-7xl text-[#D7C9B5]/40 font-serif leading-none select-none">
+            <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-7xl text-[#D7C9B5]/30 font-serif leading-none select-none z-0">
               &ldquo;
             </span>
-            <p className="relative z-10 text-lg sm:text-xl text-gray-800 font-medium leading-relaxed mb-8 italic text-center w-full">
-              "{currentVerse.text}"
-            </p>
-            <div className="flex justify-center w-full">
-              <div className="inline-grid min-h-10 place-items-center rounded-full border border-[#5D1324]/10 bg-[#5D1324]/5 px-6 py-1.5">
-                <span className="block -translate-y-0.5 text-center text-sm font-semibold leading-[1.35] text-[#5D1324] sm:text-base">
+            
+            <div className="w-full flex-1 flex items-center justify-center overflow-y-auto z-10 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <p className={`text-gray-800 font-medium italic text-center w-full ${
+                  popupLanguage === "ta" 
+                    ? "text-[15px] sm:text-[17px] leading-[1.8] tracking-wide" 
+                    : "text-[17px] sm:text-[19px] leading-relaxed"
+                }`}>
+                "{currentVerse.text}"
+              </p>
+            </div>
+
+            <div className="flex justify-center w-full mt-4 flex-shrink-0 z-10">
+              <div className="inline-grid min-h-[40px] place-items-center rounded-full border border-[#5D1324]/10 bg-[#5D1324]/5 px-5 py-1.5">
+                <span className="block -translate-y-0.5 text-center text-sm font-semibold leading-[1.35] text-[#5D1324] sm:text-base whitespace-nowrap">
                   {currentVerse.book} {currentVerse.chapter}:{currentVerse.verse}
                 </span>
               </div>

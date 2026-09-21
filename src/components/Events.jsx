@@ -5,10 +5,10 @@ import { useLanguage } from "../context/LanguageContext";
 import { FaFire, FaCalendarAlt, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 import { FadeUp, FadeLeft, FadeRight, StaggerContainer, StaggerItem } from "./animations/index.jsx";
 
-const Events = memo(function Events({ initialEvents }) {
+const Events = memo(function Events({ initialEvents, waitForData }) {
   const { t } = useLanguage();
   const [eventsData, setEventsData] = useState(() => initialEvents || { featuredEvent: null, upcomingEvents: [] });
-  const [loading, setLoading] = useState(() => !initialEvents);
+  const [loading, setLoading] = useState(() => !initialEvents && waitForData !== false);
 
   const parseEventTimestamp = (event) => {
     const date = new Date(event?.date);
@@ -40,8 +40,11 @@ const Events = memo(function Events({ initialEvents }) {
     if (initialEvents) {
       setEventsData(initialEvents);
       setLoading(false);
+    } else if (waitForData === false) {
+      setEventsData({ featuredEvent: null, upcomingEvents: [] });
+      setLoading(false);
     }
-  }, [initialEvents]);
+  }, [initialEvents, waitForData]);
 
   const { featuredEvent: latestEvent, upcomingEvents } = eventsData;
 

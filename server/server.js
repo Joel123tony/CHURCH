@@ -122,6 +122,10 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/health", async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ status: "error", message: "Database connecting" });
+  }
+
   if (req.query.youtube) {
     try {
       const { resilientFetch } = await import("./utils/resilientFetch.js");

@@ -35,7 +35,7 @@ const Pastor = memo(function Pastor({ initialPastors, waitForData }) {
   useEffect(() => {
     let isMounted = true;
 
-    if (initialPastors && initialPastors.length > 0) {
+    if (initialPastors) {
       setPastors(initialPastors);
       setLoading(false);
       return () => { isMounted = false; };

@@ -196,8 +196,9 @@ export const getHomePageData = async (req, res) => {
     });
   } catch (err) {
     console.error("Home aggregate endpoint error:", err);
-    return res.json({
+    return res.status(503).json({
       success: false,
+      message: err.message || "Failed to fetch aggregated home page data",
       sectionOrder: ["hero", "history", "events", "gallery", "pastor", "testimonials", "youtube"],
       hero: {},
       history: {},
@@ -206,9 +207,11 @@ export const getHomePageData = async (req, res) => {
       pastorContent: {},
       testimonialsContent: {},
       youtubeContent: {},
-      events: [],
+      events: { featuredEvent: null, upcomingEvents: [] },
       gallery: [],
-      pastors: []
+      pastors: [],
+      youtubeHero: { videoId: null, title: "Service unavailable", live: false },
+      youtubeLatest: []
     });
   }
 };

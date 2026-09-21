@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, memo } from "react";
 import API from "../api/axios";
 import { useLanguage } from "../context/LanguageContext";
 import MobileScrollIndicator from "./MobileScrollIndicator";
+import methodistLogo from "../assets/methodist-logo.png";
 
 const YoutubeSection = memo(function YoutubeSection({ initialVideos, waitForData }) {
   const { t } = useLanguage();
@@ -120,8 +121,21 @@ const YoutubeSection = memo(function YoutubeSection({ initialVideos, waitForData
                         loading="lazy"
                         decoding="async"
                         onError={(e) => {
-                          if (video.videoId) {
-                            e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
+                          const hq = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
+                          const mq = `https://i.ytimg.com/vi/${video.videoId}/mqdefault.jpg`;
+                          
+                          if (video.videoId && e.target.src !== hq && !e.target.dataset.triedHq) {
+                            e.target.dataset.triedHq = "true";
+                            e.target.src = hq;
+                          } else if (video.videoId && e.target.src !== mq && !e.target.dataset.triedMq) {
+                            e.target.dataset.triedMq = "true";
+                            e.target.src = mq;
+                          } else {
+                            e.target.onerror = null;
+                            e.target.src = methodistLogo;
+                            e.target.style.objectFit = "contain";
+                            e.target.style.padding = "2rem";
+                            e.target.style.backgroundColor = "#54091b";
                           }
                         }}
                       />
@@ -184,8 +198,21 @@ const YoutubeSection = memo(function YoutubeSection({ initialVideos, waitForData
                         loading="lazy"
                         decoding="async"
                         onError={(e) => {
-                          if (video.videoId) {
-                            e.target.src = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
+                          const hq = `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`;
+                          const mq = `https://i.ytimg.com/vi/${video.videoId}/mqdefault.jpg`;
+                          
+                          if (video.videoId && e.target.src !== hq && !e.target.dataset.triedHq) {
+                            e.target.dataset.triedHq = "true";
+                            e.target.src = hq;
+                          } else if (video.videoId && e.target.src !== mq && !e.target.dataset.triedMq) {
+                            e.target.dataset.triedMq = "true";
+                            e.target.src = mq;
+                          } else {
+                            e.target.onerror = null;
+                            e.target.src = methodistLogo;
+                            e.target.style.objectFit = "contain";
+                            e.target.style.padding = "2rem";
+                            e.target.style.backgroundColor = "#54091b";
                           }
                         }}
                       />

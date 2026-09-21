@@ -23,11 +23,18 @@ export default function Home() {
   // Load aggregated homepage data in ONE optimized request
   useEffect(() => {
     let isMounted = true;
+    let retryCount = 0;
+    const maxRetries = 10;
+    const retryDelay = 5000;
 
     const loadHomeData = async () => {
       try {
         const res = await getHomePage();
         if (!isMounted || !res) return;
+        
+        if (res.success === false) {
+           throw new Error(res.message || "Backend returned success: false");
+        }
 
         setHomeData(res);
         window.initialHomepageDataReady = true;
@@ -80,8 +87,13 @@ export default function Home() {
           youtube: res.youtubeContent || {}
         });
       } catch (err) {
-        console.warn("Failed to load aggregated home page data", err);
-        setHomeData({});
+        console.error(`Failed to load aggregated home page data (Attempt ${retryCount + 1}/${maxRetries}):`, err.message || err);
+        if (isMounted && retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(loadHomeData, retryDelay);
+        } else if (isMounted) {
+          setHomeData({});
+        }
       }
     };
 
@@ -164,21 +176,21 @@ export default function Home() {
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Events initialEvents={homeData?.events} waitForData={true} />
+            <Events initialEvents={homeData?.events} waitForData={homeData === null} />
           </div>
         );
       case "gallery":
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Gallery initialGallery={homeData?.gallery} waitForData={true} />
+            <Gallery initialGallery={homeData?.gallery} waitForData={homeData === null} />
           </div>
         );
       case "pastor":
         return (
           <div key={id} className={`cms-sec-${id}`}>
             {styleBlock}
-            <Pastor initialPastors={homeData?.pastors} waitForData={true} />
+            <Pastor initialPastors={homeData?.pastors} waitForData={homeData === null} />
           </div>
         );
       case "testimonials":
