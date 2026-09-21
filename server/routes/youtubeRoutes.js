@@ -20,8 +20,13 @@ const fetchYT = async (url) => {
   const start = process.hrtime.bigint();
   try {
     const res = await fetch(url);
-    return await res.json();
-  } catch {
+    const data = await res.json();
+    if (!res.ok) {
+      console.error(`YouTube API Error (${res.status}):`, data?.error?.message || "Unknown error");
+    }
+    return data;
+  } catch (error) {
+    console.error("YouTube Fetch Exception:", error.message);
     return {};
   } finally {
     if (store) {
@@ -37,6 +42,11 @@ const fetchYT = async (url) => {
 const getUploadsPlaylistId = async () => {
   const cachedId = getCached("yt_uploads_playlist_id");
   if (cachedId) return cachedId;
+
+  if (!CHANNEL_ID || !API_KEY) {
+    console.error("YouTube Config Error: CHANNEL_ID or YOUTUBE_API_KEY is missing in environment variables.");
+    return null;
+  }
 
   const url = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
   const data = await fetchYT(url);
@@ -55,6 +65,11 @@ const getLiveStream = async () => {
   const cachedLive = getCached("yt_active_live_stream");
   if (cachedLive !== null && !isCacheStale("yt_active_live_stream")) {
     return cachedLive;
+  }
+
+  if (!CHANNEL_ID || !API_KEY) {
+    console.error("YouTube Config Error (Live): CHANNEL_ID or YOUTUBE_API_KEY is missing.");
+    return null;
   }
 
   try {
@@ -168,6 +183,19 @@ router.get("/", async (req, res) => {
 router.get("/latest", async (req, res) => {
   const latest = await getYoutubeLatestData();
   return res.json(latest);
+});
+
+/* =========================
+   DIAGNOSTIC ENDPOINT
+========================= */
+router.get("/debug-env", (req, res) => {
+  res.json({
+    hasChannelId: !!process.env.CHANNEL_ID,
+    channelIdLength: process.env.CHANNEL_ID ? process.env.CHANNEL_ID.length : 0,
+    hasApiKey: !!process.env.YOUTUBE_API_KEY,
+    apiKeyLength: process.env.YOUTUBE_API_KEY ? process.env.YOUTUBE_API_KEY.length : 0,
+    nodeEnv: process.env.NODE_ENV
+  });
 });
 
 export default router;
