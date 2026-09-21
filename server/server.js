@@ -63,7 +63,12 @@ const allowedOrigins = [
 ];
 
 if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
+  allowedOrigins.push(process.env.FRONTEND_URL.trim());
+}
+
+if (process.env.ALLOWED_ORIGINS) {
+  const origins = process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim());
+  allowedOrigins.push(...origins);
 }
 
 app.use(
