@@ -127,7 +127,10 @@ export const getYoutubeHeroData = async () => {
       live: false,
     };
 
-    setCached("yt_endpoint_hero_response", responsePayload, CACHE_TTL_VIDEOS);
+    if (responsePayload.videoId) {
+      setCached("yt_endpoint_hero_response", responsePayload, CACHE_TTL_VIDEOS);
+    }
+    
     return responsePayload;
   } catch (err) {
     console.error("YouTube Hero Error:", err);
