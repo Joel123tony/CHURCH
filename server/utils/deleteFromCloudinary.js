@@ -1,8 +1,11 @@
 import cloudinary from "./cloudinary.js";
 
+const DEFAULT_CLOUD_NAME = "dhqc0n23k";
+const DEFAULT_API_KEY = "147858671311895";
+const DEFAULT_API_SECRET = "w9w03p-pKz3WLq4W6TykTn1ByiU";
+
 export const deleteFromCloudinary = async (public_id, resource_type = "image") => {
   try {
-    // ✅ validation
     if (!public_id) {
       console.warn("⚠️ Cloudinary delete skipped: no public_id provided");
       return {
@@ -13,10 +16,16 @@ export const deleteFromCloudinary = async (public_id, resource_type = "image") =
 
     console.log("🗑️ Deleting from Cloudinary:", public_id);
 
-    // 🔥 delete asset
+    const cloud_name = process.env.CLOUDINARY_CLOUD_NAME || DEFAULT_CLOUD_NAME;
+    const api_key = process.env.CLOUDINARY_API_KEY || DEFAULT_API_KEY;
+    const api_secret = process.env.CLOUDINARY_API_SECRET || DEFAULT_API_SECRET;
+
     const result = await cloudinary.uploader.destroy(public_id, {
-      resource_type, // supports image / video if needed
-      invalidate: true, // clears CDN cache
+      cloud_name,
+      api_key,
+      api_secret,
+      resource_type,
+      invalidate: true,
     });
 
     console.log("✅ Cloudinary delete result:", result);
@@ -25,10 +34,8 @@ export const deleteFromCloudinary = async (public_id, resource_type = "image") =
       success: true,
       result,
     };
-
   } catch (err) {
     console.error("❌ Cloudinary delete error:", err);
-
     return {
       success: false,
       message: err.message || "Cloudinary delete failed",

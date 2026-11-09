@@ -2,6 +2,10 @@ import cloudinary from "../config/cloudinary.js";
 import fs from "fs";
 import { compressImage, compressVideo } from "./compressMedia.js";
 
+const DEFAULT_CLOUD_NAME = "dhqc0n23k";
+const DEFAULT_API_KEY = "147858671311895";
+const DEFAULT_API_SECRET = "w9w03p-pKz3WLq4W6TykTn1ByiU";
+
 export const uploadToCloudinary = async (filePath, options = {}) => {
   const normalizedOptions = typeof options === "string" ? { folder: options } : options || {};
   
@@ -49,8 +53,16 @@ export const uploadToCloudinary = async (filePath, options = {}) => {
     isCompressed = false;
   }
 
+  // Explicit credentials passed directly to bypass missing environment or global config resets
+  const cloud_name = process.env.CLOUDINARY_CLOUD_NAME || DEFAULT_CLOUD_NAME;
+  const api_key = process.env.CLOUDINARY_API_KEY || DEFAULT_API_KEY;
+  const api_secret = process.env.CLOUDINARY_API_SECRET || DEFAULT_API_SECRET;
+
   try {
     const result = await cloudinary.uploader.upload(finalFilePath, {
+      cloud_name,
+      api_key,
+      api_secret,
       folder,
       resource_type,
       use_filename: true,
