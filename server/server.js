@@ -36,33 +36,16 @@ import compression from "compression";
 
 const app = express();
 
-app.use(compression());
-
 /* =========================
    TRUST PROXY (Render safe)
 ========================= */
 app.set("trust proxy", 1);
 
 /* =========================
-   SECURITY HEADERS
+   CORS CONFIGURATION
+   (Must be registered FIRST before all other middleware
+    so that preflights, errors, and responses always have CORS headers)
 ========================= */
-app.use(helmet());
-
-/* =========================
-   LOGGING
-========================= */
-app.use(morgan("dev"));
-
-/* =========================
-   CORS  (must come BEFORE rate-limiter so
-          429 responses still carry CORS headers)
-========================= */
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://church-rp0n.onrender.com",
-  "https://mtcpadikuppam.netlify.app",
-];
-
 const normalizeOrigin = (o) => {
   if (!o) return "";
   return o
@@ -70,6 +53,15 @@ const normalizeOrigin = (o) => {
     .replace(/^["']|["']$/g, "") // remove surrounding quotes
     .replace(/\/+$/, ""); // remove trailing slashes
 };
+
+const allowedOrigins = [
+  "https://mtcpadikuppam.netlify.app",
+  "https://church-rp0n.onrender.com",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://localhost:4173",
+];
 
 if (process.env.FRONTEND_URL) {
   allowedOrigins.push(normalizeOrigin(process.env.FRONTEND_URL));
@@ -82,32 +74,69 @@ if (process.env.ALLOWED_ORIGINS) {
   allowedOrigins.push(...origins);
 }
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const normalizedRequestOrigin = normalizeOrigin(origin);
-    if (
-      allowedOrigins.includes(normalizedRequestOrigin) ||
-      /^https:\/\/([a-zA-Z0-9-]+--)?mtcpadikuppam\.netlify\.app$/.test(normalizedRequestOrigin)
-    ) {
-      return callback(null, true);
-    }
-    
-    // Strict CORS rejection for unknown origins (returning false prevents a 500 error)
-    return callback(null, false);
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // Allow curl, Postman, mobile apps, server-to-server
+
+  const normalized = normalizeOrigin(origin);
+
+  // Check explicit allowed origins list
+  if (allowedOrigins.includes(normalized)) return true;
+
+  // Netlify production domain and preview/branch subdomains (*.netlify.app)
+  if (/^https?:\/\/([a-zA-Z0-9_-]+--)?mtcpadikuppam\.netlify\.app$/.test(normalized)) {
+    return true;
+  }
+  if (/^https?:\/\/deploy-preview-\d+--mtcpadikuppam\.netlify\.app$/.test(normalized)) {
+    return true;
+  }
+
+  // Localhost development on any port (localhost, 127.0.0.1, [::1])
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(normalized)) {
+    return true;
+  }
+
+  return false;
 };
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    // Unknown origins: safe rejection without 500 error
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+  optionsSuccessStatus: 200, // Legacy browser / WebView compatibility
+  maxAge: 86400, // Preflight caching (24 hours) to reduce latency and roundtrips
+};
+
+// 1. Mount CORS middleware first
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+
+// 2. Explicitly handle OPTIONS preflight across all routes (Express 4 & 5 compatible)
+app.options(/(.*)/, cors(corsOptions));
 
 /* =========================
-   RATE LIMIT  (after CORS; skip preflight)
+   SECURITY HEADERS
+   (crossOriginResourcePolicy allows cross-origin requests from Netlify)
+========================= */
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: false,
+  })
+);
+
+/* =========================
+   COMPRESSION & LOGGING
+========================= */
+app.use(compression());
+app.use(morgan("dev"));
+
+/* =========================
+   RATE LIMIT (after CORS; skip preflight)
 ========================= */
 app.use(
   rateLimit({
@@ -260,13 +289,10 @@ app.use((err, req, res, _next) => {
 ========================= */
 const startServer = async () => {
   try {
-    const t0 = performance.now();
-    await connectDB();
-    const dbConnectedMs = Math.round(performance.now() - t0);
-    console.log(`⏱️ MongoDB connected in ${dbConnectedMs} ms`);
-
     const PORT = process.env.PORT || 5000;
+    const t0 = performance.now();
 
+    // Start listening immediately so Render detects port immediately without 502/CORS cold-start timeouts
     const server = app.listen(PORT, () => {
       const listenMs = Math.round(performance.now() - t0);
       console.log("==================================");
@@ -290,8 +316,20 @@ const startServer = async () => {
     server.timeout = 10 * 60 * 1000;
     server.keepAliveTimeout = 10 * 60 * 1000;
     server.headersTimeout = 10 * 60 * 1000;
+
+    // Connect to MongoDB asynchronously
+    connectDB()
+      .then((conn) => {
+        if (conn) {
+          const dbConnectedMs = Math.round(performance.now() - t0);
+          console.log(`⏱️ MongoDB connected in ${dbConnectedMs} ms`);
+        }
+      })
+      .catch((err) => {
+        console.error("❌ DB CONNECTION FAILED:", err);
+      });
   } catch (err) {
-    console.error("❌ DB CONNECTION FAILED:", err);
+    console.error("❌ SERVER START ERROR:", err);
     // Do NOT exit process so non-DB routes keep working
   }
 };

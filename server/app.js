@@ -27,9 +27,65 @@ connectDB();
 const app = express();
 
 /* =========================
+   CORS CONFIGURATION
+========================= */
+const normalizeOrigin = (o) => {
+  if (!o) return "";
+  return o
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\/+$/, "");
+};
+
+const allowedOrigins = [
+  "https://mtcpadikuppam.netlify.app",
+  "https://church-rp0n.onrender.com",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://localhost:4173",
+];
+
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(normalizeOrigin(process.env.FRONTEND_URL));
+}
+
+if (process.env.ALLOWED_ORIGINS) {
+  const origins = process.env.ALLOWED_ORIGINS.split(",")
+    .map(normalizeOrigin)
+    .filter(Boolean);
+  allowedOrigins.push(...origins);
+}
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  const normalized = normalizeOrigin(origin);
+  if (allowedOrigins.includes(normalized)) return true;
+  if (/^https?:\/\/([a-zA-Z0-9_-]+--)?mtcpadikuppam\.netlify\.app$/.test(normalized)) return true;
+  if (/^https?:\/\/deploy-preview-\d+--mtcpadikuppam\.netlify\.app$/.test(normalized)) return true;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(normalized)) return true;
+  return false;
+};
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+  optionsSuccessStatus: 200,
+  maxAge: 86400,
+};
+
+app.use(cors(corsOptions));
+app.options(/(.*)/, cors(corsOptions));
+
+/* =========================
    MIDDLEWARE
 ========================= */
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
