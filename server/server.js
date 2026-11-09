@@ -60,6 +60,7 @@ app.use(morgan("dev"));
 const allowedOrigins = [
   "http://localhost:5173",
   "https://church-rp0n.onrender.com",
+  "https://mtcpadikuppam.netlify.app",
 ];
 
 const normalizeOrigin = (o) => {
@@ -81,27 +82,29 @@ if (process.env.ALLOWED_ORIGINS) {
   allowedOrigins.push(...origins);
 }
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      const normalizedRequestOrigin = normalizeOrigin(origin);
-      if (allowedOrigins.includes(normalizedRequestOrigin)) {
-        return callback(null, true);
-      }
-      
-      // Strict CORS rejection for unknown origins (returning false prevents a 500 error)
-      return callback(null, false);
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const normalizedRequestOrigin = normalizeOrigin(origin);
+    if (
+      allowedOrigins.includes(normalizedRequestOrigin) ||
+      /^https:\/\/([a-zA-Z0-9-]+--)?mtcpadikuppam\.netlify\.app$/.test(normalizedRequestOrigin)
+    ) {
+      return callback(null, true);
+    }
+    
+    // Strict CORS rejection for unknown origins (returning false prevents a 500 error)
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
 
-app.options("*", cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 /* =========================
    RATE LIMIT  (after CORS; skip preflight)

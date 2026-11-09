@@ -307,7 +307,7 @@ export const createPastor = async (req, res) => {
     });
   } catch (err) {
     console.error("[PASTOR] CREATE ERROR:", err);
-    return sendError(res, err, "Failed to create pastor");
+    return safeErrorResponse(res, err, "Failed to create pastor");
   } finally {
     if (req.file && req.file.path && fs.existsSync(req.file.path)) {
       try { fs.unlinkSync(req.file.path); } catch (e) { console.error(e); }
@@ -465,7 +465,7 @@ export const updatePastor = async (req, res) => {
     });
   } catch (err) {
     console.error("[PASTOR] UPDATE ERROR:", err);
-    return sendError(res, err, "Failed to update pastor");
+    return safeErrorResponse(res, err, "Failed to update pastor");
   } finally {
     if (req.file && req.file.path && fs.existsSync(req.file.path)) {
       try { fs.unlinkSync(req.file.path); } catch (e) { console.error(e); }
