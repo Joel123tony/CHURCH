@@ -12,19 +12,14 @@ dotenv.config({ path: envPath });
 /* =========================
    CLOUDINARY SAFE CONFIG
 ========================= */
-if (
-  !process.env.CLOUDINARY_CLOUD_NAME ||
-  !process.env.CLOUDINARY_API_KEY ||
-  !process.env.CLOUDINARY_API_SECRET
-) {
-  console.error("❌ CLOUDINARY ENV MISSING!");
-  console.error("Check CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET");
-}
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "dhqc0n23k";
+const apiKey = process.env.CLOUDINARY_API_KEY || "147858671311895";
+const apiSecret = process.env.CLOUDINARY_API_SECRET || "w9w03p-pKz3WLq4W6TykTn1ByiU";
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "",
-  api_key: process.env.CLOUDINARY_API_KEY || "",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "",
+  cloud_name: cloudName,
+  api_key: apiKey,
+  api_secret: apiSecret,
   secure: true,
 });
 

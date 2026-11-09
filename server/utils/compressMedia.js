@@ -5,18 +5,26 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
-
-
+try {
+  if (ffmpegInstaller && ffmpegInstaller.path) {
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+  }
+} catch (e) {
+  console.warn("⚠️ Could not set ffmpeg path:", e.message);
+}
 
 export const compressImage = async (inputPath) => {
-  const originalSize = fs.statSync(inputPath).size;
-
-  if (originalSize < 100 * 1024) { // Don't compress if < 100KB
-    return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
-  }
-
   try {
+    if (!inputPath || !fs.existsSync(inputPath)) {
+      return { filePath: inputPath, originalSize: 0, compressedSize: 0, isCompressed: false };
+    }
+
+    const originalSize = fs.statSync(inputPath).size;
+
+    if (originalSize < 100 * 1024) { // Don't compress if < 100KB
+      return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
+    }
+
     const tempOutput = path.join(os.tmpdir(), `img-out-${Date.now()}-${Math.random().toString(36).substring(7)}.webp`);
     
     // High-quality WebP, preserve metadata, max 1920x1920
@@ -36,21 +44,26 @@ export const compressImage = async (inputPath) => {
 
     return { filePath: tempOutput, originalSize, compressedSize, isCompressed: true };
   } catch (error) {
-    console.error("Image Compression Error:", error);
-    return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
+    console.error("Image Compression Error (using original):", error.message);
+    const fallbackSize = (inputPath && fs.existsSync(inputPath)) ? fs.statSync(inputPath).size : 0;
+    return { filePath: inputPath, originalSize: fallbackSize, compressedSize: fallbackSize, isCompressed: false };
   }
 };
 
 export const compressVideo = (inputPath) => {
   return new Promise((resolve) => {
-    const originalSize = fs.statSync(inputPath).size;
-    const tempOutput = path.join(os.tmpdir(), `vid-out-${Date.now()}-${Math.random().toString(36).substring(7)}.mp4`);
-
-    if (originalSize < 1024 * 1024) { // Don't compress if < 1MB
-      return resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
-    }
-
     try {
+      if (!inputPath || !fs.existsSync(inputPath)) {
+        return resolve({ filePath: inputPath, originalSize: 0, compressedSize: 0, isCompressed: false });
+      }
+
+      const originalSize = fs.statSync(inputPath).size;
+      const tempOutput = path.join(os.tmpdir(), `vid-out-${Date.now()}-${Math.random().toString(36).substring(7)}.mp4`);
+
+      if (originalSize < 1024 * 1024) { // Don't compress if < 1MB
+        return resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
+      }
+
       // Sensible CRF for quality, no extreme degradation
       const crf = 24; 
 
@@ -101,19 +114,23 @@ export const compressVideo = (inputPath) => {
         .save(tempOutput);
     } catch (error) {
       console.error("Video Temp File Error:", error);
-      resolve({ filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false });
+      resolve({ filePath: inputPath, originalSize: 0, compressedSize: 0, isCompressed: false });
     }
   });
 };
 
 export const compressPdf = async (inputPath) => {
-  const originalSize = fs.statSync(inputPath).size;
-
-  if (originalSize < 100 * 1024) { // Don't compress if < 100KB
-    return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
-  }
-
   try {
+    if (!inputPath || !fs.existsSync(inputPath)) {
+      return { filePath: inputPath, originalSize: 0, compressedSize: 0, isCompressed: false };
+    }
+
+    const originalSize = fs.statSync(inputPath).size;
+
+    if (originalSize < 100 * 1024) { // Don't compress if < 100KB
+      return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
+    }
+
     const { PDFDocument } = await import("pdf-lib");
     const pdfBytes = fs.readFileSync(inputPath);
     const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
@@ -135,6 +152,7 @@ export const compressPdf = async (inputPath) => {
     return { filePath: tempOutput, originalSize, compressedSize, isCompressed: true };
   } catch (error) {
     console.error("PDF Compression Error:", error);
-    return { filePath: inputPath, originalSize, compressedSize: originalSize, isCompressed: false };
+    const fallbackSize = (inputPath && fs.existsSync(inputPath)) ? fs.statSync(inputPath).size : 0;
+    return { filePath: inputPath, originalSize: fallbackSize, compressedSize: fallbackSize, isCompressed: false };
   }
 };
